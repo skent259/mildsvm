@@ -46,7 +46,8 @@ MI_SVM <- function(data, cost, kernel = "radial", max.step = 500, type = "C-clas
     
     bag_name <- data$bag_name
     bag_label <- data$bag_label
-    if(length(unique(bag_label)) == 1) stop("Only one class label, cannot perform classification!")
+    if (length(unique(bag_label)) == 1) 
+        stop("Only one class label, cannot perform classification!")
     positive_bag_name <- unique(bag_name[bag_label == 1])
     negative_bag_name <- unique(bag_name[bag_label == 0])
     unique_bag_name <- unique(bag_name)
@@ -71,7 +72,8 @@ MI_SVM <- function(data, cost, kernel = "radial", max.step = 500, type = "C-clas
             sample_label <- c(sample_label, 1)
         }
     }
-    sample_label <- factor(sample_label, levels = c(0, 1), labels = c('0', '1'))
+    sample_label <- factor(sample_label, levels = c(0, 1), labels = c("0", 
+        "1"))
     
     n_negative_inst <- length(sample_label) - length(positive_bag_name)
     weights <- c(1, length(positive_bag_name)/n_negative_inst)
@@ -85,8 +87,10 @@ MI_SVM <- function(data, cost, kernel = "radial", max.step = 500, type = "C-clas
     step <- 1
     while (step < max.step) {
         
-        svm_model <- e1071::svm(x = sample_instance, y = sample_label,  class.weights = weights, cost = cost, kernel = kernel, type = type)
-        pred_all_inst <- predict( object = svm_model, newdata = data[, -(1:3)], decision.values = TRUE)
+        svm_model <- e1071::svm(x = sample_instance, y = sample_label, 
+            class.weights = weights, cost = cost, kernel = kernel, type = type)
+        pred_all_inst <- predict(object = svm_model, newdata = data[, 
+            -(1:3)], decision.values = TRUE)
         pred_all_score <- attr(pred_all_inst, "decision.values")
         ## update sample
         idx <- 1
@@ -101,9 +105,11 @@ MI_SVM <- function(data, cost, kernel = "radial", max.step = 500, type = "C-clas
             if (bag_label_i == 0) {
                 sample_instance <- rbind(sample_instance, data_i[, -(1:3)])
                 sample_label <- c(sample_label, rep(0, n_inst))
-            }else if(bag_label_i == 1){
-                id_max <- which.max(pred_all_score[ idx: (idx + n_inst - 1)])
-                sample_instance <- rbind(sample_instance, data_i[id_max, -(1:3)])
+            } else if (bag_label_i == 1) {
+                id_max <- which.max(pred_all_score[idx:(idx + n_inst - 
+                  1)])
+                sample_instance <- rbind(sample_instance, data_i[id_max, 
+                  -(1:3)])
                 sample_label <- c(sample_label, 1)
                 selection[pos_idx] <- id_max
                 pos_idx <- pos_idx + 1
@@ -113,7 +119,8 @@ MI_SVM <- function(data, cost, kernel = "radial", max.step = 500, type = "C-clas
         }
         
         difference = sum(past_selection[, step] != selection)
-        if(difference == 0) break
+        if (difference == 0) 
+            break
         
         repeat_selection <- 0
         for (i in 1:step) {
@@ -159,13 +166,16 @@ predict.MI_SVM <- function(object, ...) {
     arguments = list(...)
     newdata = arguments$newdata
     true_bag_info = arguments$true_bag_info
-    instance_label_pred <- predict(object = object$svm_mdl, newdata = newdata[, -(1:3)], decision.values = TRUE)
+    instance_label_pred <- predict(object = object$svm_mdl, newdata = newdata[, 
+        -(1:3)], decision.values = TRUE)
     instance_score_pred <- attr(instance_label_pred, "decision.values")
     data_instance <- cbind(newdata[, 1:2], instance_label_pred, instance_score_pred)
     colnames(data_instance)[4] <- "instance_score_pred"
     data_group <- dplyr::group_by(.data = data_instance, bag_name)
-    data_bag <- dplyr::summarise(data_group, bag_score_pred = max(instance_score_pred), bag_label_pred = factor(bag_score_pred > 0, levels = c(TRUE, FALSE), labels = c('1', '0')))
-    if(! is.null(true_bag_info)){
+    data_bag <- dplyr::summarise(data_group, bag_score_pred = max(instance_score_pred), 
+        bag_label_pred = factor(bag_score_pred > 0, levels = c(TRUE, 
+            FALSE), labels = c("1", "0")))
+    if (!is.null(true_bag_info)) {
         data_bag <- inner_join(data_bag, true_bag_info, by = "bag_name")
         ROC <- pROC::roc(response = data_bag$bag_label, predictor = data_bag$bag_score_pred)
         AUC <- pROC::auc(ROC)
@@ -294,9 +304,11 @@ predict.smmBag <- function(object, ...) {
     }
     newdata$bag_label <- NULL  ## newdata now only has bag_name, instance_name
     
-    if(is.null(args$GramMatrix)){
-        instance_score_pred <- predict(object = object$object, newdata = base::subset(newdata, select =  -c(bag_name)), traindata = base::subset(object$object$traindata, select =  -c(instance_label)))
-    }else{
+    if (is.null(args$GramMatrix)) {
+        instance_score_pred <- predict(object = object$object, newdata = base::subset(newdata, 
+            select = -c(bag_name)), traindata = base::subset(object$object$traindata, 
+            select = -c(instance_label)))
+    } else {
         instance_score_pred <- predict(object = object$object, kernel_mild = args$GramMatrix)
     }
     
