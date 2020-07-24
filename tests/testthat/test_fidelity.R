@@ -29,6 +29,32 @@ test_that("kme.R functions have identical output", {
 })
 
 
+test_that("mil_distribution.R functions have identical output", {
+  mil_data <- mildsvm::GenerateMilData(positive_dist = "mvt",
+                                       negative_dist = "mvnormal",
+                                       remainder_dist = "mvnormal",
+                                       ncov = 5,
+                                       nbag = 7,
+                                       nsample = 7,
+                                       positive_degree = 3,
+                                       positive_prob = 0.15,
+                                       positive_mean = rep(0, 5))
+
+  # remove one instance, and one observation to create unequal lengths
+  ind1 <- which(mil_data$instance_name == unique(mil_data$instance_name)[1])
+  ind2 <- which(mil_data$instance_name == unique(mil_data$instance_name)[2])[1]
+  mil_data <- mil_data[-c(ind1, ind2), ]
+
+  set.seed(8)
+  expect_equal(mildsvm::mil_distribution(mil_data, cost = 1),
+               MilDistribution::mil_distribution(mil_data, cost = 1))
+  expect_equal(mildsvm::cv_mild(mil_data),
+               MilDistribution::cv_mild(mil_data))
+
+  # expect_equal(mildsvm::kme(x), MilDistribution::kme(x))
+})
+
+
 
 
 # TODO: Found some bug when ncov can't be less than 5
