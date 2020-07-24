@@ -6,6 +6,7 @@
 #' @param sigma Parameter for the radial basis function that controls the width
 #' @param x matrix
 #' @param y matrix, must have same number of columns as `x`
+#' @export
 #' @author Sean Kent
 rbf_kernel_matrix <- function(sigma, x, y) {
     n <- dim(x)[1]
@@ -35,7 +36,7 @@ rbf_kernel_matrix <- function(sigma, x, y) {
 ##'                'X1' = c(-0.4, 0.5, 2))
 ##' K <- kme(x)
 ##' @export
-##' @author Yifei Liu
+##' @author Yifei Liu, Sean Kent
 kme.default <- function(df, df2 = NULL, sigma = 0.05) {
 
 
@@ -125,8 +126,7 @@ kme.MilData <- function(df, df2 = NULL, sigma = 0.05) {
 ##'                             positive_degree = 3)
 ##' K <- kme(MilData1) ## About 10 seconds.
 ##' @export
-##' @author Yifei Liu
-##'
+##' @author Yifei Liu, Sean Kent
 kme <- function(df, df2 = NULL, sigma = 0.05) {
     UseMethod("kme", df)
 }
