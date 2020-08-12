@@ -64,21 +64,20 @@ kme.default <- function(df, df2 = NULL, sigma = 0.05) {
         } else {
             inst_name_set <- unique(df$instance_name)
             inst_name_set2 <- unique(df2$instance_name)
+            df_features <- subset(df, select = -c(instance_name))
+            df_features2 <- subset(df2, select = -c(instance_name))
+            s <- split(df_features, factor(df$instance_name, levels = inst_name_set))
+            s <- lapply(s, as.matrix)
+            s2 <- split(df_features2, factor(df2$instance_name, levels = inst_name_set2))
+            s2 <- lapply(s2, as.matrix)
+            r <- lapply(s, nrow)
+            r2 <- lapply(s2, nrow)
             n <- length(inst_name_set)
             n2 <- length(inst_name_set2)
             K <- matrix(NA, n, n2)
             for (i in 1:n) {
-                X_i <- df[df$instance_name == inst_name_set[i], ]
-                X_i$instance_name = NULL
-                n_i <- nrow(X_i)
                 for (j in 1:n2) {
-                  Z_j <- df2[df2$instance_name == inst_name_set2[j], ]
-                  Z_j$instance_name = NULL
-                  n_j <- nrow(Z_j)
-                  dis_ij <- apply(X_i, 1, function(x) apply(Z_j, 1, function(z) sum((x - z)^2)))
-                  K[i, j] <- 1/(n_i * n_j) * sum(exp(-sigma * dis_ij))
-                  ## K[i, j] <- 1 / (n_i * n_j) * sum(apply(X_i, 1, function(x)
-                  ## sum(apply(Z_j, 1, function(z) as.numeric(kernel_mild(x, z)) ) ) ) )
+                    K[i, j] <- 1 / (r[[i]] * r2[[j]]) * sum( rbf_kernel_matrix(sigma, s[[i]], s2[[j]]) )
                 }
             }
         }
