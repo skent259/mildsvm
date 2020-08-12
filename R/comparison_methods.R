@@ -163,11 +163,16 @@ MI_SVM <- function(data, cost, kernel = "radial", max.step = 500, type = "C-clas
 ##' @export 
 ##' @author Yifei Liu
 predict.MI_SVM <- function(object, ...) {
-    arguments = list(...)
-    newdata = arguments$newdata
-    true_bag_info = arguments$true_bag_info
-    instance_label_pred <- predict(object = object$svm_mdl, newdata = newdata[, 
-        -(1:3)], decision.values = TRUE)
+    arguments <- list(...)
+    newdata <- arguments$newdata
+    if (!is.null(newdata$bag_label) && !is.null(newdata$bag_name)) {
+        true_bag_info <- unique(newdata[, c("bag_label", "bag_name")]) 
+    } else if (!is.null(arguments$true_bag_info)) {
+        true_bag_info <- arguments$true_bag_info    
+    } else {
+        true_bag_info <- NULL
+    }
+    instance_label_pred <- predict(object = object$svm_mdl, newdata = newdata[, -(1:3)], decision.values = TRUE)
     instance_score_pred <- attr(instance_label_pred, "decision.values")
     data_instance <- cbind(newdata[, 1:2], instance_label_pred, instance_score_pred)
     colnames(data_instance)[4] <- "instance_score_pred"
@@ -574,3 +579,4 @@ cv_MI_SVM <- function(data, n_fold, fold_id, cost_seq, kernel = "radial",
         type = type)
     return(list(BestMdl = BestMdl, BestC = bestC, AUCs = AUCs, cost_seq = cost_seq))
 }
+
