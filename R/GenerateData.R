@@ -1,6 +1,6 @@
 if (getRversion() >= "2.15.1") utils::globalVariables(c("bag_name", "bag_label", 
-    "instance_label", "instance_name", "label", "bag_score_pred", "instance_label_pred", 
-    "instance_score_pred"), add = FALSE)
+                                                        "instance_label", "instance_name", "label", "bag_score_pred", "instance_label_pred", 
+                                                        "instance_score_pred"), add = FALSE)
 
 ##' Constructor function for MilData object
 ##'
@@ -71,10 +71,10 @@ validate_MilData <- function(x) {
     
     ## verify that the same bag names correspond to the same bag label.
     consist <- unclass(value %>% dplyr::group_by(bag_name) %>% dplyr::summarise(consist = length(unique(bag_label)) == 
-        1))$consist
+                                                                                    1))$consist
     if (any(consist != TRUE)) {
         stop(paste("There is inconsistency bag labeling at bag ", unique(value$bag_name)[which(consist != 
-            TRUE)]))
+                                                                                                   TRUE)]))
         call. = FALSE
     }
     
@@ -85,11 +85,11 @@ validate_MilData <- function(x) {
     if (!is.null(x_instance_label)) {
         value$instance_label = x_instance_label
         consist_inst <- unclass(value %>% dplyr::group_by(bag_name) %>% 
-            dplyr::summarise(consist_inst = any(as.logical(instance_label)) == 
-                unique(bag_label)))$consist_inst
+                                    dplyr::summarise(consist_inst = any(as.logical(instance_label)) == 
+                                                         unique(bag_label)))$consist_inst
         if (any(consist_inst != TRUE)) {
             stop(paste("There is inconsistency in instance-bag labelling in bag ", 
-                unique(value$bag_name)[which(consist_inst != TRUE)]))
+                       unique(value$bag_name)[which(consist_inst != TRUE)]))
             call. = FALSE
         }
     }
@@ -123,8 +123,8 @@ MilData <- function(x = data.frame()) {
             stop("There is only one level for the bag label!")
         x$bag_label = unclass(x$bag_label) - 1
         message(paste("Using the first level of bag label, ", levels[1], 
-            ", as negative label and the second level, ", levels[2], 
-            ", as positive label"))
+                      ", as negative label and the second level, ", levels[2], 
+                      ", as positive label"))
     }
     validate_MilData(new_MilData(x))
 }
@@ -160,12 +160,20 @@ MilData <- function(x = data.frame()) {
 ##' @import mvtnorm dplyr
 ##' @importFrom stats rbinom
 ##' @author Yifei Liu
-GenerateMilData <- function(positive_dist = c("mvt", "mvnormal"), negative_dist = c("mvnormal", 
-    "mvt"), remainder_dist = c("mvnormal", "mvt"), ncov = 10, nimp_pos = 1:5, 
-    nimp_neg = 1:5, nsample = 50, ninst = 4, nbag = 50, positive_mean = rep(0, 
-        length(nimp_pos)), positive_cov = diag(1, nrow = length(nimp_pos)), 
-    negative_mean = rep(0, length(nimp_neg)), negative_cov = diag(1, 
-        nrow = length(nimp_neg)), positive_prob = 0.2, ...) {
+GenerateMilData <- function(positive_dist = c("mvt", "mvnormal"),
+                            negative_dist = c("mvnormal", "mvt"),
+                            remainder_dist = c("mvnormal", "mvt"),
+                            ncov = 10,
+                            nimp_pos = 1:5, 
+                            nimp_neg = 1:5,
+                            nsample = 50,
+                            ninst = 4, 
+                            nbag = 50,
+                            positive_mean = rep(0, length(nimp_pos)),
+                            positive_cov = diag(1, nrow = length(nimp_pos)), 
+                            negative_mean = rep(0, length(nimp_neg)),
+                            negative_cov = diag(1, nrow = length(nimp_neg)),
+                            positive_prob = 0.2, ...) {
     ## remainder follows a distr with mean 0 and scale matrix identity.
     ## (Hence different cov matrix for t and normal) the positive_cov and
     ## negative_cov's are exactly the cov for the positive or negative
@@ -186,8 +194,7 @@ GenerateMilData <- function(positive_dist = c("mvt", "mvnormal"), negative_dist 
                 stop(" 'args$n_noise_inst' should be at least 1 less than 'ninst'!")
             }
             if (bag_label == 1) {
-                ins_labels <- c(rep(0, args$n_noise_inst), rep(1, ninst - 
-                  args$n_noise_inst))  ## positive label
+                ins_labels <- c(rep(0, args$n_noise_inst), rep(1, ninst - args$n_noise_inst))  ## positive label
             } else ins_labels <- rep(0, ninst)
         } else {
             ins_labels <- NULL
@@ -197,53 +204,92 @@ GenerateMilData <- function(positive_dist = c("mvt", "mvnormal"), negative_dist 
         for (j in 1:ninst) {
             if (is.null(ins_labels)) 
                 instance_label <- stats::rbinom(1, 1, positive_prob) else instance_label <- ins_labels[j]
-            
-            if (instance_label == 1) {
-                positive_features <- switch(positive_dist, mvt = if (is.null(args$positive_degree)) stop("Needs to supply 'positive_degree' in '...' when using mvt for positive distribution!") else mvtnorm::rmvt(n = nsample, 
-                  sigma = positive_cov/(args$positive_degree/(args$positive_degree - 
-                    2)), df = args$positive_degree, delta = positive_mean, 
-                  type = "shifted"), mvnormal = mvtnorm::rmvnorm(n = nsample, 
-                  mean = positive_mean, sigma = positive_cov))
-                remainder_p <- ncov - length(nimp_pos)
-                data_ij <- matrix(NA, nsample, ncov)
-                data_ij[, nimp_pos] <- positive_features
-                if (remainder_p > 0) {
-                  remainder_features <- switch(remainder_dist, mvt = if (is.null(args$remainder_degree)) stop("Needs to supply 'remainder_degree' in '...' when using mvt for remainder distribution!") else mvtnorm::rmvt(n = nsample, 
-                    sigma = diag(1, remainder_p)/(args$remainder_degree/(args$remainder_degree - 
-                      2)), df = args$remainder_degree, delta = rep(0, 
-                      remainder_p), type = "shifted"), mvnormal = mvtnorm::rmvnorm(n = nsample, 
-                    mean = rep(0, remainder_p), sigma = diag(1, remainder_p)))
-                  data_ij[, -nimp_pos] <- remainder_features
-                } else if (remainder_p < 0) {
-                  stop("The number of important variables exceeds the number of total variables!")
+                
+                if (instance_label == 1) {
+                    positive_features <- 
+                        switch(positive_dist,
+                               mvt = if (is.null(args$positive_degree)) {
+                                   stop("Needs to supply 'positive_degree' in '...' when using mvt for positive distribution!") 
+                               } else {
+                                   mvtnorm::rmvt(n = nsample, 
+                                                 sigma = positive_cov/(args$positive_degree/(args$positive_degree - 2)),
+                                                 df = args$positive_degree,
+                                                 delta = positive_mean, 
+                                                 type = "shifted")
+                               },
+                               mvnormal = mvtnorm::rmvnorm(n = nsample, 
+                                                           mean = positive_mean,
+                                                           sigma = positive_cov)
+                        )
+                    remainder_p <- ncov - length(nimp_pos)
+                    data_ij <- matrix(NA, nsample, ncov)
+                    data_ij[, nimp_pos] <- positive_features
+                    if (remainder_p > 0) {
+                        remainder_features <- 
+                            switch(remainder_dist,
+                                   mvt = if (is.null(args$remainder_degree)) {
+                                       stop("Needs to supply 'remainder_degree' in '...' when using mvt for remainder distribution!") 
+                                   } else {
+                                       mvtnorm::rmvt(n = nsample, 
+                                                     sigma = diag(1, remainder_p)/(args$remainder_degree/(args$remainder_degree - 2)),
+                                                     df = args$remainder_degree,
+                                                     delta = rep(0, remainder_p),
+                                                     type = "shifted") 
+                                   },
+                                   mvnormal = mvtnorm::rmvnorm(n = nsample, 
+                                                               mean = rep(0, remainder_p), sigma = diag(1, remainder_p))
+                            )
+                        data_ij[, -nimp_pos] <- remainder_features
+                    } else if (remainder_p < 0) {
+                        stop("The number of important variables exceeds the number of total variables!")
+                    }
+                    
+                } else {
+                    negative_features <- 
+                        switch(negative_dist,
+                               mvt = if (is.null(args$negative_degree)) {
+                                   stop("Needs to supply 'negative_degree' in '...' when using mvt for negative distribution!") 
+                               } else { 
+                                   mvtnorm::rmvt(n = nsample, 
+                                                 sigma = negative_cov/(args$negative_degree/(args$negative_degree - 2)),
+                                                 df = args$negative_degree,
+                                                 delta = negative_mean, 
+                                                 type = "shifted")
+                               },
+                               mvnormal = mvtnorm::rmvnorm(n = nsample, 
+                                                           mean = negative_mean,
+                                                           sigma = negative_cov)
+                        )
+                    remainder_p <- ncov - length(nimp_neg)
+                    
+                    data_ij <- matrix(NA, nsample, ncov)
+                    data_ij[, nimp_neg] <- negative_features
+                    if (remainder_p > 0) {
+                        remainder_features <- 
+                            switch(remainder_dist,
+                                   mvt = if (is.null(args$remainder_degree)) {
+                                       stop("Needs to supply 'remainder_degree' in '...' when using mvt for remainder distribution!") 
+                                   } else { 
+                                       mvtnorm::rmvt(n = nsample, 
+                                                     sigma = diag(1, remainder_p)/(args$remainder_degree/(args$remainder_degree - 2)),
+                                                     df = args$remainder_degree,
+                                                     delta = rep(0, remainder_p),
+                                                     type = "shifted")
+                                   },
+                                   mvnormal = mvtnorm::rmvnorm(n = nsample, 
+                                                               mean = rep(0, remainder_p),
+                                                               sigma = diag(1, remainder_p))
+                            )
+                        data_ij[, -nimp_neg] <- remainder_features
+                    } else if (remainder_p < 0) {
+                        stop("The number of important variables exceeds the number of total variables!")
+                    }
+                    
                 }
                 
-            } else {
-                negative_features <- switch(negative_dist, mvt = if (is.null(args$negative_degree)) stop("Needs to supply 'negative_degree' in '...' when using mvt for negative distribution!") else mvtnorm::rmvt(n = nsample, 
-                  sigma = negative_cov/(args$negative_degree/(args$negative_degree - 
-                    2)), df = args$negative_degree, delta = negative_mean, 
-                  type = "shifted"), mvnormal = mvtnorm::rmvnorm(n = nsample, 
-                  mean = negative_mean, sigma = negative_cov))
-                remainder_p <- ncov - length(nimp_neg)
-                
-                data_ij <- matrix(NA, nsample, ncov)
-                data_ij[, nimp_neg] <- negative_features
-                if (remainder_p > 0) {
-                  remainder_features <- switch(remainder_dist, mvt = if (is.null(args$remainder_degree)) stop("Needs to supply 'remainder_degree' in '...' when using mvt for remainder distribution!") else mvtnorm::rmvt(n = nsample, 
-                    sigma = diag(1, remainder_p)/(args$remainder_degree/(args$remainder_degree - 
-                      2)), df = args$remainder_degree, delta = rep(0, 
-                      remainder_p), type = "shifted"), mvnormal = mvtnorm::rmvnorm(n = nsample, 
-                    mean = rep(0, remainder_p), sigma = diag(1, remainder_p)))
-                  data_ij[, -nimp_neg] <- remainder_features
-                } else if (remainder_p < 0) {
-                  stop("The number of important variables exceeds the number of total variables!")
-                }
-                
-            }
-            
-            data_ij <- cbind(rep(paste0("bag", i, "inst", j), nsample), 
-                as.data.frame(data_ij), rep(instance_label, nsample))
-            data_i <- rbind(data_i, data_ij)
+                data_ij <- cbind(rep(paste0("bag", i, "inst", j), nsample), 
+                                 as.data.frame(data_ij), rep(instance_label, nsample))
+                data_i <- rbind(data_i, data_ij)
         }
         bag_name <- rep(paste0("bag", i), nrow(data_i))
         if (is.null(bag_label)) 
@@ -251,9 +297,9 @@ GenerateMilData <- function(positive_dist = c("mvt", "mvnormal"), negative_dist 
         data <- rbind(data, cbind(bag_label, bag_name, data_i))
     }
     colnames(data) = c("bag_label", "bag_name", "instance_name", paste0("X", 
-        1:ncov), "instance_label")
+                                                                        1:ncov), "instance_label")
     data <- data %>% dplyr::mutate(bag_label = as.numeric(bag_label), 
-        bag_name = as.character(bag_name), instance_name = as.character(instance_name))
+                                   bag_name = as.character(bag_name), instance_name = as.character(instance_name))
     data <- MilData(data)
     return(data)
 }

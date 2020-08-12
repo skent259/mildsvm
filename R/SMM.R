@@ -146,15 +146,14 @@ predict.smm <- function(object, ...) {
     beta_0 <- -ksvm_res@b
     if (is.matrix(kernel_mild)) {
         kernel_matrix <- kernel_mild[ksvm_res@alphaindex[[1]], ]
-        return((t(ksvm_res@coef[[1]]) %*% kernel_matrix + beta_0)[1,
-            ])
+        return((t(ksvm_res@coef[[1]]) %*% kernel_matrix + beta_0)[1, ])
     } else {
         if (is.null(kernel_mild))
             kernel_mild <- "rbf"
         unique_instance_name_train <- unique(traindata$instance_name)[ksvm_res@alphaindex[[1]]]
-        kernel_matrix <- kme(df = traindata[traindata$instance_name %in%
-            unique_instance_name_train, ], df2 = newdata, sigma = sigma)
-        return((t(ksvm_res@coef[[1]]) %*% kernel_matrix + beta_0)[1,
-            ])
+        kernel_matrix <- kme(df = traindata[traindata$instance_name %in% unique_instance_name_train, ],
+                             df2 = newdata,
+                             sigma = sigma)
+        return((t(ksvm_res@coef[[1]]) %*% kernel_matrix + beta_0)[1, ])
     }
 }

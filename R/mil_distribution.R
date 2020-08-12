@@ -377,19 +377,24 @@ predict.mild <- function(object, ...) {
             select(-bag_name, -bag_label), traindata = object$traindata,
             kernel_mild = object$kernel_mild)
     } else {
-        instance_score <- predict(object = object$model, kernel_mild = args$GramMatrix[object$useful_inst_idx,
-            ])
+        instance_score <- predict(object = object$model, kernel_mild = args$GramMatrix[object$useful_inst_idx,])
     }
 
     labels <- as.data.frame(cbind(unique(newdata[, c("bag_name", "instance_name",
         "bag_label")]), instance_score))
 
-    labels_bag_level <- labels %>% dplyr::group_by(bag_name) %>% dplyr::summarise(bag_label_pred = any(instance_score >
-        0), bag_score = max(instance_score), bag_label = bag_label[1])
-    final_pred <- newdata %>% dplyr::select(bag_name, instance_name) %>%
-        dplyr::left_join(labels_bag_level, by = "bag_name") %>% dplyr::left_join(labels %>%
-        dplyr::mutate(instance_label_pred = instance_score > 0) %>% dplyr::select(instance_name,
-        instance_score, instance_label_pred), by = "instance_name")
+    labels_bag_level <- labels %>%
+        dplyr::group_by(bag_name) %>%
+        dplyr::summarise(bag_label_pred = any(instance_score > 0),
+                         bag_score = max(instance_score),
+                         bag_label = bag_label[1])
+    final_pred <- newdata %>%
+        dplyr::select(bag_name, instance_name) %>%
+        dplyr::left_join(labels_bag_level, by = "bag_name") %>%
+        dplyr::left_join(labels %>%
+                             dplyr::mutate(instance_label_pred = instance_score > 0) %>%
+                             dplyr::select(instance_name,instance_score, instance_label_pred),
+                         by = "instance_name")
     ## calculate ROC and AUC
     roc_res <- pROC::roc(response = labels_bag_level$bag_label, predictor = labels_bag_level$bag_score)
     auc_res <- pROC::auc(roc_res)
@@ -443,9 +448,11 @@ cv_mild <- function(data, n_fold, fold_id, cost_seq = 2^(-2:2), max.step = 300,
         bag_id[positive_bag_idx] <- positive_fold_id
         bag_id[negative_bag_idx] <- negative_fold_id
 
-        temp_data <- data.frame(bag_name = unique(data$bag_name), bag_id = bag_id,
-            stringsAsFactors = FALSE) %>% dplyr::right_join(unique(data %>%
-            dplyr::select(bag_name, instance_name)), by = "bag_name")
+        temp_data <- data.frame(bag_name = unique(data$bag_name),
+                                bag_id = bag_id,
+                                stringsAsFactors = FALSE) %>%
+            dplyr::right_join(unique(data %>% dplyr::select(bag_name, instance_name)),
+                              by = "bag_name")
         fold_id <- temp_data$bag_id  ## now fold_id is of length(unique(data$instance_name))
     } else {
         n_fold <- max(fold_id)
@@ -525,15 +532,18 @@ cv_mild <- function(data, n_fold, fold_id, cost_seq = 2^(-2:2), max.step = 300,
             valid_instance_id <- which(fold_id == i)
             train_useful_inst_idx <- match(base::intersect(train_instance_id,
                 useful_inst_idx), train_instance_id)
-            temp_mdl <- kernel_mil(kernel_full = kernel_full[train_instance_id,
-                train_instance_id], data_info = data_info[train_instance_id,
-                ], max.step = max.step, cost = cost_seq[C], weights = weights,
-                sigma = sigma, yy = yy_inst[train_instance_id], useful_inst_idx = train_useful_inst_idx)
+            temp_mdl <- kernel_mil(kernel_full = kernel_full[train_instance_id, train_instance_id],
+                                   data_info = data_info[train_instance_id, ],
+                                   max.step = max.step,
+                                   cost = cost_seq[C],
+                                   weights = weights,
+                                   sigma = sigma,
+                                   yy = yy_inst[train_instance_id],
+                                   useful_inst_idx = train_useful_inst_idx)
 
-            true_valid_bag_label <- unique(data_info[valid_instance_id,
-                1:2])$bag_label
-            predictions_i <- predict(object = temp_mdl$svm_model, kernel_mild = kernel_full[train_instance_id[temp_mdl$useful_inst_idx],
-                valid_instance_id])
+            true_valid_bag_label <- unique(data_info[valid_instance_id, 1:2])$bag_label
+            predictions_i <- predict(object = temp_mdl$svm_model,
+                                     kernel_mild = kernel_full[train_instance_id[temp_mdl$useful_inst_idx], valid_instance_id])
 
             data_valid_info <- data_info[valid_instance_id, ]
             data_valid_info$instance_score_pred <- predictions_i
@@ -550,11 +560,12 @@ cv_mild <- function(data, n_fold, fold_id, cost_seq = 2^(-2:2), max.step = 300,
         max.step = max.step, cost = bestC, weights = weights, sigma = sigma,
         yy = yy_inst, useful_inst_idx = useful_inst_idx)
 
-    sample_df <- data[data$instance_name %in% instance_name[temp_res$useful_inst_idx],
-        -c(1, 2)]
-    res <- new_mild(list(model = temp_res$svm_model, total_step = temp_res$step,
-        representative_inst = cbind(positive_bag_name, temp_res$selection),
-        traindata = sample_df, useful_inst_idx = useful_inst_idx))
+    sample_df <- data[data$instance_name %in% instance_name[temp_res$useful_inst_idx], -c(1, 2)]
+    res <- new_mild(list(model = temp_res$svm_model,
+                         total_step = temp_res$step,
+                         representative_inst = cbind(positive_bag_name, temp_res$selection),
+                         traindata = sample_df,
+                         useful_inst_idx = useful_inst_idx))
 
     return(list(BestMdl = res, BestC = bestC, AUCs = AUCs, cost_seq = cost_seq))
 }
