@@ -84,8 +84,13 @@ test_that("mil_distribution.R functions have identical output", {
   set.seed(8)
   expect_equal(mildsvm::mil_distribution(mil_data, cost = 1),
                MilDistribution::mil_distribution(mil_data, cost = 1))
-  expect_equal(mildsvm::cv_mild(mil_data, n_fold = 3),
-               MilDistribution::cv_mild(mil_data, n_fold = 3))
+
+  set.seed(8)
+  mildsvm_cv_output <- mildsvm::cv_mild(mil_data, n_fold = 3)
+  set.seed(8)
+  MilDistribution_cv_output <- MilDistribution::cv_mild(mil_data, n_fold = 3)
+  expect_equal(mildsvm_cv_output,
+               MilDistribution_cv_output)
 
   # expect_equal(mildsvm::kme(x), MilDistribution::kme(x))
 })
