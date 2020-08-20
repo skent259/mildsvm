@@ -4,7 +4,7 @@
 \alias{predict.mild}
 \title{Prediction function for mild objects}
 \usage{
-predict.mild(object, ...)
+\method{predict}{mild}(object, ...)
 }
 \arguments{
 \item{object}{A mild object}

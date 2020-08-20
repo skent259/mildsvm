@@ -4,7 +4,7 @@
 \alias{predict.MI_SVM}
 \title{Prediction function for MI_SVM object}
 \usage{
-predict.MI_SVM(object, ...)
+\method{predict}{MI_SVM}(object, ...)
 }
 \arguments{
 \item{object}{The return from MI_SVM()}

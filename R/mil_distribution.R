@@ -357,8 +357,11 @@ predict.mild <- function(object, ...) {
     ## instances
 
     if (is.null(newdata$bag_label)) {
-        instance_score <- predict(object = object$model, newdata = newdata %>%
-            select(-bag_name), traindata = object$traindata, kernel_mild = object$kernel_mild)
+        instance_score <- predict(object = object$model,
+                                  newdata = newdata %>%
+                                      select(-bag_name),
+                                  traindata = object$traindata,
+                                  kernel_mild = object$kernel_mild)
 
         labels <- as.data.frame(cbind(newdata %>% dplyr::group_by(instance_name) %>%
             dplyr::summarise(bag_name = bag_name[1]), instance_score))
@@ -373,9 +376,11 @@ predict.mild <- function(object, ...) {
     }
 
     if (is.null(args$GramMatrix)) {
-        instance_score <- predict(object = object$model, newdata = newdata %>%
-            select(-bag_name, -bag_label), traindata = object$traindata,
-            kernel_mild = object$kernel_mild)
+        instance_score <- predict(object = object$model,
+                                  newdata = newdata %>%
+                                      dplyr::select(-bag_name, -bag_label),
+                                  traindata = object$traindata,
+                                  kernel_mild = object$kernel_mild)
     } else {
         instance_score <- predict(object = object$model, kernel_mild = args$GramMatrix[object$useful_inst_idx,])
     }

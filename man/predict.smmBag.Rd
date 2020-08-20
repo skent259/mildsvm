@@ -4,7 +4,7 @@
 \alias{predict.smmBag}
 \title{Predict method for smmBag objects}
 \usage{
-predict.smmBag(object, ...)
+\method{predict}{smmBag}(object, ...)
 }
 \arguments{
 \item{object}{An smmBag object}

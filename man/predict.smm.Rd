@@ -4,7 +4,7 @@
 \alias{predict.smm}
 \title{Prediction function for smm objects (the return from SMM())}
 \usage{
-predict.smm(object, ...)
+\method{predict}{smm}(object, ...)
 }
 \arguments{
 \item{object}{An smm object.}
