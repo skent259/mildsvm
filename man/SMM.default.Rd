@@ -14,20 +14,20 @@
 )
 }
 \arguments{
-\item{df}{A data.frame where the first two columns being `instance_label` and `instance_name`, or a MilData object. `df` can be NULL if kernel_mild is a matrix and y is not NULL.}
+\item{df}{A data.frame where the first two columns being \code{instance_label} and \code{instance_name}, or a MilData object. \code{df} can be NULL if kernel_mild is a matrix and y is not NULL.}
 
 \item{kernel_mild}{The kernel to be used, current only supports 'rbf'; or a kernal matrix.}
 
 \item{cost}{The cost for SMM, larger cost gives larger tolerance to errors.}
 
-\item{class.weights}{A named vector where the names should be the same as the unique values of the label. For the use of imbalance data. Will be passed to the `ksvm` function in `kernlab` package. Notice that a class weight 2:1 will gives different results from 1:0.5 because they will be directly multiplied to the cost.}
+\item{class.weights}{A named vector where the names should be the same as the unique values of the label. For the use of imbalance data. Will be passed to the \code{ksvm} function in \code{kernlab} package. Notice that a class weight 2:1 will gives different results from 1:0.5 because they will be directly multiplied to the cost.}
 
 \item{sigma}{The parameter for the rbf kernel.}
 
 \item{y}{The instance label. If omitted, will use that from df.}
 }
 \value{
-An `smm` object.
+An \code{smm} object.
 }
 \description{
 default method for SMM function.

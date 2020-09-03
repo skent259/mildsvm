@@ -7,9 +7,9 @@
 kme(df, df2 = NULL, sigma = 0.05)
 }
 \arguments{
-\item{df}{A data.frame with first column being `instance_name` and the rest being features. Or a MilData object.}
+\item{df}{A data.frame with first column being \code{instance_name} and the rest being features. Or a MilData object.}
 
-\item{df2}{If `df2` is null, the inner embedding of `df` and itself will be calculated. Otherwise `df2` is a data.frame with first column being `instance_name` and the rest being features. Or a MilData object.}
+\item{df2}{If \code{df2} is null, the inner embedding of \code{df} and itself will be calculated. Otherwise \code{df2} is a data.frame with first column being \code{instance_name} and the rest being features. Or a MilData object.}
 
 \item{sigma}{The parameter for rbf kernel.}
 }
@@ -27,7 +27,7 @@ MilData1 <- GenerateMilData(positive_dist = 'mvt',
                             remainder_dist = 'mvnormal',
                             nbag = 10,
                             positive_degree = 3)
-K <- kme(MilData1) ## About 10 seconds.
+K <- kme(MilData1)
 }
 \author{
 Yifei Liu, Sean Kent

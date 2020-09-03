@@ -20,8 +20,6 @@ rbf_kernel_matrix <- function(sigma, x, y) {
     return(res)
 }
 
-
-
 ##' Default method for kme function
 ##'
 ##' Default method for kme function.  This function calculates the kernel mean embedding for a given
@@ -38,7 +36,6 @@ rbf_kernel_matrix <- function(sigma, x, y) {
 ##' @export
 ##' @author Yifei Liu, Sean Kent
 kme.default <- function(df, df2 = NULL, sigma = 0.05) {
-
 
     if (is.null(df2)) {
         if (is.null(df$instance_name)) {
@@ -123,7 +120,7 @@ kme.MilData <- function(df, df2 = NULL, sigma = 0.05) {
 ##'                             remainder_dist = 'mvnormal',
 ##'                             nbag = 10,
 ##'                             positive_degree = 3)
-##' K <- kme(MilData1) ## About 10 seconds.
+##' K <- kme(MilData1)
 ##' @export
 ##' @author Yifei Liu, Sean Kent
 kme <- function(df, df2 = NULL, sigma = 0.05) {

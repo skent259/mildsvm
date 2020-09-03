@@ -11,7 +11,7 @@ rbf_kernel_matrix(sigma, x, y)
 
 \item{x}{matrix}
 
-\item{y}{matrix, must have same number of columns as `x`}
+\item{y}{matrix, must have same number of columns as \code{x}}
 }
 \description{
 Compute the Radial Basis Kernel from two matrices.  Follows

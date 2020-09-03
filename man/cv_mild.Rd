@@ -28,11 +28,11 @@ this.}
 
 \item{sigma}{Same as in mil_distribution()}
 
-\item{...}{One can pass `kernel_full`, the Gram matrix at instance level for fast computation.}
+\item{...}{One can pass \code{kernel_full}, the Gram matrix at instance level for fast computation.}
 }
 \value{
 A list containing the best model and the optimal cost
-    parameter.
+parameter.
 }
 \description{
 Function to perform cross validation for the cost used in the

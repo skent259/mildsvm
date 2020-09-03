@@ -41,11 +41,11 @@ GenerateMilData(
 
 \item{nbag}{Number of bags.}
 
-\item{positive_mean}{The mean vector of important covariates for positive instances, should be of same length as `nimp_pos`}
+\item{positive_mean}{The mean vector of important covariates for positive instances, should be of same length as \code{nimp_pos}}
 
 \item{positive_cov}{The covariance matrix of important covariates for positive instances.}
 
-\item{negative_mean}{The mean vector of important covariates for negative instances, should be of same length as `nimp_neg`}
+\item{negative_mean}{The mean vector of important covariates for negative instances, should be of same length as \code{nimp_neg}}
 
 \item{negative_cov}{The covariance matrix of important covariates for negative instances.}
 
@@ -57,7 +57,7 @@ GenerateMilData(
 A MilData object.
 }
 \description{
-This function generates multiple instance data (a MilData object) where each instance corresponds to `nsample` i.i.d. observations. To use the function, one needs to provide the total number of covariates `ncov`, to generate, and the index of the important covariates for positive and negative instances, `nimp_pos` and `nimp_neg`, respectively. The distribution of these important covariates will be a multivariate t or multivariate normal distribution, specified by `positive_dist`, `negative_dist`. The `remainder_dist` specifies the distribution of the unimportant covariates where their distributions do not differ in positive or negative instances. The `ninst` covariates specifies the number of instances in each bag and `nbag` gives how many bags in total will be generated. Hence in total the number of observations is `nsample` * `nbag` * `ninst`.
+This function generates multiple instance data (a MilData object) where each instance corresponds to \code{nsample} i.i.d. observations. To use the function, one needs to provide the total number of covariates \code{ncov}, to generate, and the index of the important covariates for positive and negative instances, \code{nimp_pos} and \code{nimp_neg}, respectively. The distribution of these important covariates will be a multivariate t or multivariate normal distribution, specified by \code{positive_dist}, \code{negative_dist}. The \code{remainder_dist} specifies the distribution of the unimportant covariates where their distributions do not differ in positive or negative instances. The \code{ninst} covariates specifies the number of instances in each bag and \code{nbag} gives how many bags in total will be generated. Hence in total the number of observations is \code{nsample} * \code{nbag} * \code{ninst}.
 }
 \details{
 The default parameters for the remainder distribution is zero mean and identity covariance matrix.

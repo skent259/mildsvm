@@ -9,10 +9,10 @@
 \arguments{
 \item{object}{The return from MI_SVM()}
 
-\item{...}{Should include `newdata` to represent the newdata to be predicting on, and optionally `true_bag_info` data.frame that contains 'bag_label' and 'bag_name' for AUC and ROC calculation.}
+\item{...}{Should include \code{newdata} to represent the newdata to be predicting on, and optionally \code{true_bag_info} data.frame that contains 'bag_label' and 'bag_name' for AUC and ROC calculation.}
 }
 \value{
-A list which contains a bag level prediction `bag_level_prediction` and an instance level prediction `instance_level_prediction`. If `true_bag_label` is fed to arguments, will also return `ROC` and `AUC` as list elements.
+A list which contains a bag level prediction \code{bag_level_prediction} and an instance level prediction \code{instance_level_prediction}. If \code{true_bag_label} is fed to arguments, will also return \code{ROC} and \code{AUC} as list elements.
 }
 \description{
 Predictionn function for MI_SVM object.

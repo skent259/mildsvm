@@ -9,15 +9,15 @@ smm_bag(data, kernel_mild = "rbf", cost = 1, class.weights, sigma = 0.05, ...)
 \arguments{
 \item{data}{A MilData object.}
 
-\item{kernel_mild}{Same as `SMM()`}
+\item{kernel_mild}{Same as \code{SMM()}}
 
-\item{cost}{Same as `SMM()`}
+\item{cost}{Same as \code{SMM()}}
 
-\item{class.weights}{Same as `SMM()`}
+\item{class.weights}{Same as \code{SMM()}}
 
-\item{sigma}{Same as `SMM()`}
+\item{sigma}{Same as \code{SMM()}}
 
-\item{...}{If kernel_mild is a matrix, need to pass instance level label `y`.}
+\item{...}{If kernel_mild is a matrix, need to pass instance level label \code{y}.}
 }
 \value{
 A list

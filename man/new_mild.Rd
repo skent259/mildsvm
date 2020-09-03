@@ -13,7 +13,7 @@ new_mild(x = list())
 A mild object.
 }
 \description{
-Function to construct mild object. `x` should be a list with components `model` (an smm object), `total_step` (a integer), `representative_inst` (a matrix of two columns), `traindata` (a data.frame with the first column being 'instance_name')
+Function to construct mild object. \code{x} should be a list with components \code{model} (an smm object), \code{total_step} (a integer), \code{representative_inst} (a matrix of two columns), \code{traindata} (a data.frame with the first column being 'instance_name')
 }
 \examples{
 new_mild(list())

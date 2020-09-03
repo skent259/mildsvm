@@ -21,7 +21,7 @@ build_instance_feature(
 \item{sd}{Whether or not to extract median.}
 }
 \value{
-A data.frame that is ready to be used in `MI_SVM()` function.
+A data.frame that is ready to be used in \code{MI_SVM()} function.
 }
 \description{
 This flatten the MilData type of data to regular multiple instance data where each instance is a vector by extracting distribution sample quantiles, mean and sd.

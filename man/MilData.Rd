@@ -13,10 +13,15 @@ MilData(x = data.frame())
 A MilData object.
 }
 \description{
-Helper function to generate MilData object. Changes the first three columns to the required column names ('bag_label', 'bag_name', 'instance_name'). If the original `bag_label` is a factor, will use the first level as negative label and code it as numeric '0' and use the second level as positive label and code it as numeric '1'. Levels >= 3 not supported and will raise an error.
+Helper function to generate MilData object. Changes the first three columns
+to the required column names ('bag_label', 'bag_name', 'instance_name').
+If the original \code{bag_label} is a factor, will use the first level as
+negative label and code it as numeric '0' and use the second level as
+positive label and code it as numeric '1'. Levels >= 3 not supported and
+will raise an error.
 }
 \details{
-The column name for instance label should always be `instance_label` otherwise will be taken as features of x.
+The column name for instance label should always be \code{instance_label} otherwise will be taken as features of x.
 }
 \examples{
 x = data.frame('bag_LABEL' = factor(c(1, 1, 0)),

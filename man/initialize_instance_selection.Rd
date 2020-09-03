@@ -11,9 +11,9 @@ initialize_instance_selection(data)
 }
 \value{
 list of 3:
-    'useful_inst_names' includes the names of instances that were selected.
-    'useful_inst_idx' includes the index of instances that were selected, at the instance level
-    'yy' includes the bag labels, at the instance level
+'useful_inst_names' includes the names of instances that were selected.
+'useful_inst_idx' includes the index of instances that were selected, at the instance level
+'yy' includes the bag labels, at the instance level
 }
 \description{
 Use bag_label and instance_name information to initialize the selected

@@ -9,13 +9,13 @@
 \arguments{
 \item{object}{An smm object.}
 
-\item{...}{`newdata`, new data whose first column should be `instance_name`. `traindata`, training data used to train res. The first column should be `instance_name`. `kernel_mild`, currently only support 'rbf'}
+\item{...}{\code{newdata}, new data whose first column should be \code{instance_name}. \code{traindata}, training data used to train res. The first column should be \code{instance_name}. \code{kernel_mild}, currently only support 'rbf'}
 }
 \value{
 A vector of length of the instances in newdata.
 }
 \description{
-This function gives the prediction of an smm object in the scale of score. A higher score indicates the observation is more likely to be of class `1`.
+This function gives the prediction of an smm object in the scale of score. A higher score indicates the observation is more likely to be of class \code{1}.
 }
 \examples{
 x = data.frame('bag_LABEL' = factor(c(1, 1, 0)),

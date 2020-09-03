@@ -13,7 +13,7 @@ MI_SVM(
 )
 }
 \arguments{
-\item{data}{A data.frame whose first three columns are `bag_label`, `bag_name` and `instance_name`.}
+\item{data}{A data.frame whose first three columns are \code{bag_label}, \code{bag_name} and \code{instance_name}.}
 
 \item{cost}{The cost parameter to be fed to e1071::svm}
 

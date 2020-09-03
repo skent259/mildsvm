@@ -13,7 +13,7 @@ new_MilData(x = data.frame())
 A MilData object (S3) which is built on data.frame
 }
 \description{
-Constructor function for MilData object which gives a more convenient way of handling multiple instance data. If x contains a column for 'instance_label', then this function will add `instance_label` in the object attributes but will remove it from the data.frame.
+Constructor function for MilData object which gives a more convenient way of handling multiple instance data. If x contains a column for 'instance_label', then this function will add \code{instance_label} in the object attributes but will remove it from the data.frame.
 }
 \examples{
 new_MilData(x = data.frame('bag_label' = c(1, 1),

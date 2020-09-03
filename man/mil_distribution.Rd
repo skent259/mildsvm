@@ -15,7 +15,7 @@ mil_distribution(data, cost, max.step = 500, sigma = 0.05, ...)
 
 \item{sigma}{The parameter for the rbf kernel.}
 
-\item{...}{One can pass `kernel_full`, the Gram matrix at instance level for fast computation.}
+\item{...}{One can pass \code{kernel_full}, the Gram matrix at instance level for fast computation.}
 }
 \value{
 A mild object which contains the results.
