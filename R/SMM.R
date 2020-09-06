@@ -79,8 +79,8 @@ SMM.default <- function(df, kernel_mild = "rbf", cost = 1, class.weights = NULL,
 ##' @author Yifei Liu
 SMM.MilData <- function(df, kernel_mild = "rbf", cost = 1, class.weights = NULL,
     sigma = 0.05, y = NULL) {
-    colnames(df)[which(colnames(df) == "bag_label")] = "instance_label"
-    df$bag_name = NULL
+    colnames(df)[which(colnames(df) == "bag_label")] <- "instance_label"
+    df$bag_name <- NULL
     SMM.default(df, kernel_mild, cost, class.weights, sigma, y)
 }
 ##' Function to carry out support measure machines (SMM) algorithm.
