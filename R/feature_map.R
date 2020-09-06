@@ -35,7 +35,7 @@
 #' @export
 #' @author Sean Kent
 fit_kernel_feature_map <- function(data, method = c("nystrom", "exact"),
-                                   kernel = c("rbf", "polynomial"), output = c("fit", "feature_map", "mean_map"), ...) {
+  kernel = c("rbf", "polynomial"), output = c("fit", "feature_map", "mean_map"), ...) {
 
   method = method[1]
   kernel = kernel[1]
@@ -54,7 +54,7 @@ fit_kernel_feature_map <- function(data, method = c("nystrom", "exact"),
         message(paste0("Using parameter r = ", args$r, "."))
       }
       if(is.null(args$sigma)) stop("sigma must be specificed in ... for method 'nystrom' and kernel 'rbf'.")
-      fit <- fit_nystrom(data, m = args$m, r = args$r, kernel = "rbf", sigma = args$sigma)
+      fit <- kfm_nystrom(data, m = args$m, r = args$r, kernel = "rbf", sigma = args$sigma)
     }
   } else if (method == "exact") {
     if (kernel == "polynomial") {
@@ -89,13 +89,15 @@ fit_kernel_feature_map <- function(data, method = c("nystrom", "exact"),
 #' Build a kernel feature map from fitted object
 #'
 #' TODO: make documentation
+#' @export
+#' @author Sean Kent
 build_kernel_feature_map <- function(fit, data) {
   method = fit$method
   kernel = fit$kernel
 
   if (method == "nystrom") {
     if (kernel == "rbf") {
-      fm <- predict_nystrom(fit, data)
+      fm <- predict_kfm_nystrom(fit, data)
     }
   } else if (method == "exact") {
     if (kernel == "polynomial") {
@@ -109,6 +111,8 @@ build_kernel_feature_map <- function(fit, data) {
 #' Build a kernel mean map from fitted object
 #'
 #' TODO: documentation
+#' @export
+#' @author Sean Kent
 build_kernel_mean_map <- function(fit, data) {
   fm <- build_kernel_feature_map(fit, data)
 
@@ -158,28 +162,32 @@ build_kernel_mean_map <- function(fit, data) {
 #'   X3 = rnorm(7)
 #' )
 #'
-#' fit <- fit_nystrom(df, m = 7, r = 6, kernel = "rbf", sigma = 0.05)
-#' fm <- predict_nystrom(fit, df)
+#' fit <- kfm_nystrom(df, m = 7, r = 6, kernel = "rbf", sigma = 0.05)
+#' fm <- predict_kfm_nystrom(fit, df)
 #'
 #' @export
 #' @author Sean Kent
-fit_nystrom <- function(df, m, r, kernel, ...) {
-  UseMethod("fit_nystrom", df)
+kfm_nystrom <- function(df, m, r, kernel, ...) {
+  UseMethod("kfm_nystrom", df)
 }
 
-#' @describeIn fit_nystrom For use on objects of class `data.frame` or `matrix`.
+#' @describeIn kfm_nystrom For use on objects of class `data.frame` or `matrix`.
 #' @export
-fit_nystrom.default <- function(df, m = nrow(df), r = m, kernel = "rbf", ...) {
+kfm_nystrom.default <- function(df, m = nrow(df), r = m, kernel = "rbf", ...) {
   # TODO: check all columns are numeric
   `%ni%` <- Negate(`%in%`)
   kernel_params <- list(...)
+  # kernel_params <- list()
 
   df <- as.matrix(df)
   random_rows <- sample(1:nrow(df), m)
   tmp <- df[random_rows, ]
 
   if (kernel == "rbf") {
-    stopifnot("sigma" %in% names(kernel_params))
+    if("sigma" %ni% names(kernel_params)) {
+      message("sigma not specified in ... for kernel 'rbf'.  Defaulting to sigma = 0.05.")
+      kernel_params$sigma <- 0.05
+    }
     k_hat <- rbf_kernel_matrix(kernel_params$sigma, tmp, tmp)
   } else {
     stop("kernel must be 'rbf'.")
@@ -197,13 +205,13 @@ fit_nystrom.default <- function(df, m = nrow(df), r = m, kernel = "rbf", ...) {
 
 }
 
-#' @describeIn fit_nystrom Ignore the information columns with 'bag_label',
+#' @describeIn kfm_nystrom Ignore the information columns with 'bag_label',
 #'   'bag_name', and 'instance_name' when calculating kernel approximation.
 #'   These columns are re-appended upon prediction.
 #' @export
-fit_nystrom.MilData <- function(df, m = nrow(df), r = m, kernel = "rbf", ...) {
+kfm_nystrom.MilData <- function(df, m = nrow(df), r = m, kernel = "rbf", ...) {
   df <- subset(df, select = -c(bag_label, bag_name, instance_name))
-  fit_nystrom.default(df, m, r, kernel, ...)
+  kfm_nystrom.default(df, m, r, kernel, ...)
 }
 
 
@@ -211,7 +219,7 @@ fit_nystrom.MilData <- function(df, m = nrow(df), r = m, kernel = "rbf", ...) {
 #'
 #' TODO: add description
 #'
-#' @param object a object from a call to `fit_nystrom()`
+#' @param object a object from a call to `kfm_nystrom()`
 #' @param newx An object containing features for prediction. Usually a data.frame
 #'   or matrix. Must contain the same columns as `df` from the fitting.
 #'
@@ -225,18 +233,18 @@ fit_nystrom.MilData <- function(df, m = nrow(df), r = m, kernel = "rbf", ...) {
 #'   X3 = rnorm(7)
 #' )
 #'
-#' fit <- fit_nystrom(df, m = 7, r = 6, kernel = "rbf", sigma = 0.05)
-#' fm <- predict_nystrom(fit, df)
+#' fit <- kfm_nystrom(df, m = 7, r = 6, kernel = "rbf", sigma = 0.05)
+#' fm <- predict_kfm_nystrom(fit, df)
 #'
 #' @export
 #' @author Sean Kent
-predict_nystrom <- function(object, newx) {
-  UseMethod("predict_nystrom", newx)
+predict_kfm_nystrom <- function(object, newx) {
+  UseMethod("predict_kfm_nystrom", newx)
 }
 
-#' @describeIn fit_nystrom For use on objects of class `data.frame` or `matrix`.
+#' @describeIn kfm_nystrom For use on objects of class `data.frame` or `matrix`.
 #' @export
-predict_nystrom.default <- function(object, newx) {
+predict_kfm_nystrom.default <- function(object, newx) {
   stopifnot("newx must have the same columns as object$df_sub." = colnames(newx) == colnames(object$df_sub))
   newx <- as.matrix(newx)
   if (object$kernel == "rbf") {
@@ -250,14 +258,14 @@ predict_nystrom.default <- function(object, newx) {
   return(k %*% t(object$dv))
 }
 
-#' @describeIn fit_nystrom Ignore the information columns with 'bag_label',
+#' @describeIn kfm_nystrom Ignore the information columns with 'bag_label',
 #'   'bag_name', and 'instance_name' when calculating kernel approximation.
 #'   These columns are re-appended upon prediction.
 #' @export
-predict_nystrom.MilData <- function(object, newx) {
+predict_kfm_nystrom.MilData <- function(object, newx) {
   info <- subset(newx, select = c(bag_label, bag_name, instance_name))
   newx <- subset(newx, select = -c(bag_label, bag_name, instance_name))
-  fm <- predict_nystrom.default(object, newx)
+  fm <- predict_kfm_nystrom.default(object, newx)
   cbind(info, fm)
 }
 

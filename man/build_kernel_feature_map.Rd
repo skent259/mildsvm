@@ -9,3 +9,6 @@ build_kernel_feature_map(fit, data)
 \description{
 TODO: make documentation
 }
+\author{
+Sean Kent
+}

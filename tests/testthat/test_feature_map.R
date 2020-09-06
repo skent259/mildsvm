@@ -2,7 +2,7 @@ context("Testing the functions in feature_map.R")
 
 test_that("Nystrom method approximates the true kernel on a dataframe.", {
   check_nystrom_approximation <- function(fit, df, max_thresh, mean_thresh) {
-    fm <- predict_nystrom(fit, df)
+    fm <- predict_kfm_nystrom(fit, df)
     true_kernel <- rbf_kernel_matrix(fit$kernel_params$sigma, as.matrix(df), as.matrix(df))
     approximate_kernel <- fm %*% t(fm)
 
@@ -19,15 +19,15 @@ test_that("Nystrom method approximates the true kernel on a dataframe.", {
 
   set.seed(8)
   ## RBF kernel, full feature map
-  fit <- fit_nystrom(df, m = 7, r = 7, kernel = "rbf", sigma = 0.05)
+  fit <- kfm_nystrom(df, m = 7, r = 7, kernel = "rbf", sigma = 0.05)
   check_nystrom_approximation(fit, df, 1e-14, 1e-15)
-  fit <- fit_nystrom(df, m = 7, r = 7, kernel = "rbf", sigma = 0.5)
+  fit <- kfm_nystrom(df, m = 7, r = 7, kernel = "rbf", sigma = 0.5)
   check_nystrom_approximation(fit, df, 1e-14, 1e-15)
 
   ## RBF kernel, smaller feature map
-  fit <- fit_nystrom(df, m = 7, r = 6, kernel = "rbf", sigma = 0.05)
+  fit <- kfm_nystrom(df, m = 7, r = 6, kernel = "rbf", sigma = 0.05)
   check_nystrom_approximation(fit, df, 1, 1e-3)
-  fit <- fit_nystrom(df, m = 7, r = 6, kernel = "rbf", sigma = 0.5)
+  fit <- kfm_nystrom(df, m = 7, r = 6, kernel = "rbf", sigma = 0.5)
   check_nystrom_approximation(fit, df, 1, 0.05)
 
 })
@@ -35,7 +35,7 @@ test_that("Nystrom method approximates the true kernel on a dataframe.", {
 test_that("Nystrom method approximates the true kernel on a MilData object", {
   check_nystrom_approximation <- function(fit, df, max_thresh, mean_thresh) {
     X <- subset(df, select = -c(bag_label, bag_name, instance_name))
-    fm <- predict_nystrom(fit, df)
+    fm <- predict_kfm_nystrom(fit, df)
     fm <- as.matrix(subset(fm, select = -c(bag_label, bag_name, instance_name)))
 
     true_kernel <- rbf_kernel_matrix(fit$kernel_params$sigma, as.matrix(X), as.matrix(X))
@@ -58,15 +58,15 @@ test_that("Nystrom method approximates the true kernel on a MilData object", {
 
   set.seed(8)
   ## RBF kernel, full feature map
-  fit <- fit_nystrom(df, m = 196, r = 196, kernel = "rbf", sigma = 0.05)
+  fit <- kfm_nystrom(df, m = 196, r = 196, kernel = "rbf", sigma = 0.05)
   check_nystrom_approximation(fit, df, 1e-13, 1e-14)
-  fit <- fit_nystrom(df, m = 196, r = 196, kernel = "rbf", sigma = 0.5)
+  fit <- kfm_nystrom(df, m = 196, r = 196, kernel = "rbf", sigma = 0.5)
   check_nystrom_approximation(fit, df, 1e-13, 1e-14)
 
   ## RBF kernel, smaller feature map
-  fit <- fit_nystrom(df, m = 7, r = 6, kernel = "rbf", sigma = 0.05)
+  fit <- kfm_nystrom(df, m = 7, r = 6, kernel = "rbf", sigma = 0.05)
   check_nystrom_approximation(fit, df, 1, 0.05)
-  fit <- fit_nystrom(df, m = 7, r = 6, kernel = "rbf", sigma = 0.5)
+  fit <- kfm_nystrom(df, m = 7, r = 6, kernel = "rbf", sigma = 0.5)
   check_nystrom_approximation(fit, df, 1, 0.06)
 
 })
@@ -81,18 +81,18 @@ test_that("Nystrom methods have correct output dimensions", {
     X3 = rnorm(7)
   )
 
-  fit <- fit_nystrom(df, m = 7, r = 7, kernel = "rbf", sigma = 0.05)
-  fm <- predict_nystrom(fit, df)
+  fit <- kfm_nystrom(df, m = 7, r = 7, kernel = "rbf", sigma = 0.05)
+  fm <- predict_kfm_nystrom(fit, df)
   expect_equal(dim(fm), c(7,7))
 
-  fit <- fit_nystrom(df, m = 7, r = 6, kernel = "rbf", sigma = 0.05)
-  fm <- predict_nystrom(fit, df)
+  fit <- kfm_nystrom(df, m = 7, r = 6, kernel = "rbf", sigma = 0.05)
+  fm <- predict_kfm_nystrom(fit, df)
   expect_equal(dim(fm), c(7,6))
-  fm <- predict_nystrom(fit, df[1:3, ])
+  fm <- predict_kfm_nystrom(fit, df[1:3, ])
   expect_equal(dim(fm), c(3,6))
 
-  fit <- fit_nystrom(df, m = 5, r = 3, kernel = "rbf", sigma = 0.05)
-  fm <- predict_nystrom(fit, df)
+  fit <- kfm_nystrom(df, m = 5, r = 3, kernel = "rbf", sigma = 0.05)
+  fm <- predict_kfm_nystrom(fit, df)
   expect_equal(dim(fm), c(7,3))
 
   ## test Nystrom on MilData
@@ -106,18 +106,18 @@ test_that("Nystrom methods have correct output dimensions", {
                                        positive_prob = 0.15,
                                        positive_mean = rep(0, 5))
 
-  fit <- fit_nystrom(mil_data, m = nrow(mil_data), r = nrow(mil_data), kernel = "rbf", sigma = 0.05)
-  fm <- predict_nystrom(fit, mil_data)
+  fit <- kfm_nystrom(mil_data, m = nrow(mil_data), r = nrow(mil_data), kernel = "rbf", sigma = 0.05)
+  fm <- predict_kfm_nystrom(fit, mil_data)
   expect_equal(dim(fm), c(nrow(mil_data), nrow(mil_data)+3))
-  fm <- predict_nystrom(fit, mil_data[1:13, ])
+  fm <- predict_kfm_nystrom(fit, mil_data[1:13, ])
   expect_equal(dim(fm), c(13, nrow(mil_data)+3))
 
-  fit <- fit_nystrom(mil_data, m = 7, r = 7, kernel = "rbf", sigma = 0.05)
-  fm <- predict_nystrom(fit, mil_data)
+  fit <- kfm_nystrom(mil_data, m = 7, r = 7, kernel = "rbf", sigma = 0.05)
+  fm <- predict_kfm_nystrom(fit, mil_data)
   expect_equal(dim(fm), c(nrow(mil_data), 7+3))
 
-  fit <- fit_nystrom(mil_data, m = 7, r = 3, kernel = "rbf", sigma = 0.05)
-  fm <- predict_nystrom(fit, mil_data)
+  fit <- kfm_nystrom(mil_data, m = 7, r = 3, kernel = "rbf", sigma = 0.05)
+  fm <- predict_kfm_nystrom(fit, mil_data)
   expect_equal(dim(fm), c(nrow(mil_data), 3+3))
 
 })

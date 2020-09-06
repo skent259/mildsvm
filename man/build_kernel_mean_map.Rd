@@ -9,3 +9,6 @@ build_kernel_mean_map(fit, data)
 \description{
 TODO: documentation
 }
+\author{
+Sean Kent
+}
