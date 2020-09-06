@@ -9,10 +9,12 @@
 \arguments{
 \item{object}{A mild object}
 
-\item{...}{should pass 'newdata', the new dataset to be predict on, optionally 'GramMatrix' to accelarate the speed.}
+\item{...}{should pass 'newdata', the new dataset to be predict on,
+optionally 'GramMatrix' to accelerate the speed.}
 }
 \value{
-A data.frame with the same number of rows as in newdata and with four columns, 'bag_name', 'instance_name', 'bag_label_pred', 'instance_score'
+A data.frame with the same number of rows as in newdata and with
+four columns, 'bag_name', 'instance_name', 'bag_label_pred', 'instance_score'
 }
 \description{
 Prediction function for mild objects.
