@@ -125,9 +125,10 @@ build_kernel_mean_map <- function(fit, data) {
   mean_fm <- as.data.frame(do.call(rbind, mean_fm))
   mean_fm$instance_name <- rownames(mean_fm)
 
-  merge(unique(info),
-        mean_fm,
-        sort = FALSE)
+  res <- merge(unique(info),
+               mean_fm,
+               sort = FALSE)
+  res[, c(2, 3, 1, 4:ncol(res))] # re-order first 3 columns
 }
 
 #' Fit a Nystrom method kernel approximation
