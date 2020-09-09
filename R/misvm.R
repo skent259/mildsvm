@@ -42,7 +42,7 @@ validate_MI_SVM <- function(x) {
 #' @param bags a nx1 vector specifying which instance belongs to each bag.  Can be
 #'   a string, numeric, of factor
 #' @param X a nxp data.frame of covariates.  Can also supply a matrix.
-#' @param c scalar indicating the penalty term on the sum of $\xi$ in the
+#' @param c scalar indicating the penalty term on the sum of Xi in the
 #'   objective function
 #' @param rescale logical; whether to rescale the input before fitting
 #' @param weights named vector to control the weight of the cost parameter
