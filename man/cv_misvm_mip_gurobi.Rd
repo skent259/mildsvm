@@ -29,13 +29,14 @@ a string, numeric, of factor}
 cross validation.}
 
 \item{cost_seq}{vector of values of c to perform cross vailidation over.  C is
-the penalty term on the sum of $\xi$ in the objective function}
+the penalty term on the sum of Xi in the objective function}
 
 \item{rescale}{logical; whether to rescale the input before fitting}
 
 \item{verbose}{whether to message output to the console; default is FALSE.}
 
-\item{time_limit}{the time limit for each iteration of cross validation.}
+\item{time_limit}{FALSE, or a time limit (in seconds) passed to gurobi
+parameters. If FALSE, no time limit is given.}
 }
 \value{
 \code{cv_misvm_mip_gurobi()} returns an object of class \code{"misvm"}.

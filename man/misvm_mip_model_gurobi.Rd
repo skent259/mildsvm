@@ -16,7 +16,7 @@ a string, numeric, of factor}
 
 \item{X}{a nxp data.frame of covariates.  Can also supply a matrix.}
 
-\item{c}{scalar indicating the penalty term on the sum of $\xi$ in the
+\item{c}{scalar indicating the penalty term on the sum of Xi in the
 objective function}
 
 \item{weights}{named vector to control the weight of the cost parameter

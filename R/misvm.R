@@ -186,7 +186,7 @@ misvm_mip_model_gurobi <- function(y, bags, X, c, weights = NULL) {
 #' @param fold_id a vector indicating which instances belong in each fold for
 #'   cross validation.
 #' @param cost_seq vector of values of c to perform cross vailidation over.  C is
-#'   the penalty term on the sum of $\xi$ in the objective function
+#'   the penalty term on the sum of Xi in the objective function
 #' @return `cv_misvm_mip_gurobi()` returns an object of class `"misvm"`.
 #' An object of class "misvm" is a list containing at least the following components:
 #' `w` a named weight vector matching the number of columns of X

@@ -25,7 +25,7 @@ A list
 \description{
 This function solves the mil with distributional data
 classification problem using the naive SMM method by regarding bag
-lable as instance label.
+label as instance label.
 }
 \examples{
 MilData1 <- GenerateMilData(positive_dist = 'mvt',
