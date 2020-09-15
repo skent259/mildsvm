@@ -1,4 +1,4 @@
-context("Testing the functions in feature_map.R")
+context("Testing the functions in bkfm_functions.R")
 
 test_that("Nystrom method approximates the true kernel on a dataframe.", {
   check_nystrom_approximation <- function(fit, df, max_thresh, mean_thresh) {
@@ -122,6 +122,56 @@ test_that("Nystrom methods have correct output dimensions", {
 
 })
 
+test_that("Nystrom method works with various sampling parameters", {
+
+  ## test Nystrom on data frame
+  set.seed(8)
+  df <- data.frame(
+    X1 = c(2,   3,   4,   5,   6, 7, 8),
+    X2 = c(1, 1.2, 1.3, 1.4, 1.1, 7, 1),
+    X3 = rnorm(7)
+  )
+
+  fit <- kfm_nystrom(df, m = 7, r = 7, kernel = "rbf", sampling = 1:7, sigma = 0.05)
+  expect_equivalent(fit$df_sub, as.matrix(df[1:7, ]))
+
+  expect_warning({
+    fit <- kfm_nystrom(df, m = 7, r = 7, kernel = "rbf", sampling = 1:6, sigma = 0.05)
+  })
+
+  ## test Nystrom on MilData
+  mil_data <- mildsvm::GenerateMilData(positive_dist = "mvt",
+                                       negative_dist = "mvnormal",
+                                       remainder_dist = "mvnormal",
+                                       ncov = 5,
+                                       nbag = 7,
+                                       nsample = 7,
+                                       positive_degree = 3,
+                                       positive_prob = 0.15,
+                                       positive_mean = rep(0, 5))
+
+
+  fit <- kfm_nystrom(mil_data, m = 50, r = 50,
+                     kernel = "rbf", sampling = 'stratified', sigma = 0.05)
+
+  rows <- as.numeric(rownames(fit$df_sub))
+  expect(length(unique(table(mil_data$bag_name[rows]))) %in% c(1,2),
+         "Expect counts for each bag to be the same (+/- 1)")
+  expect(length(unique(table(mil_data$instance_name[rows]))) %in% c(1,2),
+         "Expect counts for each instance to be the same (+/- 1)")
+  expect(all(unique(rows) == rows), "Rows are sampled at most once")
+
+  expect_warning({
+    fit <- kfm_nystrom(mil_data, m = 50, r = 50, kernel = "rbf", sampling = 1:10, sigma = 0.05)
+  })
+
+  fit <- kfm_nystrom(mil_data, m = 10, r = 10, kernel = "rbf", sampling = 1:10, sigma = 0.05)
+  expect_equivalent(fit$df_sub, as.matrix(mil_data[1:10, -c(1:3)]))
+
+  fit <- kfm_nystrom(mil_data, m = 10, r = 10, kernel = "rbf", sampling = "random", sigma = 0.05)
+
+})
+
 test_that("fit_kernel_feature_map works for appropriate methods", {
 
   set.seed(8)
@@ -177,7 +227,6 @@ test_that("build_kernel_feature_map works for appropriate methods", {
 
 })
 
-
 test_that("build_kernel_mean_map works for appropriate methods", {
   set.seed(8)
   df <- mildsvm::GenerateMilData(positive_dist = "mvt",
@@ -210,3 +259,67 @@ test_that("build_kernel_mean_map works for appropriate methods", {
   expect_equal(dim(fm), c(7*4, 20+3))
 
 })
+
+test_that("Stratified sampling works with bag structure", {
+  set.seed(8)
+  df <- mildsvm::GenerateMilData(positive_dist = "mvt",
+                                 negative_dist = "mvnormal",
+                                 remainder_dist = "mvnormal",
+                                 ncov = 5,
+                                 nbag = 7,
+                                 nsample = 7,
+                                 positive_degree = 3,
+                                 positive_prob = 0.15,
+                                 positive_mean = rep(0, 5))
+
+
+  rows <- bag_instance_sampling(df, size = 10)
+  expect(length(unique(table(df$bag_name[rows]))) %in% c(1,2),
+         "Expect counts for each bag to be the same (+/- 1)")
+  expect(length(unique(table(df$instance_name[rows]))) %in% c(1,2),
+         "Expect counts for each instance to be the same (+/- 1)")
+  expect(all(unique(rows) == rows), "Rows are sampled at most once")
+
+  rows <- bag_instance_sampling(df, size = 50)
+  expect(length(unique(table(df$bag_name[rows]))) %in% c(1,2),
+         "Expect counts for each bag to be the same (+/- 1)")
+  expect(length(unique(table(df$instance_name[rows]))) %in% c(1,2),
+         "Expect counts for each instance to be the same (+/- 1)")
+  expect(all(unique(rows) == rows), "Rows are sampled at most once")
+
+
+  rows <- bag_instance_sampling(df, size = 196)
+  expect(length(unique(table(df$bag_name[rows]))) %in% c(1,2),
+         "Expect counts for each bag to be the same (+/- 1)")
+  expect(length(unique(table(df$instance_name[rows]))) %in% c(1,2),
+         "Expect counts for each instance to be the same (+/- 1)")
+  expect(all(unique(rows) == rows), "Rows are sampled at most once")
+
+
+  df <- mildsvm::GenerateMilData(positive_dist = "mvnormal",
+                                 negative_dist = "mvnormal",
+                                 remainder_dist = "mvnormal",
+                                 nbag = 2,
+                                 ninst = 2,
+                                 nsample = 4)
+  df <- df[-c(1:3), ]
+
+  rows <- bag_instance_sampling(df, size = 13)
+  expect(length(unique(table(df$bag_name[rows]))) %in% c(1,2),
+         "Expect counts for each bag to be the same (+/- 1)")
+  expect(length(unique(table(df$instance_name[rows]))) %in% c(1,2),
+         "Expect counts for each instance to be the same (+/- 1)")
+  # in this case, not all rows will be unique, as row 1 gets sampled multiple times
+
+
+
+  # how to do stratified sampling
+
+  # how to incorporate into kfm_nystrom function
+  # - add parameter 'random_rows' to override variable in kfm_nystrom.default
+  # - add parameter 'sampling' which indicates which sampling method to use
+  #   - sampling = 'random' or sampling = 'stratified'
+
+})
+
+

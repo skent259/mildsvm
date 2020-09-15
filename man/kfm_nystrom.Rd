@@ -10,9 +10,9 @@
 \usage{
 kfm_nystrom(df, m, r, kernel, ...)
 
-\method{kfm_nystrom}{default}(df, m = nrow(df), r = m, kernel = "rbf", ...)
+\method{kfm_nystrom}{default}(df, m = nrow(df), r = m, kernel = "rbf", sampling = "random", ...)
 
-\method{kfm_nystrom}{MilData}(df, m = nrow(df), r = m, kernel = "rbf", ...)
+\method{kfm_nystrom}{MilData}(df, m = nrow(df), r = m, kernel = "rbf", sampling = "random", ...)
 
 \method{predict_kfm_nystrom}{default}(object, newx)
 
@@ -31,6 +31,11 @@ to \code{m}, the default.}
 'rbf' is implemented.}
 
 \item{...}{additional parameters needed for the kernels.  See details.}
+
+\item{sampling}{determines how to sample instances.  Default it 'random'.
+For kfm_nystrom.MilData, can specify \code{sampling} = 'stratified' to ensure
+that samples are chosen evenly from bags and instances.  \code{sampling} can
+also be a numeric vector of length \code{m} of pre-determined samples.}
 }
 \value{
 an S3 object with the following components

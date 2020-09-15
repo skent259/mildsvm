@@ -7,6 +7,7 @@
 #' has features calculated in the input space based on the underlying kernel
 #' (x'y + c)^d where c = constant and d = degree are input parameters.
 #' TODO: update this to reflect more general methods
+#' TODO: I believe this function can be removed, methods now call the kfm_function directly
 #'
 #' @param data A MilData object.  Ignored if `method` = 'exact' and `output` =
 #'   "fit".
@@ -142,6 +143,10 @@ build_kernel_mean_map <- function(fit, data) {
 #'   to \code{m}, the default.
 #' @param kernel a character determining the kernel to use.  Currently, only
 #'   'rbf' is implemented.
+#' @param sampling determines how to sample instances.  Default it 'random'.
+#'   For kfm_nystrom.MilData, can specify `sampling` = 'stratified' to ensure
+#'   that samples are chosen evenly from bags and instances.  `sampling` can
+#'   also be a numeric vector of length `m` of pre-determined samples.
 #' @param ... additional parameters needed for the kernels.  See details.
 #'
 #' @return an S3 object with the following components
@@ -174,22 +179,30 @@ kfm_nystrom <- function(df, m, r, kernel, ...) {
 
 #' @describeIn kfm_nystrom For use on objects of class `data.frame` or `matrix`.
 #' @export
-kfm_nystrom.default <- function(df, m = nrow(df), r = m, kernel = "rbf", ...) {
+kfm_nystrom.default <- function(df, m = nrow(df), r = m, kernel = "rbf", sampling = 'random', ...) {
   # TODO: check all columns are numeric
   `%ni%` <- Negate(`%in%`)
   kernel_params <- list(...)
-  # kernel_params <- list()
 
   df <- as.matrix(df)
-  random_rows <- sample(1:nrow(df), m)
-  tmp <- df[random_rows, ]
+  if (is.numeric(sampling)) {
+    if (length(sampling) != m)  {
+      warning("Length of input 'sampling' is not equal to 'm', reverting to sampling = 'random'.")
+      sampling <- sample(1:nrow(df), m)
+    }
+  } else if (sampling == 'random') {
+    sampling <- sample(1:nrow(df), m)
+  } else {
+    stop("parameter 'sampling' must be a numeric vector or the character 'random'. ")
+  }
+  df_sub <- df[sampling, ]
 
   if (kernel == "rbf") {
     if("sigma" %ni% names(kernel_params)) {
       message("sigma not specified in ... for kernel 'rbf'.  Defaulting to sigma = 0.05.")
       kernel_params$sigma <- 0.05
     }
-    k_hat <- rbf_kernel_matrix(kernel_params$sigma, tmp, tmp)
+    k_hat <- rbf_kernel_matrix(kernel_params$sigma, df_sub, df_sub)
   } else {
     stop("kernel must be 'rbf'.")
   }
@@ -198,7 +211,7 @@ kfm_nystrom.default <- function(df, m = nrow(df), r = m, kernel = "rbf", ...) {
   D <- diag(1 / sqrt(e$values[1:r]))
   V <- t(e$vectors[, 1:r])
 
-  return(list(df_sub = tmp,
+  return(list(df_sub = df_sub,
               dv = D %*% V,
               method = "nystrom",
               kernel = kernel,
@@ -210,9 +223,12 @@ kfm_nystrom.default <- function(df, m = nrow(df), r = m, kernel = "rbf", ...) {
 #'   'bag_name', and 'instance_name' when calculating kernel approximation.
 #'   These columns are re-appended upon prediction.
 #' @export
-kfm_nystrom.MilData <- function(df, m = nrow(df), r = m, kernel = "rbf", ...) {
+kfm_nystrom.MilData <- function(df, m = nrow(df), r = m, kernel = "rbf", sampling = "random", ...) {
+  if (sampling[1] == 'stratified') {
+    sampling <- bag_instance_sampling(df, m)
+  }
   df <- subset(df, select = -c(bag_label, bag_name, instance_name))
-  kfm_nystrom.default(df, m, r, kernel, ...)
+  kfm_nystrom.default(df, m, r, kernel, sampling, ...)
 }
 
 
@@ -351,7 +367,63 @@ predict_exact.MilData <- function(object, newx) {
   cbind(info, fm)
 }
 
+#' Sample MilData object by bags and instances
+#'
+#' From a 'MilData' object, return a sample that evenly pulls from the unique
+#' bags and unique instances from each bag as much as possible.  This is a form
+#' of stratified sampling to avoid randomly sampling many rows from a few bags.
+#'
+#' @param data a 'MilData' object containing the data
+#' @param size a non-negative integer giving the number of rows to choose from
+#'   `data`.
+#' @return a numeric vector of length `size` indicating which rows were sampled.
+#'
+#' @examples
+#' mil_data <- mildsvm::GenerateMilData(positive_dist = "mvnormal",
+#'                                      negative_dist = "mvnormal",
+#'                                      remainder_dist = "mvnormal",
+#'                                      nbag = 2,
+#'                                      ninst = 2,
+#'                                      nsample = 2)
+#'
+#' rows <- bag_instance_sampling(mil_data, 6)
+#' table(mil_data$bag_name[rows])
+#' table(mil_data$instance_name[rows])
+#'
+#' rows <- bag_instance_sampling(mil_data, 4)
+#' table(mil_data$bag_name[rows])
+#' table(mil_data$instance_name[rows])
+#'
+#' @export
+#' @author Sean Kent
+bag_instance_sampling <- function(data, size) {
+  stopifnot(inherits(data, "MilData"))
+  resample <- function(x, ...) x[sample.int(length(x), ...)] # safer version of sample
 
+
+  bags <- unique(data$bag_name)
+  sampled_bags <- resample(c(rep(bags, size %/% length(bags)),
+                           sample(bags, size %% length(bags))))
+  sampled_instances <- character(size)
+  sampled_rows <- numeric(size)
+
+  for (bag in unique(sampled_bags)) {
+    ind <- which(bag == sampled_bags)
+    k <- length(ind)
+    instances <- unique(data$instance_name[which(data$bag_name == bag)])
+    sampled_instances[ind] <- resample(c(rep(instances, k %/% length(instances)),
+                                       sample(instances, k %% length(instances))))
+
+    for (instance in instances) {
+      ind2 <- which(instance == sampled_instances)
+      l <- length(ind2)
+      rows <- which(data$instance_name == instance)
+      sampled_rows[ind2] <- resample(c(rep(rows, l %/% length(rows)),
+                                     sample(rows, l %% length(rows))))
+    }
+  }
+  return(sampled_rows)
+}
 
 ##' This flatten the MilData type of data to regular multiple instance data where each instance is a vector
 ##'

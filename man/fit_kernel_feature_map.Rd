@@ -30,6 +30,7 @@ in a polynomial kernel with given degree (default = 2).  Each instance_name
 has features calculated in the input space based on the underlying kernel
 (x'y + c)^d where c = constant and d = degree are input parameters.
 TODO: update this to reflect more general methods
+TODO: I believe this function can be removed, methods now call the kfm_function directly
 }
 \details{
 TODO: update this
