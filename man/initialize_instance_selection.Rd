@@ -20,6 +20,16 @@ Use bag_label and instance_name information to initialize the selected
 instances. When bag label is 0, select all instances.  When bag label is
 1, select the first instance in each bag.
 }
+\examples{
+x = MilData(data.frame('bag_label' = factor(c(1, 1, 0)),
+                       'bag_name' = c(rep('bag_1', 2), 'bag_2'),
+                       'instance_name' = c('bag_1_inst_1', 'bag_1_inst_2', 'bag_2_inst_1'),
+                       'X1' = c(-0.4, 0.5, 2),
+                       'instance_label' = c(0, 1, 0)))
+
+initialize_instance_selection(x)
+
+}
 \author{
 Sean Kent
 }
