@@ -33,15 +33,16 @@ validate_MI_SVM <- function(x) {
 
 #' Fit MI-SVM model based on full MIP problem
 #'
-#' Function to run the Gurobi model to train MI-SVM problem based on the full
-#' specification of the Mixed Integer Programming (MIP) problem.
+#' Function to train an MI-SVM classifier based on the full
+#' specification of the Mixed Integer Programming (MIP) problem.  The optimization
+#' problem is solved using the `gurobi` R package through the Gurobi backend.
 #'
 #' @param y a nx1 numeric vector of bag labels with length equal to the number
 #'   of instances (not the number of bags). Must have -1 for negative bags and
 #'   +1 for positive bags
 #' @param bags a nx1 vector specifying which instance belongs to each bag.  Can be
 #'   a string, numeric, of factor
-#' @param X a nxp data.frame of covariates.  Can also supply a matrix.
+#' @param X an nxp data.frame of covariates.  Can also supply a matrix.
 #' @param c scalar indicating the penalty term on the sum of Xi in the
 #'   objective function
 #' @param rescale logical; whether to rescale the input before fitting
@@ -51,18 +52,29 @@ validate_MI_SVM <- function(x) {
 #' @param time_limit FALSE, or a time limit (in seconds) passed to gurobi
 #'   parameters. If FALSE, no time limit is given.
 #'
-#' @return `misvm_mip_gurobi()` returns an object of class `"misvm"`.
+#' @return `misvm_mip()` returns an object of class `"misvm"`.
 #'   An object of class "misvm" is a list containing at least the following
 #'   components:
-#'   - `w` a named weight vector matching the number of columns of X
-#'   TODO: fill out the rest of this...
-misvm_mip_gurobi <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
+#'   - `model`: a list with components:
+#'     - `w`: weights to apply to the predictors to make the classifier
+#'     - `b`: intercept term used to make the classifier
+#'     - `xi`: slack variables returned from the optimization
+#'     - `z`: integer variables returned from the optimization that determine selected instances
+#'     `status`: solution status from `gurobi::gurobi`
+#'     `itercount`: itercount from `gurobi::gurobi`
+#'     `baritercount`: baritercount from `gurobi::gurobi`
+#'     `objval`: value of the objective at the solution
+#'     `c`: value of the cost parameter used in solving the optimization
+#'   - `representative_inst`: NULL, TODO: mesh with other misvm method
+#'   - `traindata`: NULL, TODO: mesh with other misvm method
+#'   - `useful_inst_idx`: NULL, TODO: mesh with other misvm method
+misvm_mip <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
                              verbose = FALSE, time_limit = FALSE) {
   # TODO: maybe change function call to y, X, bags?
   if (rescale) X <- scale(X)
   bags <- as.numeric(factor(bags, levels = unique(bags)))
 
-  model <- misvm_mip_model_gurobi(y, bags, X, c, weights)
+  model <- misvm_mip_model(y, bags, X, c, weights)
   params <- list()
   params$OutputFlag = 1*verbose
   params$IntFeasTol = 1e-5
@@ -95,27 +107,26 @@ misvm_mip_gurobi <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
   names(res$model$w) <- colnames(X)
 
   return(new_misvm(res, method = "mip"))
-  # return(res)
 }
 
-#' Create optimization model for MI-SVM problem in Gurobi
+#' Create optimization model for MI-SVM problem
 #'
-#' Internal function to build a Gurobi optimization model based on the MI-SVM
-#' problem.
-#' @inheritParams misvm_mip_gurobi
+#' Internal function to build an optimization model (that can be passed to
+#' `gurobi::gurobi`) based on the MI-SVM problem.
+#'
+#' @inheritParams misvm_mip
 #' @return a model that can be passed to `gurobi::gurobi` that contains the MIQP
 #'   problem defined by MI-SVM in Andrews et al. (2003)
 #'
 #' @export
 #' @author Sean Kent
-misvm_mip_model_gurobi <- function(y, bags, X, c, weights = NULL) {
+misvm_mip_model <- function(y, bags, X, c, weights = NULL) {
   L <- 1e0 * sum(abs(X))
   # TODO: check that y has only -1 and 1
-  r <- reorder(y, bags, X)
+  r <- .reorder(y, bags, X)
   y <- r$y
   bags <- r$b
   X <- r$X
-
 
   ## Build constraint matrix
   # order of variables is [w, b, xi, z]
@@ -182,15 +193,15 @@ misvm_mip_model_gurobi <- function(y, bags, X, c, weights = NULL) {
 #'  C is chosen through cross-validation.  Cross-validation is done over the
 #'  bags and evaluated based on bag AUC.
 #'
-#' @inheritParams misvm_mip_gurobi
+#' @inheritParams misvm_mip
 #' @param fold_id a vector indicating which instances belong in each fold for
 #'   cross validation.
 #' @param cost_seq vector of values of c to perform cross vailidation over.  C is
 #'   the penalty term on the sum of Xi in the objective function
-#' @return `cv_misvm_mip_gurobi()` returns an object of class `"misvm"`.
+#' @return `cv_misvm_mip()` returns an object of class `"misvm"`.
 #' An object of class "misvm" is a list containing at least the following components:
 #' `w` a named weight vector matching the number of columns of X
-cv_misvm_mip_gurobi <- function(y, bags, X, fold_id, cost_seq = 2^(-5:15),
+cv_misvm_mip <- function(y, bags, X, fold_id, cost_seq = 2^(-5:15),
                                 rescale = TRUE, verbose = FALSE, time_limit = FALSE) {
 
   n_fold <- max(fold_id)
@@ -203,20 +214,19 @@ cv_misvm_mip_gurobi <- function(y, bags, X, fold_id, cost_seq = 2^(-5:15),
     for (fold in 1:n_fold) {
       ind <- fold_id != fold
 
-      model_i_fold <- misvm_mip_gurobi(y[ind], bags[ind], X[ind, ], cost_seq[C],
+      model_i_fold <- misvm_mip(y[ind], bags[ind], X[ind, ], cost_seq[C],
                                        rescale = rescale, verbose = verbose, time_limit = time_limit)
       pred_scores <- predict(model_i_fold, newX = X[!ind, ], type = "score")
 
       auc_fold <- pROC::auc(pROC::roc(response = classify_bags(y[!ind], bags[!ind]),
                                       predictor = classify_bags(pred_scores, bags[!ind])))
       auc_sum <- auc_sum + auc_fold
-
     }
     AUCs[C] <- auc_sum/n_fold
   }
 
   bestC <- cost_seq[which.max(AUCs)]
-  misvm_fit <- misvm_mip_gurobi(y, bags, X, bestC, rescale = rescale,
+  misvm_fit <- misvm_mip(y, bags, X, bestC, rescale = rescale,
                                 verbose = verbose, time_limit = time_limit)
 
   # TODO: fix this output
@@ -256,29 +266,29 @@ predict.misvm <- function(object, newX, type = c("prediction", "score")) {
 
 
 
-##' MI-SVM algorithm implementation in R
-##'
-##' This function implements the MI-SVM algorithm proposed by Andrews et al (2003)
-##' @param data A data.frame whose first three columns are `bag_label`, `bag_name` and `instance_name`.
-##' @param cost The cost parameter to be fed to e1071::svm
-##' @param kernel The kernel function to be used for e1071::svm.
-##' @param max.step Maximum steps of iteration for the iterative SVM methods.
-##' @param type type that to be used for e1071::svm.
-##' @return An object of class 'MI_SVM'
-##' @examples
-##' MilData1 <- GenerateMilData(positive_dist = 'mvt',
-##'                             negative_dist = 'mvnormal',
-##'                             remainder_dist = 'mvnormal',
-##'                             nbag = 50,
-##'                             nsample = 20,
-##'                             positive_degree = 3,
-##'                             positive_prob = 0.15,
-##'                             positive_mean = rep(0, 5))
-##' df1 <- build_instance_feature(MilData1, seq(0.05, 0.95, length.out = 10))
-##' mdl <- MI_SVM(data = df1, cost = 1, kernel = 'radial')
-##' @importFrom e1071 svm
-##' @export
-##' @author Yifei Liu
+#' MI-SVM algorithm implementation in R
+#'
+#' This function implements the MI-SVM algorithm proposed by Andrews et al (2003)
+#' @param data A data.frame whose first three columns are `bag_label`, `bag_name` and `instance_name`.
+#' @param cost The cost parameter to be fed to `e1071::svm`.
+#' @param kernel The kernel function to be used for `e1071::svm`.
+#' @param max.step Maximum steps of iteration for the iterative SVM methods.
+#' @param type type that to be used for `e1071::svm`.
+#' @return An object of class 'MI_SVM'
+#' @examples
+#' MilData1 <- GenerateMilData(positive_dist = 'mvt',
+#'                             negative_dist = 'mvnormal',
+#'                             remainder_dist = 'mvnormal',
+#'                             nbag = 50,
+#'                             nsample = 20,
+#'                             positive_degree = 3,
+#'                             positive_prob = 0.15,
+#'                             positive_mean = rep(0, 5))
+#' df1 <- build_instance_feature(MilData1, seq(0.05, 0.95, length.out = 10))
+#' mdl <- MI_SVM(data = df1, cost = 1, kernel = 'radial')
+#' @importFrom e1071 svm
+#' @export
+#' @author Yifei Liu
 MI_SVM <- function(data, cost, kernel = "radial", max.step = 500, type = "C-classification") {
 
   ## divide the bags to positive bags and negative bags The format of
@@ -307,13 +317,11 @@ MI_SVM <- function(data, cost, kernel = "radial", max.step = 500, type = "C-clas
       sample_label <- c(sample_label, rep(0, n_inst))
 
     } else if (bag_i_label == 1) {
-      sample_instance <- rbind(sample_instance, colMeans(data_i[,
-                                                                -(1:3)]))
+      sample_instance <- rbind(sample_instance, colMeans(data_i[, -(1:3)]))
       sample_label <- c(sample_label, 1)
     }
   }
-  sample_label <- factor(sample_label, levels = c(0, 1), labels = c("0",
-                                                                    "1"))
+  sample_label <- factor(sample_label, levels = c(0, 1), labels = c("0", "1"))
 
   n_negative_inst <- length(sample_label) - length(positive_bag_name)
   weights <- c(1, length(positive_bag_name)/n_negative_inst)
@@ -328,9 +336,9 @@ MI_SVM <- function(data, cost, kernel = "radial", max.step = 500, type = "C-clas
   while (step < max.step) {
 
     svm_model <- e1071::svm(x = sample_instance, y = sample_label,
-                            class.weights = weights, cost = cost, kernel = kernel, type = type)
-    pred_all_inst <- predict(object = svm_model, newdata = data[,
-                                                                -(1:3)], decision.values = TRUE)
+                            class.weights = weights, cost = cost,
+                            kernel = kernel, type = type)
+    pred_all_inst <- predict(object = svm_model, newdata = data[,  -(1:3)], decision.values = TRUE)
     pred_all_score <- attr(pred_all_inst, "decision.values")
     ## update sample
     idx <- 1
@@ -346,10 +354,8 @@ MI_SVM <- function(data, cost, kernel = "radial", max.step = 500, type = "C-clas
         sample_instance <- rbind(sample_instance, data_i[, -(1:3)])
         sample_label <- c(sample_label, rep(0, n_inst))
       } else if (bag_label_i == 1) {
-        id_max <- which.max(pred_all_score[idx:(idx + n_inst -
-                                                  1)])
-        sample_instance <- rbind(sample_instance, data_i[id_max,
-                                                         -(1:3)])
+        id_max <- which.max(pred_all_score[idx:(idx + n_inst - 1)])
+        sample_instance <- rbind(sample_instance, data_i[id_max, -(1:3)])
         sample_label <- c(sample_label, 1)
         selection[pos_idx] <- id_max
         pos_idx <- pos_idx + 1
@@ -380,57 +386,32 @@ MI_SVM <- function(data, cost, kernel = "radial", max.step = 500, type = "C-clas
                                          representative_inst = cbind(positive_bag_name, selection)))))
 }
 
-##' Cross-validation function for MI_SVM
-##'
-##' Cross-validation function for MI_SVM.
-##' @param data Same as in MI_SVM()
-##' @param n_fold Default to be 5
-##' @param fold_id Can be skipped if n_fold is set.
-##' @param cost_seq The cost sequence.
-##' @param kernel The kernel to be used in MI_SVM()
-##' @param max.step Maximum steps to be used in MI_SVM()
-##' @param type type to be used in MI_SVM()
-##' @return A list that contains best model, optimal cost value, the AUCs, and the cost sequence.
-##' @examples
-##' MilData1 <- GenerateMilData(positive_dist = 'mvt',
-##'                             negative_dist = 'mvnormal',
-##'                             remainder_dist = 'mvnormal',
-##'                             nbag = 50,
-##'                             nsample = 20,
-##'                             positive_degree = 3,
-##'                             positive_prob = 0.15,
-##'                             positive_mean = rep(0, 5))
-##' df1 <- build_instance_feature(MilData1, seq(0.05, 0.95, length.out = 10))
-##' foo_cv <- cv_MI_SVM(data = df1, n_fold = 3, cost_seq = 2^(-2:2))
-##' @export
-##' @author Yifei Liu
+#' Cross-validation function for MI_SVM
+#'
+#' Cross-validation function for MI_SVM.
+#'
+#' @inheritParams MI_SVM
+#' @inheritParams cv_mildsvm
+#' @return A list that contains best model, optimal cost value, the AUCs, and the cost sequence.
+#' @examples
+#' MilData1 <- GenerateMilData(positive_dist = 'mvt',
+#'                             negative_dist = 'mvnormal',
+#'                             remainder_dist = 'mvnormal',
+#'                             nbag = 50,
+#'                             nsample = 20,
+#'                             positive_degree = 3,
+#'                             positive_prob = 0.15,
+#'                             positive_mean = rep(0, 5))
+#' df1 <- build_instance_feature(MilData1, seq(0.05, 0.95, length.out = 10))
+#' foo_cv <- cv_MI_SVM(data = df1, n_fold = 3, cost_seq = 2^(-2:2))
+#' @export
+#' @author Yifei Liu
 cv_MI_SVM <- function(data, n_fold, fold_id, cost_seq, kernel = "radial",
                       max.step = 500, type = "C-classification") {
   bag_info <- unique(data[, c("bag_label", "bag_name")])
-  if (missing(fold_id)) {
-    if (missing(n_fold))
-      n_fold = 5
 
-    positive_bag_idx <- which(bag_info$bag_label == 1)
-    negative_bag_idx <- which(bag_info$bag_label == 0)
-    positive_fold_id <- base::sample((1:length(positive_bag_idx))%%n_fold +
-                                       1)
-    negative_fold_id <- base::sample((1:length(negative_bag_idx))%%n_fold +
-                                       1)
-
-    bag_id <- numeric(nrow(bag_info))
-    bag_id[positive_bag_idx] <- positive_fold_id
-    bag_id[negative_bag_idx] <- negative_fold_id
-
-    temp_data <- data.frame(bag_name = unique(data$bag_name), bag_id = bag_id,
-                            stringsAsFactors = FALSE) %>% right_join(data %>% select(bag_name),
-                                                                     by = "bag_name")
-    fold_id <- temp_data$bag_id
-  } else {
-    n_fold <- max(fold_id)
-    if (!is.null(setdiff(fold_id, 1:n_fold)))
-      stop("The argument fold_id has some 'holes'!")
-  }
+  fold_info <- select_cv_folds(data, n_fold, fold_id)
+  fold_id <- fold_info$fold_id
 
   AUCs <- numeric(length(cost_seq))
   for (C in 1:length(cost_seq)) {
@@ -454,28 +435,28 @@ cv_MI_SVM <- function(data, n_fold, fold_id, cost_seq, kernel = "radial",
 }
 
 
-##' Prediction function for MI_SVM object
-##'
-##' Predictionn function for MI_SVM object.
-##' @param object The return from MI_SVM()
-##' @param ... Should include `newdata` to represent the newdata to be predicting on, and optionally `true_bag_info` data.frame that contains 'bag_label' and 'bag_name' for AUC and ROC calculation.
-##' @return A list which contains a bag level prediction `bag_level_prediction` and an instance level prediction `instance_level_prediction`. If `true_bag_label` is fed to arguments, will also return `ROC` and `AUC` as list elements.
-##' @examples
-##' MilData1 <- GenerateMilData(positive_dist = 'mvt',
-##'                             negative_dist = 'mvnormal',
-##'                             remainder_dist = 'mvnormal',
-##'                             nbag = 50,
-##'                             nsample = 20,
-##'                             positive_degree = 3,
-##'                             positive_prob = 0.15,
-##'                             positive_mean = rep(0, 5))
-##' df1 <- build_instance_feature(MilData1, seq(0.05, 0.95, length.out = 10))
-##' mdl <- MI_SVM(data = df1, cost = 1, kernel = 'radial')
-##' predictions1_MI <- predict(mdl, newdata = df1, true_bag_info = unique(df1[, 1:2]))
-##' @importFrom pROC roc auc
-##' @importFrom dplyr summarise group_by
-##' @export
-##' @author Yifei Liu
+#' Prediction function for MI_SVM object
+#'
+#' Predictionn function for MI_SVM object.
+#' @param object The return from MI_SVM()
+#' @param ... Should include `newdata` to represent the newdata to be predicting on, and optionally `true_bag_info` data.frame that contains 'bag_label' and 'bag_name' for AUC and ROC calculation.
+#' @return A list which contains a bag level prediction `bag_level_prediction` and an instance level prediction `instance_level_prediction`. If `true_bag_label` is fed to arguments, will also return `ROC` and `AUC` as list elements.
+#' @examples
+#' MilData1 <- GenerateMilData(positive_dist = 'mvt',
+#'                             negative_dist = 'mvnormal',
+#'                             remainder_dist = 'mvnormal',
+#'                             nbag = 50,
+#'                             nsample = 20,
+#'                             positive_degree = 3,
+#'                             positive_prob = 0.15,
+#'                             positive_mean = rep(0, 5))
+#' df1 <- build_instance_feature(MilData1, seq(0.05, 0.95, length.out = 10))
+#' mdl <- MI_SVM(data = df1, cost = 1, kernel = 'radial')
+#' predictions1_MI <- predict(mdl, newdata = df1, true_bag_info = unique(df1[, 1:2]))
+#' @importFrom pROC roc auc
+#' @importFrom dplyr summarise group_by
+#' @export
+#' @author Yifei Liu
 predict.MI_SVM <- function(object, ...) {
   arguments <- list(...)
   newdata <- arguments$newdata

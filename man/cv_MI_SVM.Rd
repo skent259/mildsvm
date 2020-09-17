@@ -15,19 +15,20 @@ cv_MI_SVM(
 )
 }
 \arguments{
-\item{data}{Same as in MI_SVM()}
+\item{data}{A data.frame whose first three columns are \code{bag_label}, \code{bag_name} and \code{instance_name}.}
 
-\item{n_fold}{Default to be 5}
+\item{n_fold}{The number of folds.}
 
-\item{fold_id}{Can be skipped if n_fold is set.}
+\item{fold_id}{A user specified fold_id. Suggested not to specify
+this.}
 
-\item{cost_seq}{The cost sequence.}
+\item{cost_seq}{The cost sequence, default to be 2^(-2:2).}
 
-\item{kernel}{The kernel to be used in MI_SVM()}
+\item{kernel}{The kernel function to be used for \code{e1071::svm}.}
 
-\item{max.step}{Maximum steps to be used in MI_SVM()}
+\item{max.step}{Maximum steps of iteration for the iterative SVM methods.}
 
-\item{type}{type to be used in MI_SVM()}
+\item{type}{type that to be used for \code{e1071::svm}.}
 }
 \value{
 A list that contains best model, optimal cost value, the AUCs, and the cost sequence.

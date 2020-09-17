@@ -95,7 +95,25 @@ test_that("mil_distribution.R functions have identical output", {
   # expect_equal(mildsvm::kme(x), MilDistribution::kme(x))
 })
 
+test_that("misvm.R functions have identical output.", {
+  mil_data <- mildsvm::GenerateMilData(positive_dist = 'mvt',
+                                       negative_dist = 'mvnormal',
+                                       remainder_dist = 'mvnormal',
+                                       nbag = 10,
+                                       nsample = 7,
+                                       positive_degree = 3,
+                                       positive_prob = 0.15,
+                                       positive_mean = rep(0, 5))
+  df1 <- mildsvm::build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
 
 
+  set.seed(8)
+  mildsvm_cv_output <- mildsvm::cv_MI_SVM(data = df1, n_fold = 3, cost_seq = 2^(-2:2))
+  set.seed(8)
+  MilDistribution_cv_output <- MilDistribution::cv_MI_SVM(df1, n_fold = 3, cost_seq = 2^(-2:2))
+  expect_equal(mildsvm_cv_output,
+               MilDistribution_cv_output)
 
-# TODO: Found some bug when ncov can't be less than 5
+
+})
+

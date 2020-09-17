@@ -15,13 +15,13 @@ MI_SVM(
 \arguments{
 \item{data}{A data.frame whose first three columns are \code{bag_label}, \code{bag_name} and \code{instance_name}.}
 
-\item{cost}{The cost parameter to be fed to e1071::svm}
+\item{cost}{The cost parameter to be fed to \code{e1071::svm}.}
 
-\item{kernel}{The kernel function to be used for e1071::svm.}
+\item{kernel}{The kernel function to be used for \code{e1071::svm}.}
 
 \item{max.step}{Maximum steps of iteration for the iterative SVM methods.}
 
-\item{type}{type that to be used for e1071::svm.}
+\item{type}{type that to be used for \code{e1071::svm}.}
 }
 \value{
 An object of class 'MI_SVM'
