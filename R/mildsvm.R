@@ -531,7 +531,8 @@ cv_mild <- function(data, n_fold, fold_id, cost_seq = 2^(-2:2), max.step = 300,
 ##' @param method the method to use in fitting. If "mip", uses the full mildsvm
 ##'     mixed integer program.
 ##' @param time_limit the time limit for each iteration of cross validation.
-##' @param ... One can pass `kernel_full`, the Gram matrix at instance level for fast computation.
+##' @param kfm_fun a kernel feature map fitting function required when method = "mip"
+##' @param ... additional arguments passed to the `kfm_fun`
 ##' @return A list containing the best model and the optimal cost
 ##'     parameter.
 ##' @examples
@@ -566,6 +567,7 @@ cv_mildsvm <- function(data, n_fold, fold_id, cost_seq = 2^(-2:2),
     fold_id <- fold_info$fold_id
 
     if (method == "mip") {
+        # TODO: REMEMBER when cv_mild gets incorporated here, only need the kfm_fit for this method
         kmm_data <- build_kernel_mean_map(kfm_fit, data)
         y = 2*kmm_data$bag_label - 1 # convert {0,1} to {-1,1}
         b = kmm_data$bag_name

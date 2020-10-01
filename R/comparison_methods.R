@@ -67,10 +67,15 @@ smm_bag <- function(data, kernel_mild = "rbf", cost = 1, class.weights,
         class.weights <- c(1, n_positive/(n_bag - n_positive))
     }
     if (is.matrix(kernel_mild)) {
-        if (is.null(list(...)$y))
-            stop(" 'y' should be supplied if 'kernel_mild' is a matrix")
-        res <- SMM(df = NULL, kernel_mild = kernel_mild, cost = cost,
-            class.weights = class.weights, sigma = sigma, y = list(...)$y)
+        if (is.null(list(...)$y)) {
+            # stop(" 'y' should be supplied if 'kernel_mild' is a matrix")
+            inst_info <- unique(data[, c("instance_label", "instance_name")])
+            y <- inst_info$instance_label
+        } else {
+            y <- list(...)$y
+        }
+        res <- SMM(df = data, kernel_mild = kernel_mild, cost = cost,
+            class.weights = class.weights, sigma = sigma, y = y)
     } else {
         res <- SMM(df = data, kernel_mild = kernel_mild, cost = cost,
             class.weights = class.weights, sigma = sigma, y = NULL)
@@ -247,6 +252,7 @@ mil_with_feature <- function(data, kernel = "radial", cost = 1, class.weights = 
     sigma = 0.05, type = "C-classification", qtls = seq(0.05, 0.95, length.out = 10),
     max.step = 500) {
     df <- build_instance_feature(data, qtls)
+    df <- na.omit(df)
     mdl <- MI_SVM(data = df, cost = cost, kernel = kernel, max.step = max.step,
         type = type)
     return(mdl)

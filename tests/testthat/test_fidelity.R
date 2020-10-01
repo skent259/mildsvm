@@ -117,3 +117,19 @@ test_that("misvm.R functions have identical output.", {
 
 })
 
+test_that("misvm.R functions have identical output.", {
+  set.seed(8)
+  mil_data <- GenerateMilData(positive_dist = 'mvt',
+                              negative_dist = 'mvnormal',
+                              remainder_dist = 'mvnormal',
+                              nbag = 50,
+                              nsample = 20,
+                              positive_degree = 3,
+                              positive_prob = 0.15,
+                              positive_mean = rep(0, 5))
+
+
+  expect_equal(mildsvm::mil_with_feature(data = mil_data),
+               MilDistribution::mil_with_feature(data = mil_data))
+})
+
