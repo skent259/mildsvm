@@ -517,6 +517,78 @@ cv_mild <- function(data, n_fold, fold_id, cost_seq = 2^(-2:2), max.step = 300,
     return(list(BestMdl = res, BestC = bestC, AUCs = AUCs, cost_seq = cost_seq))
 }
 
+
+##' Function to perform cross validation for the cost used in mil_distribution() function.
+##'
+##' Function to perform cross validation for the cost used in the
+##' mil_distribution() function. The calculation can be accelerated if
+##' the full gram matrix is provided.
+##' TODO: update parameters, return, etc.
+##' @param data The dataset as a MilData object.
+##' @param cost the cost parameter in the model; default = 1. TODO: make this better
+##' @param method the method to use in fitting. If "mip", uses the full mildsvm
+##'     mixed integer program.
+##' @param weights if TRUE, will adjust the SVM cost to account for class imbalance
+##'   if FALSE or NULL, no adjustment is made. Optionally, one can pass pre-specified
+##'   weights like `c("0" = 2, "1" = 1)` that get used.  Default is `weights = TRUE`.
+##' @param time_limit the time limit for each iteration of cross validation.
+##' @param kfm_fun a kernel feature map fitting function required when method = "mip"
+##' @param ... additional arguments passed to the `kfm_fun`
+##' @return An object of class `mildsvm` fit to the data.
+##' @examples
+##' MilData1 <- GenerateMilData(positive_dist = 'mvt',
+##'                             negative_dist = 'mvnormal',
+##'                             remainder_dist = 'mvnormal',
+##'                             nbag = 15,
+##'                             positive_degree = 3,
+##'                             nsample = 20
+##' )
+##' foo <- mildsvm(MilData1, method = "mip", m = 10)
+##'
+##' @export
+##' @author Sean Kent
+mildsvm <- function(data, cost = 1, method = "mip", weights = TRUE,
+                       time_limit = 150, kfm_fun = "kfm_nystrom", ...) {
+
+    dots <- list(...)
+    rescale <- FALSE
+    verbose <- ifelse("verbose" %ni% names(dots), FALSE, dots$verbose)
+    if ("fit" %in% names(dots)) {
+        kfm_fit <- dots$fit
+        # TODO: think about removing this...
+    } else {
+        dots$df <- data
+        dots$output <- "fit"
+        kfm_fit <- do.call(kfm_fun, args = dots)
+    }
+
+    if (method == "mip") {
+        # TODO: REMEMBER when cv_mild gets incorporated here, only need the kfm_fit for this method
+        kmm_data <- build_kernel_mean_map(kfm_fit, data)
+        y = 2*kmm_data$bag_label - 1 # convert {0,1} to {-1,1}
+        b = kmm_data$bag_name
+        X = subset(kmm_data, select = -c(bag_label, bag_name, instance_name))
+
+        if (is.numeric(weights)) {
+            stopifnot(names(weights) == c("0", "1") | names(weights) == c("1", "0"))
+            # PASS
+        } else if (weights) {
+            bag_labels <- sapply(split(y, factor(b)), unique)
+            weights <- c("0" = sum(bag_labels == 1) / sum(bag_labels == -1), "1" = 1)
+        } else {
+            weights <- NULL
+        }
+
+        res <- misvm_mip(y, b, X, c = cost, rescale, weights, verbose, time_limit)
+        res$kfm_fit <- kfm_fit
+    } else {
+        stop("Please specify method = 'mip' for now. ")
+    }
+
+    res <- new_mildsvm(res, method = method)
+    return(res)
+}
+
 ##' Function to perform cross validation for the cost used in mil_distribution() function.
 ##'
 ##' Function to perform cross validation for the cost used in the

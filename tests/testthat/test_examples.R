@@ -22,7 +22,18 @@ test_that("predict.mild function works without error", {
 
 })
 
+test_that("mildsvm example works", {
+  MilData1 <- GenerateMilData(positive_dist = 'mvt',
+                              negative_dist = 'mvnormal',
+                              remainder_dist = 'mvnormal',
+                              nbag = 15,
+                              positive_degree = 3,
+                              nsample = 20
+  )
+  foo <- mildsvm(MilData1, method = "mip", m = 10)
+  # predict(foo, MilData1)
 
+})
 
 
 # test_that("build_poly_instance_feature works", {
