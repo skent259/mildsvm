@@ -20,6 +20,19 @@ rbf_kernel_matrix <- function(sigma, x, y) {
     return(res)
 }
 
+#' Compute the Linear Kernel from two matrices
+#'
+#' @description Compute the Linear Kernel from two matrices.  Follows
+#' very closesly to kernlab::kernelMatrix.vanilla but omits unnecessary
+#' checks that slow down the computation.
+#' @param x matrix
+#' @param y matrix, must have same number of columns as `x`
+#' @export
+#' @author Sean Kent
+linear_kernel_matrix <- function(x, y) {
+    crossprod(t(x), t(y))
+}
+
 ##' Default method for kme function
 ##'
 ##' Default method for kme function.  This function calculates the kernel mean embedding for a given
