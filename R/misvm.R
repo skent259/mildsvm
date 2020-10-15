@@ -13,23 +13,206 @@ validate_misvm <- function(x) {
   x
 }
 
-new_MI_SVM <- function(x = list()) {
-  stopifnot(is.list(x))
+#' fit MI-SVM model to the data
+#'
+#' Description
+#'
+#' @name misvm
+NULL
 
-  structure(x, class = c("MI_SVM", "list"))
+#' @export
+misvm <- function(x, y, bags, cost, kernel, method = c("heuristic", "mip"), ..., weights = TRUE) {
+  UseMethod("misvm")
 }
 
-validate_MI_SVM <- function(x) {
-  if (!is.list(x)) {
-    stop("x should be a list!")
-    call. = FALSE
-  }
-  if (is.null(x$svm_mdl) | is.null(x$total_step) | is.null(x$representative_inst)) {
-    stop("x should contain 'svm_mdl', 'total_step', and 'representative_inst'")
-    call. = FALSE
-  }
-  x
+#' @describeIn misvm Method for passing formula
+#' @export
+misvm.formula <- function(formula, data, cost, kernel, method = c("heuristic", "mip"), ..., weights = TRUE) {
+  # TODO: implement this method
+  # NOTE: other 'professional' functions use a different type of call that I
+  #   couldn't get to work. See https://github.com/therneau/survival/blob/master/R/survfit.R
+  #   or https://github.com/cran/e1071/blob/master/R/svm.R
+  #   right now we're using something that should work for most generic formulas
+
+  x <- model.matrix(formula[-2], data = data)
+  if (attr(terms(formula), "intercept") == 1) x <- x[, -1, drop = FALSE]
+  x <- as.data.frame(x)
+
+  response <- get_all_vars(formula, data = data)
+  y <- response[, 1]
+  bags <- response[, 2]
+
+  res <- misvm.default(x, y, bags, cost = cost, kernel = kernel, method = method, ..., weights = weights)
+
+  res$call_type <- "misvm.formula"
+  res$formula <- formula
+  res$bag_name <- as.character(terms(formula)[[2]])[[3]]
+  return(res)
 }
+
+#' @describeIn misvm Method for data.frame-like objects
+#' @export
+misvm.default <- function(x, y, bags, cost, kernel, method = c("heuristic", "mip"), ..., weights = TRUE) {
+
+  dots <- list(...)
+  method <- match.arg(method)
+
+  # store the levels of y and convert to 0,1 numeric format.
+  y <- factor(y)
+  lev <- levels(y)
+  if (length(lev) == 1) {
+    stop(paste0("Response y has only one level, ", lev, ", cannot perform misvm fitting."))
+  } else if (length(lev) > 2) {
+    stop(paste0("Response y has more than two levels, ", lev, ", cannot perform misvm fitting."))
+  }
+  if (lev[1] == 1 | lev[1] == "1" | lev[1] == TRUE) {
+    lev <- rev(lev)
+    y <- factor(y, levels = lev) # make sure 1 is second level
+  } else if (lev[2] != 1 & lev[2] != "1" & lev[2] != TRUE) {
+    message(paste0("Setting level ", lev[2], " to be the positive class for misvm fitting."))
+  } # else lev[2] is like 1, keep it that way.
+  y <- as.numeric(y) - 1
+
+  ## weights
+  if (is.numeric(weights)) {
+    stopifnot(names(weights) == c("0", "1") | names(weights) == c("1", "0"))
+    # PASS
+  } else if (weights) {
+    bag_labels <- sapply(split(y, factor(bags)), unique)
+    weights <- c("0" = sum(bag_labels == 1) / sum(bag_labels == -1), "1" = 1)
+  } else {
+    weights <- NULL
+  }
+
+  if (method == "heuristic") {
+    if ("max.step" %ni% names(dots)) dots$max.step <- 500
+    if ("type" %ni% names(dots)) dots$type <- "C-classification"
+
+    data <- cbind(bag_label = y,
+                  bag_name = bags,
+                  instance_name = as.character(1:length(y)),
+                  x)
+    res <- MI_SVM(data, cost = cost, kernel = kernel,
+                  max.step = dots$max.step, type = dots$type)
+  } else if (method == "mip") {
+    if ("rescale" %ni% names(dots)) dots$rescale <- FALSE
+    if ("verbose" %ni% names(dots)) dots$verbose <- FALSE
+    if ("time_limit" %ni% names(dots)) dots$time_limit <- 60 # seconds
+    y = 2*y - 1 # convert {0,1} to {-1, 1}
+    res <- misvm_mip(y, bags, x, c = cost, dots$rescale, weights, dots$verbose, dots$time_limit)
+  } else {
+    stop("misvm requires method = 'heuristic' or 'mip'.")
+  }
+
+  res$features <- colnames(x)
+  res$call_type <- "misvm.default"
+  res$bag_name <- NULL
+  res$levels <- lev
+  new_misvm(res, method = method)
+  # return(res)
+}
+
+#' Predict method for 'misvm' object
+#' @param object an object of class misvm
+#' @param new_data matrix to predict from.  Needs to have the same number of
+#'   columns as the X that trained the misvm object
+#' @param type if 'class', return predicted values with threshold of 0 as
+#'   -1 or +1.  If 'raw', return the raw predicted scores.
+#' @param layer if 'bag', return predictions at the bag level.  If 'instance',
+#'   return predictions at the instance level.
+#' @param new_bags character or character vector.  Can specify a singular
+#'   character that provides the column name for the bag names in `new_data`,
+#'   default = "bag_name".  Can also specify a vector of length `nrow(new_data)`
+#'   that has bag name for each instance.  When `object` was fitted with
+#'   `misvm.formula`, this parameter is not necessary as the bag name can be
+#'   pulled directly from new_data, if available.
+#'
+#' @return tibble with `nrow(new_data)` rows.  If type = 'class', the tibble
+#'   will have a column '.pred_class'.  If type = 'raw', the tibble will have
+#'   a column '.pred'.
+#'
+#' @examples
+#' mil_data <- GenerateMilData(
+#'   positive_dist = 'mvt',
+#'   negative_dist = 'mvnormal',
+#'   remainder_dist = 'mvnormal',
+#'   nbag = 20,
+#'   nsample = 20,
+#'   positive_degree = 3,
+#'   positive_prob = 0.15,
+#'   positive_mean = rep(0, 5)
+#' )
+#' df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
+#' mdl1 <- misvm.default(df1, cost = 1, kernel = "radial", method = "mip")
+#'
+#' predict(mdl1, new_data = df1, type = "raw", layer = "bag")
+#'
+#' # summarize predictions at the bag layer
+#' library(dplyr)
+#' df1 %>%
+#'   bind_cols(predict(mdl2, df1, type = "class")) %>%
+#'   bind_cols(predict(mdl2, df1, type = "raw")) %>%
+#'   distinct(bag_name, bag_label, .pred_class, .pred)
+#'
+#' @export
+#' @author Sean Kent
+predict.misvm <- function(object, new_data,
+                          type = c("class", "raw"), layer = c("bag", "instance"),
+                          new_bags = "bag_name") {
+  type <- match.arg(type)
+  layer <- match.arg(layer)
+  method <- attr(object, "method")
+
+  if (object$call_type == "misvm.formula") {
+    new_x <- model.matrix(object$formula[-2], data = new_data)
+    if (attr(terms(object$formula), "intercept") == 1) new_x <- new_x[, -1, drop = FALSE]
+    new_x <- as.data.frame(new_x)
+  } else {
+    new_x <- new_data[, object$features, drop = FALSE]
+  }
+
+
+
+  if (method == "heuristic") {
+    pos <- predict(object = object$svm_mdl, newdata = new_x, decision.values = TRUE)
+    scores <- attr(pos, "decision.values")
+    pos <- as.numeric(as.character(pos))
+
+  } else if (method == "mip") {
+    scores <- as.matrix(new_x) %*% object$model$w + object$model$b
+    pos <- 1*(scores > 0)
+
+  } else {
+    stop("predict.misvm requires method = 'heuristic' or 'mip'.")
+  }
+
+  if (layer == "bag") {
+    if (object$call_type == "misvm.formula" & new_bags[1] == "bag_name" & length(new_bags) == 1) {
+      new_bags <- object$bag_name
+    }
+    if (length(new_bags) == 1 & new_bags[1] %in% colnames(new_data)) {
+      bags <- new_data[[new_bags]]
+    } else {
+      bags <- new_bags
+    }
+    scores <- classify_bags(scores, bags, condense = FALSE)
+    pos <- classify_bags(pos, bags, condense = FALSE)
+  }
+  pos <- factor(pos, levels = c(0, 1), labels = object$levels) # TODO: adjust this to accept any labels, passed from model object
+
+  res <- switch(type,
+                "raw" = tibble::tibble(.pred = as.numeric(scores)),
+                "class" = tibble::tibble(.pred_class = pos))
+
+  # TODO: consider returning the AUC here as an attribute.  Can only do if we have the true bag labels
+  # attr(res, "AUC") <- calculated_auc
+  attr(res, "layer") <- layer
+  res
+}
+
+
+# Specific implementation methods below ----------------------------------------
+
 
 #' Fit MI-SVM model based on full MIP problem
 #'
@@ -214,9 +397,9 @@ cv_misvm_mip <- function(y, bags, X, fold_id, cost_seq = 2^(-5:15),
     for (fold in 1:n_fold) {
       ind <- fold_id != fold
 
-      model_i_fold <- misvm_mip(y[ind], bags[ind], X[ind, ], cost_seq[C],
+      model_i_fold <- misvm_mip(y[ind], bags[ind], X[ind, , drop = FALSE], cost_seq[C],
                                        rescale = rescale, verbose = verbose, time_limit = time_limit)
-      pred_scores <- predict(model_i_fold, newX = X[!ind, ], type = "score")
+      pred_scores <- predict(model_i_fold, newX = X[!ind, , drop = FALSE], type = "score")
 
       auc_fold <- pROC::auc(pROC::roc(response = classify_bags(y[!ind], bags[!ind]),
                                       predictor = classify_bags(pred_scores, bags[!ind])))
@@ -236,32 +419,6 @@ cv_misvm_mip <- function(y, bags, X, fold_id, cost_seq = 2^(-5:15),
                         traindata = misvm_fit$traindata,
                         useful_inst_idx = misvm_fit$useful_inst_idx))
   return(list(BestMdl = res, BestC = bestC, AUCs = AUCs, cost_seq = cost_seq))
-}
-
-#' Predict method for 'misvm' object
-#' @param object an object of class misvm
-#' @param newX matrix to predict from.  Needs to have the same number of
-#'   columns as the X that trained the misvm object
-#' @param type if 'prediction', return predicted values with threshold of 0 as
-#'   -1 or +1.  If 'score', return the raw predicted scores.
-#'
-#' @return vector of length `nrow(newX)`.  If 'prediction', return predicted
-#'   values with threshold of 0 as -1 or +1.  If 'scores', return the raw
-#'   predicted scores.
-#'
-#' @export
-#' @author Sean Kent
-predict.misvm <- function(object, newX, type = c("prediction", "score")) {
-  type <- type[1]
-  if (attr(object, "method") == "mip") {
-    scores <- as.matrix(newX) %*% object$model$w + object$model$b
-    if (type == "score") {
-      return(scores)
-    } else if (type == "prediction") {
-      pos <- scores > 0
-      return(2*as.vector(pos) - 1)
-    }
-  }
 }
 
 
@@ -308,16 +465,16 @@ MI_SVM <- function(data, cost, kernel = "radial", max.step = 500, type = "C-clas
   sample_label <- NULL
 
   for (i in 1:n_bag) {
-    data_i <- data[data$bag_name == unique_bag_name[i], ]  ## find data from i-th bag
+    data_i <- data[data$bag_name == unique_bag_name[i], , drop = FALSE]  ## find data from i-th bag
     n_inst <- nrow(data_i)
     bag_i_label <- data_i$bag_label[1]
     if (bag_i_label == 0) {
       ## this indicates a negative bag
-      sample_instance <- rbind(sample_instance, data_i[, -(1:3)])
+      sample_instance <- rbind(sample_instance, data_i[, -(1:3), drop = FALSE])
       sample_label <- c(sample_label, rep(0, n_inst))
 
     } else if (bag_i_label == 1) {
-      sample_instance <- rbind(sample_instance, colMeans(data_i[, -(1:3)]))
+      sample_instance <- rbind(sample_instance, colMeans(data_i[, -(1:3), drop = FALSE]))
       sample_label <- c(sample_label, 1)
     }
   }
@@ -338,7 +495,7 @@ MI_SVM <- function(data, cost, kernel = "radial", max.step = 500, type = "C-clas
     svm_model <- e1071::svm(x = sample_instance, y = sample_label,
                             class.weights = weights, cost = cost,
                             kernel = kernel, type = type)
-    pred_all_inst <- predict(object = svm_model, newdata = data[,  -(1:3)], decision.values = TRUE)
+    pred_all_inst <- predict(object = svm_model, newdata = data[, -(1:3), drop = FALSE], decision.values = TRUE)
     pred_all_score <- attr(pred_all_inst, "decision.values")
     ## update sample
     idx <- 1
@@ -347,15 +504,15 @@ MI_SVM <- function(data, cost, kernel = "radial", max.step = 500, type = "C-clas
     sample_label <- NULL
 
     for (i in 1:n_bag) {
-      data_i <- data[data$bag_name == unique_bag_name[i], ]
+      data_i <- data[data$bag_name == unique_bag_name[i], , drop = FALSE]
       n_inst <- nrow(data_i)
       bag_label_i <- data_i$bag_label[1]
       if (bag_label_i == 0) {
-        sample_instance <- rbind(sample_instance, data_i[, -(1:3)])
+        sample_instance <- rbind(sample_instance, data_i[, -(1:3), drop = FALSE])
         sample_label <- c(sample_label, rep(0, n_inst))
       } else if (bag_label_i == 1) {
         id_max <- which.max(pred_all_score[idx:(idx + n_inst - 1)])
-        sample_instance <- rbind(sample_instance, data_i[id_max, -(1:3)])
+        sample_instance <- rbind(sample_instance, data_i[id_max, -(1:3), drop = FALSE])
         sample_label <- c(sample_label, 1)
         selection[pos_idx] <- id_max
         pos_idx <- pos_idx + 1
@@ -408,7 +565,7 @@ MI_SVM <- function(data, cost, kernel = "radial", max.step = 500, type = "C-clas
 #' @author Yifei Liu
 cv_MI_SVM <- function(data, n_fold, fold_id, cost_seq, kernel = "radial",
                       max.step = 500, type = "C-classification") {
-  bag_info <- unique(data[, c("bag_label", "bag_name")])
+  bag_info <- unique(data[, c("bag_label", "bag_name"), drop = FALSE])
 
   fold_info <- select_cv_folds(data, n_fold, fold_id)
   fold_id <- fold_info$fold_id
@@ -417,12 +574,12 @@ cv_MI_SVM <- function(data, n_fold, fold_id, cost_seq, kernel = "radial",
   for (C in 1:length(cost_seq)) {
     temp_auc <- 0
     for (i in 1:n_fold) {
-      data_train <- data[fold_id != i, ]
-      data_valid <- data[fold_id == i, ]
+      data_train <- data[fold_id != i, , drop = FALSE]
+      data_valid <- data[fold_id == i, , drop = FALSE]
       mdl <- MI_SVM(data = data_train, cost = cost_seq[C], kernel = kernel,
                     max.step = max.step, type = type)
       predictions_i <- predict(object = mdl, newdata = data_valid,
-                               true_bag_info = unique(data_valid[, 1:2]))
+                               true_bag_info = unique(data_valid[, 1:2, drop = FALSE]))
       temp_auc <- temp_auc + predictions_i$AUC
     }
     AUCs[C] <- temp_auc/n_fold
@@ -432,6 +589,27 @@ cv_MI_SVM <- function(data, n_fold, fold_id, cost_seq, kernel = "radial",
   BestMdl <- MI_SVM(data = data, cost = bestC, kernel = kernel, max.step = max.step,
                     type = type)
   return(list(BestMdl = BestMdl, BestC = bestC, AUCs = AUCs, cost_seq = cost_seq))
+}
+
+
+# Deprecated methods below, need to delete eventually --------------------------
+
+new_MI_SVM <- function(x = list()) {
+  stopifnot(is.list(x))
+
+  structure(x, class = c("MI_SVM", "list"))
+}
+
+validate_MI_SVM <- function(x) {
+  if (!is.list(x)) {
+    stop("x should be a list!")
+    call. = FALSE
+  }
+  if (is.null(x$svm_mdl) | is.null(x$total_step) | is.null(x$representative_inst)) {
+    stop("x should contain 'svm_mdl', 'total_step', and 'representative_inst'")
+    call. = FALSE
+  }
+  x
 }
 
 
@@ -455,7 +633,6 @@ cv_MI_SVM <- function(data, n_fold, fold_id, cost_seq, kernel = "radial",
 #' predictions1_MI <- predict(mdl, newdata = df1, true_bag_info = unique(df1[, 1:2]))
 #' @importFrom pROC roc auc
 #' @importFrom dplyr summarise group_by
-#' @export
 #' @author Yifei Liu
 predict.MI_SVM <- function(object, ...) {
   arguments <- list(...)

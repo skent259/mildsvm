@@ -1,3 +1,5 @@
+`%ni%` <- Negate(`%in%`)
+
 #' Function to reorder the data by bag label, bag number, and then first data
 #' column
 #'
@@ -19,14 +21,19 @@
 #'   +1 for positive bags
 #' @param bags a vector specifying which instance belongs to each bag.  Can be
 #'   a string, numeric, of factor
+#' @param condense whether to return classification at the level of unique bags or not
 #' @return a named vector of length `length(unique(b))` which gives the
 #'   classification for each bag.  Names come from `bags`.
 #' @export
 #' @author Sean Kent
-classify_bags <- function(y, bags) {
+classify_bags <- function(y, bags, condense = TRUE) {
   # works whether y is {-1, 1} or {0, 1} as long as 1 reflects a positive instance
-  res <- sapply(unique(bags), function(b) max(y[b == bags]))
-  names(res) <- unique(bags)
+  if (condense) {
+    res <- sapply(unique(bags), function(b) max(y[b == bags]))
+    names(res) <- unique(bags)
+  } else {
+    res <- sapply(bags, function(b) max(y[b == bags]))
+  }
   return(res)
 }
 

@@ -4,7 +4,7 @@
 \alias{classify_bags}
 \title{Classify y from bags}
 \usage{
-classify_bags(y, bags)
+classify_bags(y, bags, condense = TRUE)
 }
 \arguments{
 \item{y}{a numeric vector of bag labels with length equal to the number of
@@ -13,6 +13,8 @@ instances (not the number of bags). Must have -1 for negative bags and
 
 \item{bags}{a vector specifying which instance belongs to each bag.  Can be
 a string, numeric, of factor}
+
+\item{condense}{whether to return classification at the level of unique bags or not}
 }
 \value{
 a named vector of length \code{length(unique(b))} which gives the
