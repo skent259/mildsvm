@@ -119,6 +119,12 @@ misvm.default <- function(x, y, bags, cost = 1, method = c("heuristic", "mip"), 
                                          time_limit = 60)) {
 
   method <- match.arg(method)
+  if ("kernel" %ni% names(control)) control$kernel <- "radial"
+  if ("max.step" %ni% names(control)) control$max.step <- 500
+  if ("type" %ni% names(control)) control$type <- "C-classification"
+  if ("scale" %ni% names(control)) control$scale <- TRUE
+  if ("verbose" %ni% names(control)) control$verbose <- FALSE
+  if ("time_limit" %ni% names(control)) control$time_limit <- 60
 
   # store the levels of y and convert to 0,1 numeric format.
   y <- factor(y)
@@ -155,9 +161,11 @@ misvm.default <- function(x, y, bags, cost = 1, method = c("heuristic", "mip"), 
                   x)
     res <- MI_SVM(data,
                   cost = cost,
+                  weights = weights,
                   kernel = control$kernel,
                   max.step = control$max.step,
-                  type = control$type)
+                  type = control$type,
+                  scale = control$scale)
   } else if (method == "mip") {
     y = 2*y - 1 # convert {0,1} to {-1, 1}
     res <- misvm_mip(y, bags, x,
@@ -512,7 +520,7 @@ cv_misvm_mip <- function(y, bags, X, fold_id, cost_seq = 2^(-5:15),
 #' @importFrom e1071 svm
 #' @export
 #' @author Yifei Liu
-MI_SVM <- function(data, cost, kernel = "radial", max.step = 500, type = "C-classification") {
+MI_SVM <- function(data, cost, weights, kernel = "radial", max.step = 500, type = "C-classification", scale = TRUE) {
 
   ## divide the bags to positive bags and negative bags The format of
   ## data is bag_label | bag_name | instance_name
@@ -547,8 +555,8 @@ MI_SVM <- function(data, cost, kernel = "radial", max.step = 500, type = "C-clas
   sample_label <- factor(sample_label, levels = c(0, 1), labels = c("0", "1"))
 
   n_negative_inst <- length(sample_label) - length(positive_bag_name)
-  weights <- c(1, length(positive_bag_name)/n_negative_inst)
-  names(weights) <- c("1", "0")
+  # weights <- c(1, length(positive_bag_name)/n_negative_inst)
+  # names(weights) <- c("1", "0")
   ## iterate between updating the model and selecting the most positive
   ## bag from an instance.
 
@@ -560,7 +568,8 @@ MI_SVM <- function(data, cost, kernel = "radial", max.step = 500, type = "C-clas
 
     svm_model <- e1071::svm(x = sample_instance, y = sample_label,
                             class.weights = weights, cost = cost,
-                            kernel = kernel, type = type)
+                            kernel = kernel, scale = scale,
+                            type = type)
     pred_all_inst <- predict(object = svm_model, newdata = data[, -(1:3), drop = FALSE], decision.values = TRUE)
     pred_all_score <- attr(pred_all_inst, "decision.values")
     ## update sample

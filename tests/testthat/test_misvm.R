@@ -185,4 +185,68 @@ test_that("Dots work in misvm() formula", {
 
 })
 
+test_that("misvm() has correct argument handling", {
+  set.seed(8)
+  mil_data <- GenerateMilData(positive_dist = 'mvt',
+                              negative_dist = 'mvnormal',
+                              remainder_dist = 'mvnormal',
+                              nbag = 20,
+                              nsample = 20,
+                              positive_degree = 3,
+                              positive_prob = 0.15,
+                              positive_mean = rep(0, 5))
 
+  df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10)) %>%
+    select(-instance_name)
+
+  ## weights
+  misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = TRUE)
+  expect_equal(
+    misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 1, "1" = 1)),
+    misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = FALSE)
+  )
+
+  df2 <- df1 %>% mutate(bag_label = factor(bag_label, levels = c(1, 0)))
+  dimnames(df2) <- dimnames(df1)
+  expect_equal(
+    misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 2, "1" = 1)),
+    misvm(mi(bag_label, bag_name) ~ ., data = df2, weights = c("0" = 2, "1" = 1))
+  )
+  expect_equal(
+    misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 2, "1" = 1), method = "mip"),
+    misvm(mi(bag_label, bag_name) ~ ., data = df2, weights = c("0" = 2, "1" = 1), method = "mip")
+  )
+
+  df2 <- df1 %>% mutate(bag_label = factor(bag_label, labels = c("No", "Yes")))
+  dimnames(df2) <- dimnames(df1)
+  expect_equal(
+    misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 2, "1" = 1))$svm_mdl,
+    misvm(mi(bag_label, bag_name) ~ ., data = df2, weights = c("No" = 2, "Yes" = 1))$svm_mdl
+  )
+  expect_equal(
+    misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 2, "1" = 1), method = "mip")$svm_mdl,
+    misvm(mi(bag_label, bag_name) ~ ., data = df2, weights = c("No" = 2, "Yes" = 1), method = "mip")$svm_mdl
+  )
+
+  ## kernel
+  expect_false(isTRUE(all.equal(
+    misvm(mi(bag_label, bag_name) ~ ., data = df1, method = "heuristic", control = list(kernel = "radial")),
+    misvm(mi(bag_label, bag_name) ~ ., data = df1, method = "heuristic", control = list(kernel = "linear"))
+  )))
+  expect_equal(
+    misvm(mi(bag_label, bag_name) ~ ., data = df1, method = "mip", control = list(kernel = "radial")),
+    misvm(mi(bag_label, bag_name) ~ ., data = df1, method = "mip", control = list(kernel = "linear"))
+  )
+
+  ## scale
+  expect_false(isTRUE(all.equal(
+    misvm(mi(bag_label, bag_name) ~ ., data = df1, method = "heuristic", control = list(scale = TRUE)),
+    misvm(mi(bag_label, bag_name) ~ ., data = df1, method = "heuristic", control = list(scale = FALSE))
+  )))
+  expect_false(isTRUE(all.equal(
+    misvm(mi(bag_label, bag_name) ~ ., data = df1, method = "mip", control = list(scale = TRUE)),
+    misvm(mi(bag_label, bag_name) ~ ., data = df1, method = "mip", control = list(scale = FALSE))
+  )))
+
+
+})
