@@ -2,7 +2,7 @@
 % Please edit documentation in R/misvm.R
 \name{misvm_mip_model}
 \alias{misvm_mip_model}
-\title{Create optimization model for MI-SVM problem}
+\title{INTERNAL Create optimization model for MI-SVM problem}
 \usage{
 misvm_mip_model(y, bags, X, c, weights = NULL)
 }

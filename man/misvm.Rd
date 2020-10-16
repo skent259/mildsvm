@@ -12,7 +12,7 @@
   cost = 1,
   method = c("heuristic", "mip"),
   weights = TRUE,
-  control = list(kernel = "radial", max.step = 500, type = "C-classification", scale =
+  control = list(kernel = "radial", max_step = 500, type = "C-classification", scale =
     TRUE, verbose = FALSE, time_limit = 60)
 )
 
@@ -23,7 +23,7 @@
   cost = 1,
   method = c("heuristic", "mip"),
   weights = TRUE,
-  control = list(kernel = "radial", max.step = 500, type = "C-classification", scale =
+  control = list(kernel = "radial", max_step = 500, type = "C-classification", scale =
     TRUE, verbose = FALSE, time_limit = 60)
 )
 }
@@ -53,7 +53,7 @@ control computation with the following components:
 \itemize{
 \item \code{kernel} argument used when \code{method} = 'heuristic'.  The kernel function
 to be used for \code{e1071::svm}.
-\item \code{max.step} argument used when \code{method} = 'heuristic'. Maximum steps of
+\item \code{max_step} argument used when \code{method} = 'heuristic'. Maximum steps of
 iteration for the heuristic algorithm.
 \item \code{type} argument used when \code{method} = 'heuristic'. The \code{type} argument is
 passed to \code{e1071::svm}.

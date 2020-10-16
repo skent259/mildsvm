@@ -51,7 +51,7 @@ validate_misvm <- function(x) {
 #'   control computation with the following components:
 #'   - `kernel` argument used when `method` = 'heuristic'.  The kernel function
 #'   to be used for `e1071::svm`.
-#'   - `max.step` argument used when `method` = 'heuristic'. Maximum steps of
+#'   - `max_step` argument used when `method` = 'heuristic'. Maximum steps of
 #'   iteration for the heuristic algorithm.
 #'   - `type` argument used when `method` = 'heuristic'. The `type` argument is
 #'   passed to `e1071::svm`.
@@ -76,7 +76,7 @@ misvm <- function(x, y, bags, ...) {
 #' @export
 misvm.formula <- function(formula, data, cost = 1, method = c("heuristic", "mip"), weights = TRUE,
                           control = list(kernel = "radial",
-                                         max.step = 500,
+                                         max_step = 500,
                                          type = "C-classification",
                                          scale = TRUE,
                                          verbose = FALSE,
@@ -112,7 +112,7 @@ misvm.formula <- function(formula, data, cost = 1, method = c("heuristic", "mip"
 #' @export
 misvm.default <- function(x, y, bags, cost = 1, method = c("heuristic", "mip"), weights = TRUE,
                           control = list(kernel = "radial",
-                                         max.step = 500,
+                                         max_step = 500,
                                          type = "C-classification",
                                          scale = TRUE,
                                          verbose = FALSE,
@@ -120,7 +120,7 @@ misvm.default <- function(x, y, bags, cost = 1, method = c("heuristic", "mip"), 
 
   method <- match.arg(method)
   if ("kernel" %ni% names(control)) control$kernel <- "radial"
-  if ("max.step" %ni% names(control)) control$max.step <- 500
+  if ("max_step" %ni% names(control)) control$max_step <- 500
   if ("type" %ni% names(control)) control$type <- "C-classification"
   if ("scale" %ni% names(control)) control$scale <- TRUE
   if ("verbose" %ni% names(control)) control$verbose <- FALSE
@@ -159,16 +159,16 @@ misvm.default <- function(x, y, bags, cost = 1, method = c("heuristic", "mip"), 
                   bag_name = bags,
                   instance_name = as.character(1:length(y)),
                   x)
-    res <- MI_SVM(data,
+    res <- misvm_heuristic_fit(data,
                   cost = cost,
                   weights = weights,
                   kernel = control$kernel,
-                  max.step = control$max.step,
+                  max_step = control$max_step,
                   type = control$type,
                   scale = control$scale)
   } else if (method == "mip") {
     y = 2*y - 1 # convert {0,1} to {-1, 1}
-    res <- misvm_mip(y, bags, x,
+    res <- misvm_mip_fit(y, bags, x,
                      c = cost,
                      rescale = control$scale,
                      weights = weights,
@@ -288,7 +288,7 @@ predict.misvm <- function(object, new_data,
 # Specific implementation methods below ----------------------------------------
 
 
-#' Fit MI-SVM model based on full MIP problem
+#' INTERNAL Fit MI-SVM model based on full MIP problem
 #'
 #' Function to train an MI-SVM classifier based on the full
 #' specification of the Mixed Integer Programming (MIP) problem.  The optimization
@@ -309,7 +309,7 @@ predict.misvm <- function(object, new_data,
 #' @param time_limit FALSE, or a time limit (in seconds) passed to gurobi
 #'   parameters. If FALSE, no time limit is given.
 #'
-#' @return `misvm_mip()` returns an object of class `"misvm"`.
+#' @return `misvm_mip_fit()` returns an object of class `"misvm"`.
 #'   An object of class "misvm" is a list containing at least the following
 #'   components:
 #'   - `model`: a list with components:
@@ -325,7 +325,7 @@ predict.misvm <- function(object, new_data,
 #'   - `representative_inst`: NULL, TODO: mesh with other misvm method
 #'   - `traindata`: NULL, TODO: mesh with other misvm method
 #'   - `useful_inst_idx`: NULL, TODO: mesh with other misvm method
-misvm_mip <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
+misvm_mip_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
                              verbose = FALSE, time_limit = FALSE) {
   # TODO: maybe change function call to y, X, bags?
   if (rescale) X <- scale(X)
@@ -366,16 +366,15 @@ misvm_mip <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
   return(new_misvm(res, method = "mip"))
 }
 
-#' Create optimization model for MI-SVM problem
+#' INTERNAL Create optimization model for MI-SVM problem
 #'
 #' Internal function to build an optimization model (that can be passed to
 #' `gurobi::gurobi`) based on the MI-SVM problem.
 #'
-#' @inheritParams misvm_mip
+#' @inheritParams misvm_mip_fit
 #' @return a model that can be passed to `gurobi::gurobi` that contains the MIQP
 #'   problem defined by MI-SVM in Andrews et al. (2003)
 #'
-#' @export
 #' @author Sean Kent
 misvm_mip_model <- function(y, bags, X, c, weights = NULL) {
   L <- 1e0 * sum(abs(X))
@@ -450,7 +449,7 @@ misvm_mip_model <- function(y, bags, X, c, weights = NULL) {
 #'  C is chosen through cross-validation.  Cross-validation is done over the
 #'  bags and evaluated based on bag AUC.
 #'
-#' @inheritParams misvm_mip
+#' @inheritParams misvm_mip_fit
 #' @param fold_id a vector indicating which instances belong in each fold for
 #'   cross validation.
 #' @param cost_seq vector of values of c to perform cross vailidation over.  C is
@@ -471,7 +470,7 @@ cv_misvm_mip <- function(y, bags, X, fold_id, cost_seq = 2^(-5:15),
     for (fold in 1:n_fold) {
       ind <- fold_id != fold
 
-      model_i_fold <- misvm_mip(y[ind], bags[ind], X[ind, , drop = FALSE], cost_seq[C],
+      model_i_fold <- misvm_mip_fit(y[ind], bags[ind], X[ind, , drop = FALSE], cost_seq[C],
                                        rescale = rescale, verbose = verbose, time_limit = time_limit)
       pred_scores <- predict(model_i_fold, newX = X[!ind, , drop = FALSE], type = "score")
 
@@ -483,7 +482,7 @@ cv_misvm_mip <- function(y, bags, X, fold_id, cost_seq = 2^(-5:15),
   }
 
   bestC <- cost_seq[which.max(AUCs)]
-  misvm_fit <- misvm_mip(y, bags, X, bestC, rescale = rescale,
+  misvm_fit <- misvm_mip_fit(y, bags, X, bestC, rescale = rescale,
                                 verbose = verbose, time_limit = time_limit)
 
   # TODO: fix this output
@@ -497,13 +496,13 @@ cv_misvm_mip <- function(y, bags, X, fold_id, cost_seq = 2^(-5:15),
 
 
 
-#' MI-SVM algorithm implementation in R
+#' INTERNAL MI-SVM algorithm implementation in R
 #'
 #' This function implements the MI-SVM algorithm proposed by Andrews et al (2003)
 #' @param data A data.frame whose first three columns are `bag_label`, `bag_name` and `instance_name`.
 #' @param cost The cost parameter to be fed to `e1071::svm`.
 #' @param kernel The kernel function to be used for `e1071::svm`.
-#' @param max.step Maximum steps of iteration for the iterative SVM methods.
+#' @param max_step Maximum steps of iteration for the iterative SVM methods.
 #' @param type type that to be used for `e1071::svm`.
 #' @return An object of class 'MI_SVM'
 #' @examples
@@ -518,9 +517,10 @@ cv_misvm_mip <- function(y, bags, X, fold_id, cost_seq = 2^(-5:15),
 #' df1 <- build_instance_feature(MilData1, seq(0.05, 0.95, length.out = 10))
 #' mdl <- MI_SVM(data = df1, cost = 1, kernel = 'radial')
 #' @importFrom e1071 svm
-#' @export
 #' @author Yifei Liu
-MI_SVM <- function(data, cost, weights, kernel = "radial", max.step = 500, type = "C-classification", scale = TRUE) {
+misvm_heuristic_fit <- function(data, cost, weights, kernel = "radial",
+                                max_step = 500, type = "C-classification",
+                                scale = TRUE) {
 
   ## divide the bags to positive bags and negative bags The format of
   ## data is bag_label | bag_name | instance_name
@@ -561,10 +561,10 @@ MI_SVM <- function(data, cost, weights, kernel = "radial", max.step = 500, type 
   ## bag from an instance.
 
   selection <- rep(0, length(positive_bag_name))
-  past_selection <- matrix(NA, length(positive_bag_name), max.step)
+  past_selection <- matrix(NA, length(positive_bag_name), max_step)
   past_selection[, 1] <- selection
   step <- 1
-  while (step < max.step) {
+  while (step < max_step) {
 
     svm_model <- e1071::svm(x = sample_instance, y = sample_label,
                             class.weights = weights, cost = cost,
@@ -614,15 +614,15 @@ MI_SVM <- function(data, cost, weights, kernel = "radial", max.step = 500, type 
     step <- step + 1
     past_selection[, step] <- selection
   }
-  return(validate_MI_SVM(new_MI_SVM(list(svm_mdl = svm_model, total_step = step,
-                                         representative_inst = cbind(positive_bag_name, selection)))))
+  return(list(svm_mdl = svm_model, total_step = step,
+              representative_inst = cbind(positive_bag_name, selection)))
 }
 
 #' Cross-validation function for MI_SVM
 #'
 #' Cross-validation function for MI_SVM.
 #'
-#' @inheritParams MI_SVM
+#' @inheritParams misvm_heuristic_fit
 #' @inheritParams cv_mildsvm
 #' @return A list that contains best model, optimal cost value, the AUCs, and the cost sequence.
 #' @examples
@@ -639,7 +639,7 @@ MI_SVM <- function(data, cost, weights, kernel = "radial", max.step = 500, type 
 #' @export
 #' @author Yifei Liu
 cv_MI_SVM <- function(data, n_fold, fold_id, cost_seq, kernel = "radial",
-                      max.step = 500, type = "C-classification") {
+                      max_step = 500, type = "C-classification") {
   bag_info <- unique(data[, c("bag_label", "bag_name"), drop = FALSE])
 
   fold_info <- select_cv_folds(data, n_fold, fold_id)
@@ -651,8 +651,8 @@ cv_MI_SVM <- function(data, n_fold, fold_id, cost_seq, kernel = "radial",
     for (i in 1:n_fold) {
       data_train <- data[fold_id != i, , drop = FALSE]
       data_valid <- data[fold_id == i, , drop = FALSE]
-      mdl <- MI_SVM(data = data_train, cost = cost_seq[C], kernel = kernel,
-                    max.step = max.step, type = type)
+      mdl <- misvm_heuristic_fit(data = data_train, cost = cost_seq[C], kernel = kernel,
+                    max_step = max_step, type = type)
       predictions_i <- predict(object = mdl, newdata = data_valid,
                                true_bag_info = unique(data_valid[, 1:2, drop = FALSE]))
       temp_auc <- temp_auc + predictions_i$AUC
@@ -661,7 +661,7 @@ cv_MI_SVM <- function(data, n_fold, fold_id, cost_seq, kernel = "radial",
   }
 
   bestC <- cost_seq[which.max(AUCs)]
-  BestMdl <- MI_SVM(data = data, cost = bestC, kernel = kernel, max.step = max.step,
+  BestMdl <- misvm_heuristic_fit(data = data, cost = bestC, kernel = kernel, max_step = max_step,
                     type = type)
   return(list(BestMdl = BestMdl, BestC = bestC, AUCs = AUCs, cost_seq = cost_seq))
 }
@@ -669,23 +669,23 @@ cv_MI_SVM <- function(data, n_fold, fold_id, cost_seq, kernel = "radial",
 
 # Deprecated methods below, need to delete eventually --------------------------
 
-new_MI_SVM <- function(x = list()) {
-  stopifnot(is.list(x))
-
-  structure(x, class = c("MI_SVM", "list"))
-}
-
-validate_MI_SVM <- function(x) {
-  if (!is.list(x)) {
-    stop("x should be a list!")
-    call. = FALSE
-  }
-  if (is.null(x$svm_mdl) | is.null(x$total_step) | is.null(x$representative_inst)) {
-    stop("x should contain 'svm_mdl', 'total_step', and 'representative_inst'")
-    call. = FALSE
-  }
-  x
-}
+# new_MI_SVM <- function(x = list()) {
+#   stopifnot(is.list(x))
+#
+#   structure(x, class = c("MI_SVM", "list"))
+# }
+#
+# validate_MI_SVM <- function(x) {
+#   if (!is.list(x)) {
+#     stop("x should be a list!")
+#     call. = FALSE
+#   }
+#   if (is.null(x$svm_mdl) | is.null(x$total_step) | is.null(x$representative_inst)) {
+#     stop("x should contain 'svm_mdl', 'total_step', and 'representative_inst'")
+#     call. = FALSE
+#   }
+#   x
+# }
 
 
 #' Prediction function for MI_SVM object

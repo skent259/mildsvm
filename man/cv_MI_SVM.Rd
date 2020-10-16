@@ -10,7 +10,7 @@ cv_MI_SVM(
   fold_id,
   cost_seq,
   kernel = "radial",
-  max.step = 500,
+  max_step = 500,
   type = "C-classification"
 )
 }
@@ -26,7 +26,7 @@ this.}
 
 \item{kernel}{The kernel function to be used for \code{e1071::svm}.}
 
-\item{max.step}{Maximum steps of iteration for the iterative SVM methods.}
+\item{max_step}{Maximum steps of iteration for the iterative SVM methods.}
 
 \item{type}{type that to be used for \code{e1071::svm}.}
 }
