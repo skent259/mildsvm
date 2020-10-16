@@ -86,8 +86,14 @@ misvm.formula <- function(formula, data, cost = 1, method = c("heuristic", "mip"
   #   or https://github.com/cran/e1071/blob/master/R/svm.R
   #   right now we're using something that should work for most generic formulas
 
-  x <- model.matrix(formula[-2], data = data)
-  if (attr(terms(formula), "intercept") == 1) x <- x[, -1, drop = FALSE]
+  mi_names <- as.character(terms(formula, data = data)[[2]])
+  bag_label <- mi_names[[2]]
+  bag_name <- mi_names[[3]]
+
+  predictors <- setdiff(colnames(data), c(bag_label, bag_name))
+
+  x <- model.matrix(formula[-2], data = data[, predictors])
+  if (attr(terms(formula, data = data), "intercept") == 1) x <- x[, -1, drop = FALSE]
   x <- as.data.frame(x)
 
   response <- get_all_vars(formula, data = data)
@@ -98,7 +104,7 @@ misvm.formula <- function(formula, data, cost = 1, method = c("heuristic", "mip"
 
   res$call_type <- "misvm.formula"
   res$formula <- formula
-  res$bag_name <- as.character(terms(formula)[[2]])[[3]]
+  res$bag_name <- bag_name
   return(res)
 }
 

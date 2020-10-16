@@ -162,5 +162,27 @@ test_that("predict.misvm returns labels that match the input labels", {
 
 })
 
+test_that("Dots work in misvm() formula", {
+  set.seed(8)
+  mil_data <- GenerateMilData(positive_dist = 'mvt',
+                              negative_dist = 'mvnormal',
+                              remainder_dist = 'mvnormal',
+                              nbag = 20,
+                              nsample = 20,
+                              positive_degree = 3,
+                              positive_prob = 0.15,
+                              positive_mean = rep(0, 5))
+
+  df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10)) %>%
+    select(bag_label, bag_name, X1_mean, X2_mean, X3_mean)
+
+  misvm_dot <- misvm(mi(bag_label, bag_name) ~ ., data = df1)
+  misvm_nodot <- misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean + X3_mean, data = df1)
+
+  expect_equal(misvm_dot$svm_mdl, misvm_nodot$svm_mdl)
+  expect_equal(misvm_dot$features, misvm_nodot$features)
+  expect_equal(misvm_dot$bag_name, misvm_nodot$bag_name)
+
+})
 
 
