@@ -13,22 +13,74 @@ validate_misvm <- function(x) {
   x
 }
 
-#' fit MI-SVM model to the data
+#' Fit MI-SVM model to the data
 #'
-#' Description
+#' This function fits the MI-SVM model, first proposed by Andrews et al. (2003).
+#'   It is a variation on the traditional SVM framework that carefully treats
+#'   data from the multiple instance learning paradigm, where instances are
+#'   grouped into bags, and a label is only available for each bag. Several
+#'   choices of fitting algorithm are available, including a version of the
+#'   heuristic algorithm proposed by Andrews et al. (2003) and a novel algorithm
+#'   that explicitly solves the mixed-integer programming (MIP) problem using
+#'   the `gurobi` optimization back-end.
 #'
+#' @param x a data.frame, matrix, or similar object of covariates, where each
+#'   row represents an instance.
+#' @param y a numeric, character, or factor vector of bag labels for each
+#'   instance.  Must satisfy `length(y) == nrow(x)`. Suggest that one of the
+#'   levels is 1, '1', of TRUE, which becomes the positive class in MI-SVM;
+#'   otherwise, a positive class is chosen and a message will be supplied.
+#' @param bags a vector specifying which instance belongs to each bag.  Can be
+#'   a string, numeric, of factor.
+#' @param formula a formula with specification `mi(y, bags) ~ x` which uses the
+#'   `mi` function to create the bag-instance structure. This argument is an
+#'   alternative to the `x, y, bags` arguments, but requires the `data` argument.
+#'   See examples.
+#' @param data a data.frame or similar from which formula elements will be
+#'   extracted.  Used only when the first argument is a formula object.
+#' @param cost The cost parameter in SVM. If `method` = 'heuristic', this will
+#'   be fed to `e1071::svm`, otherwise it is similarly in internal functions.
+#' @param method MI-SVM algorithm to use in fitting; default is 'heuristic',
+#'   which employs an algorithm similar to Andrews et al. (2003). When `method`
+#'   = 'mip', the novel MIP method will be used.  See details.
+#' @param weights named vector, or TRUE, to control the weight of the cost parameter
+#'   for each possible y value.  Weights multiply against the cost vector. If
+#'   TRUE, weights are calculated based on inverse counts of bags with given label.
+#'   Otherwise, names must match the levels of `y`.
+#' @param control list of additional parameters passed to the method that
+#'   control computation with the following components:
+#'   - `kernel` argument used when `method` = 'heuristic'.  The kernel function
+#'   to be used for `e1071::svm`.
+#'   - `max.step` argument used when `method` = 'heuristic'. Maximum steps of
+#'   iteration for the heuristic algorithm.
+#'   - `type` argument used when `method` = 'heuristic'. The `type` argument is
+#'   passed to `e1071::svm`.
+#'   - `scale` argument used for all methods. Logical; whether to rescale
+#'   the input before fitting
+#'   - `verbose` argument used when `method` = 'mip'. Whether to message output
+#'   to the console.
+#'   - `time_limit` argument used when `method` = 'mip'. FALSE, or a time limit
+#'   (in seconds) passed to `gurobi` parameters.  If FALSE< no time limit is
+#'   given.
+#'
+#' @author Sean Kent, Yifei Liu
 #' @name misvm
 NULL
 
 #' @export
-misvm <- function(x, y, bags, cost, kernel, method = c("heuristic", "mip"), ..., weights = TRUE) {
+misvm <- function(x, y, bags, ...) {
   UseMethod("misvm")
 }
 
 #' @describeIn misvm Method for passing formula
 #' @export
-misvm.formula <- function(formula, data, cost, kernel, method = c("heuristic", "mip"), ..., weights = TRUE) {
-  # TODO: implement this method
+misvm.formula <- function(formula, data, cost = 1, method = c("heuristic", "mip"), weights = TRUE,
+                          control = list(kernel = "radial",
+                                         max.step = 500,
+                                         type = "C-classification",
+                                         scale = TRUE,
+                                         verbose = FALSE,
+                                         time_limit = 60)) {
   # NOTE: other 'professional' functions use a different type of call that I
   #   couldn't get to work. See https://github.com/therneau/survival/blob/master/R/survfit.R
   #   or https://github.com/cran/e1071/blob/master/R/svm.R
@@ -42,7 +94,7 @@ misvm.formula <- function(formula, data, cost, kernel, method = c("heuristic", "
   y <- response[, 1]
   bags <- response[, 2]
 
-  res <- misvm.default(x, y, bags, cost = cost, kernel = kernel, method = method, ..., weights = weights)
+  res <- misvm.default(x, y, bags, cost = cost, method = method, weights = weights, control = control)
 
   res$call_type <- "misvm.formula"
   res$formula <- formula
@@ -52,9 +104,14 @@ misvm.formula <- function(formula, data, cost, kernel, method = c("heuristic", "
 
 #' @describeIn misvm Method for data.frame-like objects
 #' @export
-misvm.default <- function(x, y, bags, cost, kernel, method = c("heuristic", "mip"), ..., weights = TRUE) {
+misvm.default <- function(x, y, bags, cost = 1, method = c("heuristic", "mip"), weights = TRUE,
+                          control = list(kernel = "radial",
+                                         max.step = 500,
+                                         type = "C-classification",
+                                         scale = TRUE,
+                                         verbose = FALSE,
+                                         time_limit = 60)) {
 
-  dots <- list(...)
   method <- match.arg(method)
 
   # store the levels of y and convert to 0,1 numeric format.
@@ -75,31 +132,34 @@ misvm.default <- function(x, y, bags, cost, kernel, method = c("heuristic", "mip
 
   ## weights
   if (is.numeric(weights)) {
-    stopifnot(names(weights) == c("0", "1") | names(weights) == c("1", "0"))
-    # PASS
+    stopifnot(names(weights) == lev | names(weights) == rev(lev))
+    weights <- weights[lev]
+    names(weights) <- c("0", "1")
   } else if (weights) {
     bag_labels <- sapply(split(y, factor(bags)), unique)
-    weights <- c("0" = sum(bag_labels == 1) / sum(bag_labels == -1), "1" = 1)
+    weights <- c("0" = sum(bag_labels == 1) / sum(bag_labels == 0), "1" = 1)
   } else {
     weights <- NULL
   }
 
   if (method == "heuristic") {
-    if ("max.step" %ni% names(dots)) dots$max.step <- 500
-    if ("type" %ni% names(dots)) dots$type <- "C-classification"
-
     data <- cbind(bag_label = y,
                   bag_name = bags,
                   instance_name = as.character(1:length(y)),
                   x)
-    res <- MI_SVM(data, cost = cost, kernel = kernel,
-                  max.step = dots$max.step, type = dots$type)
+    res <- MI_SVM(data,
+                  cost = cost,
+                  kernel = control$kernel,
+                  max.step = control$max.step,
+                  type = control$type)
   } else if (method == "mip") {
-    if ("rescale" %ni% names(dots)) dots$rescale <- FALSE
-    if ("verbose" %ni% names(dots)) dots$verbose <- FALSE
-    if ("time_limit" %ni% names(dots)) dots$time_limit <- 60 # seconds
     y = 2*y - 1 # convert {0,1} to {-1, 1}
-    res <- misvm_mip(y, bags, x, c = cost, dots$rescale, weights, dots$verbose, dots$time_limit)
+    res <- misvm_mip(y, bags, x,
+                     c = cost,
+                     rescale = control$scale,
+                     weights = weights,
+                     verbose = control$verbose,
+                     time_limit = control$time_limit)
   } else {
     stop("misvm requires method = 'heuristic' or 'mip'.")
   }

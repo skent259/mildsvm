@@ -4,31 +4,88 @@
 \alias{misvm}
 \alias{misvm.formula}
 \alias{misvm.default}
-\title{fit MI-SVM model to the data}
+\title{Fit MI-SVM model to the data}
 \usage{
 \method{misvm}{formula}(
   formula,
   data,
-  cost,
-  kernel,
+  cost = 1,
   method = c("heuristic", "mip"),
-  ...,
-  weights = TRUE
+  weights = TRUE,
+  control = list(kernel = "radial", max.step = 500, type = "C-classification", scale =
+    TRUE, verbose = FALSE, time_limit = 60)
 )
 
 \method{misvm}{default}(
   x,
   y,
   bags,
-  cost,
-  kernel,
+  cost = 1,
   method = c("heuristic", "mip"),
-  ...,
-  weights = TRUE
+  weights = TRUE,
+  control = list(kernel = "radial", max.step = 500, type = "C-classification", scale =
+    TRUE, verbose = FALSE, time_limit = 60)
 )
 }
+\arguments{
+\item{formula}{a formula with specification \code{mi(y, bags) ~ x} which uses the
+\code{mi} function to create the bag-instance structure. This argument is an
+alternative to the \verb{x, y, bags} arguments, but requires the \code{data} argument.
+See examples.}
+
+\item{data}{a data.frame or similar from which formula elements will be
+extracted.  Used only when the first argument is a formula object.}
+
+\item{cost}{The cost parameter in SVM. If \code{method} = 'heuristic', this will
+be fed to \code{e1071::svm}, otherwise it is similarly in internal functions.}
+
+\item{method}{MI-SVM algorithm to use in fitting; default is 'heuristic',
+which employs an algorithm similar to Andrews et al. (2003). When \code{method}
+= 'mip', the novel MIP method will be used.  See details.}
+
+\item{weights}{named vector, or TRUE, to control the weight of the cost parameter
+for each possible y value.  Weights multiply against the cost vector. If
+TRUE, weights are calculated based on inverse counts of bags with given label.
+Otherwise, names must match the levels of \code{y}.}
+
+\item{control}{list of additional parameters passed to the method that
+control computation with the following components:
+\itemize{
+\item \code{kernel} argument used when \code{method} = 'heuristic'.  The kernel function
+to be used for \code{e1071::svm}.
+\item \code{max.step} argument used when \code{method} = 'heuristic'. Maximum steps of
+iteration for the heuristic algorithm.
+\item \code{type} argument used when \code{method} = 'heuristic'. The \code{type} argument is
+passed to \code{e1071::svm}.
+\item \code{scale} argument used for all methods. Logical; whether to rescale
+the input before fitting
+\item \code{verbose} argument used when \code{method} = 'mip'. Whether to message output
+to the console.
+\item \code{time_limit} argument used when \code{method} = 'mip'. FALSE, or a time limit
+(in seconds) passed to \code{gurobi} parameters.  If FALSE< no time limit is
+given.
+}}
+
+\item{x}{a data.frame, matrix, or similar object of covariates, where each
+row represents an instance.}
+
+\item{y}{a numeric, character, or factor vector of bag labels for each
+instance.  Must satisfy \code{length(y) == nrow(x)}. Suggest that one of the
+levels is 1, '1', of TRUE, which becomes the positive class in MI-SVM;
+otherwise, a positive class is chosen and a message will be supplied.}
+
+\item{bags}{a vector specifying which instance belongs to each bag.  Can be
+a string, numeric, of factor.}
+}
 \description{
-Description
+This function fits the MI-SVM model, first proposed by Andrews et al. (2003).
+It is a variation on the traditional SVM framework that carefully treats
+data from the multiple instance learning paradigm, where instances are
+grouped into bags, and a label is only available for each bag. Several
+choices of fitting algorithm are available, including a version of the
+heuristic algorithm proposed by Andrews et al. (2003) and a novel algorithm
+that explicitly solves the mixed-integer programming (MIP) problem using
+the \code{gurobi} optimization back-end.
 }
 \section{Methods (by class)}{
 \itemize{
@@ -37,3 +94,6 @@ Description
 \item \code{default}: Method for data.frame-like objects
 }}
 
+\author{
+Sean Kent, Yifei Liu
+}

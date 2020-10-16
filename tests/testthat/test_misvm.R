@@ -15,7 +15,7 @@ test_that("misvm() works for data-frame-like inputs", {
   mdl1 <- misvm.default(x = df1[, 4:123],
                         y = df1$bag_label,
                         bags = df1$bag_name,
-                        cost = 1, kernel = "radial", method = "mip")
+                        method = "mip")
 
   # mdl1
   expect_equal(
@@ -31,7 +31,7 @@ test_that("misvm() works for data-frame-like inputs", {
   mdl2 <- misvm.default(x = df1[, 4:123],
                         y = df1$bag_label,
                         bags = df1$bag_name,
-                        cost = 1, kernel = "radial", method = "heuristic")
+                        method = "heuristic")
 
   expect_equal(
     predict(mdl2, new_data = df1, type = "class", layer = "bag"),
@@ -69,12 +69,10 @@ test_that("misvm() works with formula method", {
 
   df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
 
-  mdl1 <- misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean + X3_mean, data = df1, cost = 1, kernel = "radial")
+  mdl1 <- misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean + X3_mean, data = df1)
   mdl2 <- misvm(x = df1[, c("X1_mean", "X2_mean", "X3_mean")],
                 y = df1$bag_label,
-                bags = df1$bag_name,
-                cost = 1,
-                kernel = "radial")
+                bags = df1$bag_name)
 
   expect_equal(mdl1$svm_mdl, mdl2$svm_mdl)
   expect_equal(mdl1$total_step, mdl2$total_step)
@@ -89,30 +87,31 @@ test_that("misvm() works with formula method", {
   predict(mdl1, df1, type = "class")
 
   # check only 1 predictor works
-  mdl1 <- misvm(mi(bag_label, bag_name) ~ X1_mean, data = df1, cost = 1, kernel = "radial")
+  mdl1 <- misvm(mi(bag_label, bag_name) ~ X1_mean, data = df1)
   predict(mdl1, df1, type = "raw")
 
   # check some obscure formulas
-  mdl1 <- misvm(mi(bag_label, bag_name) ~ 0 + X1_mean:X2_mean + X2_mean*X3_mean, data = df1, cost = 1, kernel = "radial")
+  mdl1 <- misvm(mi(bag_label, bag_name) ~ 0 + X1_mean:X2_mean + X2_mean*X3_mean, data = df1)
   expect_equal(mdl1$features,
                colnames(model.matrix(~ 0 + X1_mean:X2_mean + X2_mean*X3_mean, data = df1)))
   predict(mdl1, df1, type = "raw")
 
   # check for mip method
-  mdl1 <- misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean + X3_mean, data = df1, cost = 1, kernel = "radial", method = "mip")
+  mdl1 <- misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean + X3_mean, data = df1, method = "mip")
 
 
 })
 
-test_that("predict.misvm returns lables that match the input labels", {
+test_that("predict.misvm returns labels that match the input labels", {
   test_prediction_levels_equal <- function(df, method, class = "default") {
     mdl <- switch(class,
                   "default" = misvm(x = df[, 4:123],
                                     y = df$bag_label,
                                     bags = df$bag_name,
-                                    cost = 1, kernel = "radial", method = method),
+                                    method = method),
                   "formula" = misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean,
-                                    data = df2, cost = 1, kernel = "radial"))
+                                    data = df2,
+                                    method = method))
     preds <- predict(mdl, df, type = "class")
     expect_setequal(levels(preds$.pred_class), levels(df$bag_label))
   }
@@ -156,8 +155,8 @@ test_that("predict.misvm returns lables that match the input labels", {
   # check that 0/1 and 1/0 return the same predictions
   df2 <- df1 %>% mutate(bag_label = factor(bag_label, levels = c(0, 1)))
   df3 <- df1 %>% mutate(bag_label = factor(bag_label, levels = c(1, 0)))
-  mdl2 <- misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean, data = df2, cost = 1, kernel = "radial")
-  mdl3 <- misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean, data = df3, cost = 1, kernel = "radial")
+  mdl2 <- misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean, data = df2)
+  mdl3 <- misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean, data = df3)
   expect_equal(predict(mdl2, df2, type = "class"),
                predict(mdl3, df3, type = "class"))
 
