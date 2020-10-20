@@ -94,6 +94,42 @@ the \code{gurobi} optimization back-end.
 \item \code{default}: Method for data.frame-like objects
 }}
 
+\examples{
+set.seed(8)
+mil_data <- GenerateMilData(
+  positive_dist = 'mvt',
+  negative_dist = 'mvnormal',
+  remainder_dist = 'mvnormal',
+  nbag = 20,
+  nsample = 20,
+  positive_degree = 3,
+  positive_prob = 0.15,
+  positive_mean = rep(0, 5)
+)
+df <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
+
+# Heuristic method
+mdl1 <- misvm(x = df[, 4:123], y = df$bag_label,
+              bags = df$bag_name, method = "heuristic")
+mdl2 <- misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean + X3_mean, data = df)
+
+if (require(gurobi)) {
+  # solve using the MIP method
+  mdl3 <- misvm(x = df[, 4:123], y = df$bag_label,
+                bags = df$bag_name, method = "mip")
+}
+
+predict(mdl1, new_data = df, type = "raw", layer = "bag")
+
+# summarize predictions at the bag layer
+library(dplyr)
+df \%>\%
+  bind_cols(predict(mdl2, df1, type = "class")) \%>\%
+  bind_cols(predict(mdl2, df1, type = "raw")) \%>\%
+  distinct(bag_name, bag_label, .pred_class, .pred)
+
+
+}
 \author{
 Sean Kent, Yifei Liu
 }
