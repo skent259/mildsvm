@@ -33,3 +33,4 @@ Internal function to build an optimization model (that can be passed to
 \author{
 Sean Kent
 }
+\keyword{internal}

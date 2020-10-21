@@ -107,7 +107,7 @@ select_cv_folds <- function(data, n_fold, fold_id) {
   bag_info <- unique(data[, c("bag_label", "bag_name")])
   if (missing(fold_id)) {
     if (missing(n_fold))
-      n_fold = 5
+      n_fold <- 5
 
     positive_bag_idx <- which(bag_info$bag_label == 1)
     negative_bag_idx <- which(bag_info$bag_label == 0)
@@ -130,4 +130,71 @@ select_cv_folds <- function(data, n_fold, fold_id) {
       stop("The argument fold_id has some 'holes'!")
   }
   return(list(n_fold = n_fold, fold_id = fold_id))
+}
+
+#' Function that will eventually supercede select_cv_folds because it supports
+#' the same variables at the new function interface.
+#' @keywords internal
+select_cv_folds2 <- function(y, bags, n_fold, fold_id) {
+
+  info <- data.frame(y = y, bags = bags)
+  info_bag_layer <- unique(info)
+
+  if (missing(fold_id)) {
+    if (missing(n_fold))
+      n_fold <- 5
+
+    positive_bag_idx <- which(info_bag_layer$y == 1)
+    negative_bag_idx <- which(info_bag_layer$y == 0)
+    positive_fold_id <- base::sample((1:length(positive_bag_idx))%%n_fold + 1)
+    negative_fold_id <- base::sample((1:length(negative_bag_idx))%%n_fold + 1)
+
+    bag_id <- numeric(nrow(info_bag_layer))
+    bag_id[positive_bag_idx] <- positive_fold_id
+    bag_id[negative_bag_idx] <- negative_fold_id
+    info_bag_layer$bag_id <- bag_id
+
+    tmp <- info %>%
+      dplyr::left_join(info_bag_layer, by = c("bags", "y"))
+
+    fold_id <- tmp$bag_id
+    # fold_id <- temp_data$bag_id  ## now fold_id is of length(unique(data$instance_name))
+  } else {
+    n_fold <- max(fold_id)
+    if (!is.null(setdiff(fold_id, 1:n_fold)))
+      stop("The argument fold_id has some 'holes'!")
+  }
+  return(list(n_fold = n_fold, fold_id = fold_id))
+}
+
+x_from_formula <- function(formula, data) {
+  mi_names <- as.character(terms(formula, data = data)[[2]])
+  bag_label <- mi_names[[2]]
+  bag_name <- mi_names[[3]]
+  predictors <- setdiff(colnames(data), c(bag_label, bag_name))
+
+  x <- model.matrix(formula[-2], data = data[, predictors])
+  if (attr(terms(formula, data = data), "intercept") == 1) x <- x[, -1, drop = FALSE]
+  x <- as.data.frame(x)
+}
+
+#' Store the levels of y and convert to 0,1 numeric format.
+#' @keywords internal
+#' @author Sean Kent
+convert_y <- function(y) {
+  y <- factor(y)
+  lev <- levels(y)
+  if (length(lev) == 1) {
+    stop(paste0("Response y has only one level, ", lev, ", cannot perform misvm fitting."))
+  } else if (length(lev) > 2) {
+    stop(paste0("Response y has more than two levels, ", lev, ", cannot perform misvm fitting."))
+  }
+  if (lev[1] == 1 | lev[1] == "1" | lev[1] == TRUE) {
+    lev <- rev(lev)
+    y <- factor(y, levels = lev) # make sure 1 is second level
+  } else if (lev[2] != 1 & lev[2] != "1" & lev[2] != TRUE) {
+    message(paste0("Setting level ", lev[2], " to be the positive class for misvm fitting."))
+  } # else lev[2] is like 1, keep it that way.
+  y <- as.numeric(y) - 1
+  list(y = y, lev = lev)
 }

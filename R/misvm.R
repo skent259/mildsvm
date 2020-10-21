@@ -1,6 +1,6 @@
-new_misvm <- function(x = list(), method = "mip") {
+new_misvm <- function(x = list(), method = c("mip", "heuristic")) {
   stopifnot(is.list(x))
-  method <- match.arg(method, c("mip", "heuristic"))
+  method <- match.arg(method)
   structure(
     x,
     class = "misvm",
@@ -63,6 +63,20 @@ validate_misvm <- function(x) {
 #'   (in seconds) passed to `gurobi` parameters.  If FALSE< no time limit is
 #'   given.
 #'
+#' @return an object of class 'misvm'.  The object contains the following
+#'   components:
+#'   - `model`: a model that will depend on the method used to fit.  It holds
+#'   the main model components used for prediction.  If the model is fit with
+#'   method = 'heuristic', this object is of class 'svm' from the package
+#'   `e1071`.
+#'   - `representative_inst`: Instances from positive bags that are selected to
+#'   be most representative of the positive instance.
+#'   - `features`: the features used for prediction.  These are needed for
+#'   prediction.
+#'   - `call_type`: the call type, which specifies whether `misvm()` was called
+#'   via the formula or data.frame method.
+#'   - `levels`: levels of `y` that are recorded for future prediction.
+#'
 #' @examples
 #' set.seed(8)
 #' mil_data <- GenerateMilData(
@@ -93,8 +107,8 @@ validate_misvm <- function(x) {
 #' # summarize predictions at the bag layer
 #' library(dplyr)
 #' df %>%
-#'   bind_cols(predict(mdl2, df1, type = "class")) %>%
-#'   bind_cols(predict(mdl2, df1, type = "raw")) %>%
+#'   bind_cols(predict(mdl2, df, type = "class")) %>%
+#'   bind_cols(predict(mdl2, df, type = "raw")) %>%
 #'   distinct(bag_name, bag_label, .pred_class, .pred)
 #'
 #'
@@ -122,15 +136,9 @@ misvm.formula <- function(formula, data, cost = 1, method = c("heuristic", "mip"
   #   right now we're using something that should work for most generic formulas
 
   mi_names <- as.character(terms(formula, data = data)[[2]])
-  bag_label <- mi_names[[2]]
   bag_name <- mi_names[[3]]
 
-  predictors <- setdiff(colnames(data), c(bag_label, bag_name))
-
-  x <- model.matrix(formula[-2], data = data[, predictors])
-  if (attr(terms(formula, data = data), "intercept") == 1) x <- x[, -1, drop = FALSE]
-  x <- as.data.frame(x)
-
+  x <- x_from_formula(formula, data)
   response <- get_all_vars(formula, data = data)
   y <- response[, 1]
   bags <- response[, 2]
@@ -162,20 +170,9 @@ misvm.default <- function(x, y, bags, cost = 1, method = c("heuristic", "mip"), 
   if ("time_limit" %ni% names(control)) control$time_limit <- 60
 
   # store the levels of y and convert to 0,1 numeric format.
-  y <- factor(y)
-  lev <- levels(y)
-  if (length(lev) == 1) {
-    stop(paste0("Response y has only one level, ", lev, ", cannot perform misvm fitting."))
-  } else if (length(lev) > 2) {
-    stop(paste0("Response y has more than two levels, ", lev, ", cannot perform misvm fitting."))
-  }
-  if (lev[1] == 1 | lev[1] == "1" | lev[1] == TRUE) {
-    lev <- rev(lev)
-    y <- factor(y, levels = lev) # make sure 1 is second level
-  } else if (lev[2] != 1 & lev[2] != "1" & lev[2] != TRUE) {
-    message(paste0("Setting level ", lev[2], " to be the positive class for misvm fitting."))
-  } # else lev[2] is like 1, keep it that way.
-  y <- as.numeric(y) - 1
+  y_info <- convert_y(y)
+  y <- y_info$y
+  lev <- y_info$lev
 
   ## weights
   if (is.numeric(weights)) {
@@ -273,17 +270,13 @@ predict.misvm <- function(object, new_data,
   method <- attr(object, "method")
 
   if (object$call_type == "misvm.formula") {
-    new_x <- model.matrix(object$formula[-2], data = new_data)
-    if (attr(terms(object$formula), "intercept") == 1) new_x <- new_x[, -1, drop = FALSE]
-    new_x <- as.data.frame(new_x)
+    new_x <- x_from_formula(object$formula, new_data)
   } else {
     new_x <- new_data[, object$features, drop = FALSE]
   }
 
-
-
   if (method == "heuristic") {
-    pos <- predict(object = object$svm_mdl, newdata = new_x, decision.values = TRUE)
+    pos <- predict(object = object$model, newdata = new_x, decision.values = TRUE)
     scores <- attr(pos, "decision.values")
     pos <- as.numeric(as.character(pos))
 
@@ -307,7 +300,7 @@ predict.misvm <- function(object, new_data,
     scores <- classify_bags(scores, bags, condense = FALSE)
     pos <- classify_bags(pos, bags, condense = FALSE)
   }
-  pos <- factor(pos, levels = c(0, 1), labels = object$levels) # TODO: adjust this to accept any labels, passed from model object
+  pos <- factor(pos, levels = c(0, 1), labels = object$levels)
 
   res <- switch(type,
                 "raw" = tibble::tibble(.pred = as.numeric(scores)),
@@ -360,6 +353,9 @@ predict.misvm <- function(object, new_data,
 #'   - `representative_inst`: NULL, TODO: mesh with other misvm method
 #'   - `traindata`: NULL, TODO: mesh with other misvm method
 #'   - `useful_inst_idx`: NULL, TODO: mesh with other misvm method
+#'
+#' @author Sean Kent
+#' @keywords internal
 misvm_mip_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
                              verbose = FALSE, time_limit = FALSE) {
   # TODO: maybe change function call to y, X, bags?
@@ -411,6 +407,7 @@ misvm_mip_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
 #'   problem defined by MI-SVM in Andrews et al. (2003)
 #'
 #' @author Sean Kent
+#' @keywords internal
 misvm_mip_model <- function(y, bags, X, c, weights = NULL) {
   L <- 1e0 * sum(abs(X))
   # TODO: check that y has only -1 and 1
@@ -478,59 +475,6 @@ misvm_mip_model <- function(y, bags, X, c, weights = NULL) {
   return(model)
 }
 
-#' Fit a Cross-Validated MI-SVM model based on full MIP problem
-#'
-#' Function to run the gurobi model to train MI-SVM problem.  The hyperparameter
-#'  C is chosen through cross-validation.  Cross-validation is done over the
-#'  bags and evaluated based on bag AUC.
-#'
-#' @inheritParams misvm_mip_fit
-#' @param fold_id a vector indicating which instances belong in each fold for
-#'   cross validation.
-#' @param cost_seq vector of values of c to perform cross vailidation over.  C is
-#'   the penalty term on the sum of Xi in the objective function
-#' @return `cv_misvm_mip()` returns an object of class `"misvm"`.
-#' An object of class "misvm" is a list containing at least the following components:
-#' `w` a named weight vector matching the number of columns of X
-cv_misvm_mip <- function(y, bags, X, fold_id, cost_seq = 2^(-5:15),
-                                rescale = TRUE, verbose = FALSE, time_limit = FALSE) {
-
-  n_fold <- max(fold_id)
-  bag_labels <- sapply(split(y, factor(bags)), unique)
-  weights <- c("0" = sum(bag_labels == 1) / sum(bag_labels == -1), "1" = 1)
-
-  AUCs <- numeric(length(cost_seq))
-  for (C in 1:length(cost_seq)) {
-    auc_sum <- 0
-    for (fold in 1:n_fold) {
-      ind <- fold_id != fold
-
-      model_i_fold <- misvm_mip_fit(y[ind], bags[ind], X[ind, , drop = FALSE], cost_seq[C],
-                                       rescale = rescale, verbose = verbose, time_limit = time_limit)
-      pred_scores <- predict(model_i_fold, newX = X[!ind, , drop = FALSE], type = "score")
-
-      auc_fold <- pROC::auc(pROC::roc(response = classify_bags(y[!ind], bags[!ind]),
-                                      predictor = classify_bags(pred_scores, bags[!ind])))
-      auc_sum <- auc_sum + auc_fold
-    }
-    AUCs[C] <- auc_sum/n_fold
-  }
-
-  bestC <- cost_seq[which.max(AUCs)]
-  misvm_fit <- misvm_mip_fit(y, bags, X, bestC, rescale = rescale,
-                                verbose = verbose, time_limit = time_limit)
-
-  # TODO: fix this output
-  res <- new_misvm(list(model = misvm_fit$model,
-                        total_step = NULL,
-                        representative_inst = misvm_fit$representative_inst,
-                        traindata = misvm_fit$traindata,
-                        useful_inst_idx = misvm_fit$useful_inst_idx))
-  return(list(BestMdl = res, BestC = bestC, AUCs = AUCs, cost_seq = cost_seq))
-}
-
-
-
 #' INTERNAL MI-SVM algorithm implementation in R
 #'
 #' This function implements the MI-SVM algorithm proposed by Andrews et al (2003)
@@ -553,6 +497,7 @@ cv_misvm_mip <- function(y, bags, X, fold_id, cost_seq = 2^(-5:15),
 #' mdl <- MI_SVM(data = df1, cost = 1, kernel = 'radial')
 #' @importFrom e1071 svm
 #' @author Yifei Liu
+#' @keywords internal
 misvm_heuristic_fit <- function(data, cost, weights, kernel = "radial",
                                 max_step = 500, type = "C-classification",
                                 scale = TRUE) {
@@ -601,11 +546,11 @@ misvm_heuristic_fit <- function(data, cost, weights, kernel = "radial",
   step <- 1
   while (step < max_step) {
 
-    svm_model <- e1071::svm(x = sample_instance, y = sample_label,
+    model <- e1071::svm(x = sample_instance, y = sample_label,
                             class.weights = weights, cost = cost,
                             kernel = kernel, scale = scale,
                             type = type)
-    pred_all_inst <- predict(object = svm_model, newdata = data[, -(1:3), drop = FALSE], decision.values = TRUE)
+    pred_all_inst <- predict(object = model, newdata = data[, -(1:3), drop = FALSE], decision.values = TRUE)
     pred_all_score <- attr(pred_all_inst, "decision.values")
     ## update sample
     idx <- 1
@@ -649,56 +594,8 @@ misvm_heuristic_fit <- function(data, cost, weights, kernel = "radial",
     step <- step + 1
     past_selection[, step] <- selection
   }
-  return(list(svm_mdl = svm_model, total_step = step,
+  return(list(model = model, total_step = step,
               representative_inst = cbind(positive_bag_name, selection)))
-}
-
-#' Cross-validation function for MI_SVM
-#'
-#' Cross-validation function for MI_SVM.
-#'
-#' @inheritParams misvm_heuristic_fit
-#' @inheritParams cv_mildsvm
-#' @return A list that contains best model, optimal cost value, the AUCs, and the cost sequence.
-#' @examples
-#' MilData1 <- GenerateMilData(positive_dist = 'mvt',
-#'                             negative_dist = 'mvnormal',
-#'                             remainder_dist = 'mvnormal',
-#'                             nbag = 50,
-#'                             nsample = 20,
-#'                             positive_degree = 3,
-#'                             positive_prob = 0.15,
-#'                             positive_mean = rep(0, 5))
-#' df1 <- build_instance_feature(MilData1, seq(0.05, 0.95, length.out = 10))
-#' foo_cv <- cv_MI_SVM(data = df1, n_fold = 3, cost_seq = 2^(-2:2))
-#' @export
-#' @author Yifei Liu
-cv_MI_SVM <- function(data, n_fold, fold_id, cost_seq, kernel = "radial",
-                      max_step = 500, type = "C-classification") {
-  bag_info <- unique(data[, c("bag_label", "bag_name"), drop = FALSE])
-
-  fold_info <- select_cv_folds(data, n_fold, fold_id)
-  fold_id <- fold_info$fold_id
-
-  AUCs <- numeric(length(cost_seq))
-  for (C in 1:length(cost_seq)) {
-    temp_auc <- 0
-    for (i in 1:n_fold) {
-      data_train <- data[fold_id != i, , drop = FALSE]
-      data_valid <- data[fold_id == i, , drop = FALSE]
-      mdl <- misvm_heuristic_fit(data = data_train, cost = cost_seq[C], kernel = kernel,
-                    max_step = max_step, type = type)
-      predictions_i <- predict(object = mdl, newdata = data_valid,
-                               true_bag_info = unique(data_valid[, 1:2, drop = FALSE]))
-      temp_auc <- temp_auc + predictions_i$AUC
-    }
-    AUCs[C] <- temp_auc/n_fold
-  }
-
-  bestC <- cost_seq[which.max(AUCs)]
-  BestMdl <- misvm_heuristic_fit(data = data, cost = bestC, kernel = kernel, max_step = max_step,
-                    type = type)
-  return(list(BestMdl = BestMdl, BestC = bestC, AUCs = AUCs, cost_seq = cost_seq))
 }
 
 

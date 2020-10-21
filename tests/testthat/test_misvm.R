@@ -74,7 +74,7 @@ test_that("misvm() works with formula method", {
                 y = df1$bag_label,
                 bags = df1$bag_name)
 
-  expect_equal(mdl1$svm_mdl, mdl2$svm_mdl)
+  expect_equal(mdl1$model, mdl2$model)
   expect_equal(mdl1$total_step, mdl2$total_step)
   expect_equal(mdl1$call_type, "misvm.formula")
   expect_equal(mdl1$features, c("X1_mean", "X2_mean", "X3_mean"))
@@ -179,9 +179,11 @@ test_that("Dots work in misvm() formula", {
   misvm_dot <- misvm(mi(bag_label, bag_name) ~ ., data = df1)
   misvm_nodot <- misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean + X3_mean, data = df1)
 
-  expect_equal(misvm_dot$svm_mdl, misvm_nodot$svm_mdl)
+  expect_equal(misvm_dot$model, misvm_nodot$model)
   expect_equal(misvm_dot$features, misvm_nodot$features)
   expect_equal(misvm_dot$bag_name, misvm_nodot$bag_name)
+
+  expect_equal(predict(misvm_dot, new_data = df1), predict(misvm_nodot, new_data = df1))
 
 })
 
@@ -220,12 +222,12 @@ test_that("misvm() has correct argument handling", {
   df2 <- df1 %>% mutate(bag_label = factor(bag_label, labels = c("No", "Yes")))
   dimnames(df2) <- dimnames(df1)
   expect_equal(
-    misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 2, "1" = 1))$svm_mdl,
-    misvm(mi(bag_label, bag_name) ~ ., data = df2, weights = c("No" = 2, "Yes" = 1))$svm_mdl
+    misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 2, "1" = 1))$model,
+    misvm(mi(bag_label, bag_name) ~ ., data = df2, weights = c("No" = 2, "Yes" = 1))$model
   )
   expect_equal(
-    misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 2, "1" = 1), method = "mip")$svm_mdl,
-    misvm(mi(bag_label, bag_name) ~ ., data = df2, weights = c("No" = 2, "Yes" = 1), method = "mip")$svm_mdl
+    misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 2, "1" = 1), method = "mip")$model,
+    misvm(mi(bag_label, bag_name) ~ ., data = df2, weights = c("No" = 2, "Yes" = 1), method = "mip")$model
   )
 
   ## kernel

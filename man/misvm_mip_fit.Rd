@@ -65,3 +65,7 @@ Function to train an MI-SVM classifier based on the full
 specification of the Mixed Integer Programming (MIP) problem.  The optimization
 problem is solved using the \code{gurobi} R package through the Gurobi backend.
 }
+\author{
+Sean Kent
+}
+\keyword{internal}

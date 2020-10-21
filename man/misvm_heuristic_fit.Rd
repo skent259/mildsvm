@@ -46,3 +46,4 @@ mdl <- MI_SVM(data = df1, cost = 1, kernel = 'radial')
 \author{
 Yifei Liu
 }
+\keyword{internal}
