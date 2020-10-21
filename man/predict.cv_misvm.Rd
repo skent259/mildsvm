@@ -61,8 +61,8 @@ predict(mdl1, new_data = df1, type = "raw", layer = "bag")
 # summarize predictions at the bag layer
 library(dplyr)
 df1 \%>\%
-  bind_cols(predict(mdl2, df1, type = "class")) \%>\%
-  bind_cols(predict(mdl2, df1, type = "raw")) \%>\%
+  bind_cols(predict(mdl2, df, type = "class")) \%>\%
+  bind_cols(predict(mdl2, df, type = "raw")) \%>\%
   distinct(bag_name, bag_label, .pred_class, .pred)
 
 }

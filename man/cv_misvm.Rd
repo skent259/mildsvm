@@ -133,6 +133,9 @@ df <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
 cost_seq <- 2^seq(-5, 7, length.out = 5)
 
 # Heuristic method
+mdl1 <- cv_misvm(x = df[, 4:123], y = df$bag_label,
+                 bags = df$bag_name, cost_seq = cost_seq,
+                 n_fold = 3, method = "heuristic")
 mdl2 <- cv_misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean + X3_mean, data = df,
                  cost_seq = cost_seq, n_fold = 3)
 

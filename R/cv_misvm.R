@@ -58,9 +58,9 @@ validate_cv_misvm <- function(x) {
 #' cost_seq <- 2^seq(-5, 7, length.out = 5)
 #'
 #' # Heuristic method
-# mdl1 <- cv_misvm(x = df[, 4:123], y = df$bag_label,
-#                  bags = df$bag_name, cost_seq = cost_seq,
-#                  n_fold = 3, method = "heuristic")
+#' mdl1 <- cv_misvm(x = df[, 4:123], y = df$bag_label,
+#'                  bags = df$bag_name, cost_seq = cost_seq,
+#'                  n_fold = 3, method = "heuristic")
 #' mdl2 <- cv_misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean + X3_mean, data = df,
 #'                  cost_seq = cost_seq, n_fold = 3)
 #'
@@ -237,8 +237,8 @@ cv_misvm.default <- function(x, y, bags, cost_seq, n_fold, fold_id,
 #' # summarize predictions at the bag layer
 #' library(dplyr)
 #' df1 %>%
-#'   bind_cols(predict(mdl2, df1, type = "class")) %>%
-#'   bind_cols(predict(mdl2, df1, type = "raw")) %>%
+#'   bind_cols(predict(mdl2, df, type = "class")) %>%
+#'   bind_cols(predict(mdl2, df, type = "raw")) %>%
 #'   distinct(bag_name, bag_label, .pred_class, .pred)
 #'
 #' @export
