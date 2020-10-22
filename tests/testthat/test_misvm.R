@@ -11,13 +11,13 @@ test_that("misvm() works for data-frame-like inputs", {
                               positive_prob = 0.15,
                               positive_mean = rep(0, 5))
 
+  # mip method
   df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
   mdl1 <- misvm.default(x = df1[, 4:123],
                         y = df1$bag_label,
                         bags = df1$bag_name,
                         method = "mip")
 
-  # mdl1
   expect_equal(
     predict(mdl1, new_data = df1, type = "class", layer = "bag"),
     predict(mdl1, new_data = df1, type = "class", layer = "bag", new_bags = df1$bag_name)
@@ -27,7 +27,7 @@ test_that("misvm() works for data-frame-like inputs", {
   predict(mdl1, new_data = df1, type = "raw", layer = "bag")
   predict(mdl1, new_data = df1, type = "raw", layer = "instance")
 
-
+  # heuristic method
   mdl2 <- misvm.default(x = df1[, 4:123],
                         y = df1$bag_label,
                         bags = df1$bag_name,
@@ -52,6 +52,23 @@ test_that("misvm() works for data-frame-like inputs", {
 
   expect_equal(nrow(bag_preds), length(unique(df1$bag_name)))
   expect_setequal(bag_preds$bag_name, unique(df1$bag_name))
+
+  # qp-heuristic method
+  mdl3 <- misvm.default(x = df1[, 4:123],
+                        y = df1$bag_label,
+                        bags = df1$bag_name,
+                        method = "qp-heuristic")
+
+  expect_equal(
+    predict(mdl3, new_data = df1, type = "class", layer = "bag"),
+    predict(mdl3, new_data = df1, type = "class", layer = "bag", new_bags = df1$bag_name)
+  )
+
+  predict(mdl3, new_data = df1, type = "class", layer = "bag")
+  predict(mdl3, new_data = df1, type = "class", layer = "instance")
+  predict(mdl3, new_data = df1, type = "raw", layer = "bag")
+  predict(mdl3, new_data = df1, type = "raw", layer = "instance")
+
 
 })
 
@@ -99,6 +116,8 @@ test_that("misvm() works with formula method", {
   # check for mip method
   mdl1 <- misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean + X3_mean, data = df1, method = "mip")
 
+  # check for qp-heuristic method
+  mdl1 <- misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean + X3_mean, data = df1, method = "qp-heuristic")
 
 })
 
@@ -132,24 +151,28 @@ test_that("predict.misvm returns labels that match the input labels", {
   df2 <- df1 %>% mutate(bag_label = factor(bag_label))
   test_prediction_levels_equal(df2, method = "heuristic")
   test_prediction_levels_equal(df2, method = "mip")
+  test_prediction_levels_equal(df2, method = "qp-heuristic")
   test_prediction_levels_equal(df2, method = "heuristic", class = "formula")
 
   # 1/0
   df2 <- df1 %>% mutate(bag_label = factor(bag_label, levels = c(1, 0)))
   test_prediction_levels_equal(df2, method = "heuristic")
   test_prediction_levels_equal(df2, method = "mip")
+  test_prediction_levels_equal(df2, method = "qp-heuristic")
   test_prediction_levels_equal(df2, method = "heuristic", class = "formula")
 
   # TRUE/FALSE
   df2 <- df1 %>% mutate(bag_label = factor(bag_label, labels = c(TRUE, FALSE)))
   test_prediction_levels_equal(df2, method = "heuristic")
   test_prediction_levels_equal(df2, method = "mip")
+  test_prediction_levels_equal(df2, method = "qp-heuristic")
   test_prediction_levels_equal(df2, method = "heuristic", class = "formula")
 
   # Yes/No
   df2 <- df1 %>% mutate(bag_label = factor(bag_label, labels = c("No", "Yes")))
   expect_message(test_prediction_levels_equal(df2, method = "heuristic"))
   expect_message(test_prediction_levels_equal(df2, method = "mip"))
+  test_prediction_levels_equal(df2, method = "qp-heuristic")
   test_prediction_levels_equal(df2, method = "heuristic", class = "formula")
 
   # check that 0/1 and 1/0 return the same predictions
@@ -229,6 +252,15 @@ test_that("misvm() has correct argument handling", {
     misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 2, "1" = 1), method = "mip")$model,
     misvm(mi(bag_label, bag_name) ~ ., data = df2, weights = c("No" = 2, "Yes" = 1), method = "mip")$model
   )
+
+  expect_false(isTRUE(all.equal(
+    misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 2, "1" = 1), method = "mip")$model,
+    misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 1e-6, "1" = 1), method = "mip")$model
+  )))
+  expect_false(isTRUE(all.equal(
+    misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 2, "1" = 1), method = "qp-heuristic")$model,
+    misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 1e-6, "1" = 1), method = "qp-heuristic")$model
+  )))
 
   ## kernel
   expect_false(isTRUE(all.equal(

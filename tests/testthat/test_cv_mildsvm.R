@@ -72,7 +72,33 @@ test_that("cv_misvm() works for data-frame-like inputs", {
   pROC::auc(response = pred_bag$bag_label, predictor = pred_bag$.pred)
   expect_equal(dim(pred_bag), c(20, 4))
   expect_equal(round(pred_bag$.pred[1:5], 4),
-               c(0.3831, -0.8246, -0.5646, 2.1066,  0.4685))
+               c( 0.6293, -0.6668, -0.6176,  1.8590,  0.4452))
+  expect_equal(round(as.numeric(pROC::auc(response = pred_bag$bag_label, predictor = pred_bag$.pred)), 4),
+               1.000)
+
+  # qp-heuristic
+  set.seed(8)
+  model <- cv_misvm(x = df1[, 4:123],
+                    y = df1$bag_label,
+                    bags = df1$bag_name,
+                    n_fold = 3,
+                    cost_seq = 2^seq(-5, 7, length.out = 5),
+                    method = "qp-heuristic")
+
+  pred <-
+    df_test %>%
+    bind_cols(predict(model, new_data = df_test)) %>%
+    bind_cols(predict(model, new_data = df_test, type = "raw"))
+
+  pred_bag <-
+    pred %>%
+    group_by(bag_name) %>%
+    distinct(bag_label, .pred, .pred_class)
+
+  pROC::auc(response = pred_bag$bag_label, predictor = pred_bag$.pred)
+  expect_equal(dim(pred_bag), c(20, 4))
+  expect_equal(round(pred_bag$.pred[1:5], 4),
+               c(-0.0197, -0.5313, -0.3722,  1.3680,  0.2570))
   expect_equal(round(as.numeric(pROC::auc(response = pred_bag$bag_label, predictor = pred_bag$.pred)), 4),
                1.000)
 

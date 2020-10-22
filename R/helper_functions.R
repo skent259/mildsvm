@@ -174,7 +174,7 @@ x_from_formula <- function(formula, data) {
   predictors <- setdiff(colnames(data), c(bag_label, bag_name))
 
   x <- model.matrix(formula[-2], data = data[, predictors])
-  if (attr(terms(formula, data = data), "intercept") == 1) x <- x[, -1, drop = FALSE]
+  if (attr(stats::terms(formula, data = data), "intercept") == 1) x <- x[, -1, drop = FALSE]
   x <- as.data.frame(x)
 }
 

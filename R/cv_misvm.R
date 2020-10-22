@@ -1,4 +1,4 @@
-new_cv_misvm <- function(x = list(), method = c("mip", "heuristic")) {
+new_cv_misvm <- function(x = list(), method = c("heuristic", "mip", "qp-heuristic")) {
   stopifnot(is.list(x))
   method <- match.arg(method)
   structure(
@@ -92,7 +92,7 @@ cv_misvm <- function(x, y, bags, ...) {
 #' @describeIn cv_misvm Method for passing formula
 #' @export
 cv_misvm.formula <- function(formula, data, cost_seq, n_fold, fold_id,
-                             method = c("heuristic", "mip"), weights = TRUE,
+                             method = c("heuristic", "mip", "qp-heuristic"), weights = TRUE,
                              control = list(kernel = "radial",
                                             max_step = 500,
                                             type = "C-classification",
@@ -100,17 +100,17 @@ cv_misvm.formula <- function(formula, data, cost_seq, n_fold, fold_id,
                                             verbose = FALSE,
                                             time_limit = 60)) {
 
-  mi_names <- as.character(terms(formula, data = data)[[2]])
+  mi_names <- as.character(stats::terms(formula, data = data)[[2]])
   bag_label <- mi_names[[2]]
   bag_name <- mi_names[[3]]
 
   predictors <- setdiff(colnames(data), c(bag_label, bag_name))
 
   x <- model.matrix(formula[-2], data = data[, predictors])
-  if (attr(terms(formula, data = data), "intercept") == 1) x <- x[, -1, drop = FALSE]
+  if (attr(stats::terms(formula, data = data), "intercept") == 1) x <- x[, -1, drop = FALSE]
   x <- as.data.frame(x)
 
-  response <- get_all_vars(formula, data = data)
+  response <- stats::get_all_vars(formula, data = data)
   y <- response[, 1]
   bags <- response[, 2]
 
@@ -130,7 +130,7 @@ cv_misvm.formula <- function(formula, data, cost_seq, n_fold, fold_id,
 #' @describeIn cv_misvm Method for data.frame-like objects
 #' @export
 cv_misvm.default <- function(x, y, bags, cost_seq, n_fold, fold_id,
-                          method = c("heuristic", "mip"), weights = TRUE,
+                          method = c("heuristic", "mip", "qp-heuristic"), weights = TRUE,
                           control = list(kernel = "radial",
                                          max_step = 500,
                                          type = "C-classification",

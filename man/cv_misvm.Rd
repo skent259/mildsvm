@@ -12,7 +12,7 @@
   cost_seq,
   n_fold,
   fold_id,
-  method = c("heuristic", "mip"),
+  method = c("heuristic", "mip", "qp-heuristic"),
   weights = TRUE,
   control = list(kernel = "radial", max_step = 500, type = "C-classification", scale =
     TRUE, verbose = FALSE, time_limit = 60)
@@ -25,7 +25,7 @@
   cost_seq,
   n_fold,
   fold_id,
-  method = c("heuristic", "mip"),
+  method = c("heuristic", "mip", "qp-heuristic"),
   weights = TRUE,
   control = list(kernel = "radial", max_step = 500, type = "C-classification", scale =
     TRUE, verbose = FALSE, time_limit = 60)
@@ -54,10 +54,11 @@ automatically.}
 which employs an algorithm similar to Andrews et al. (2003). When \code{method}
 = 'mip', the novel MIP method will be used.  See details.}
 
-\item{weights}{named vector, or TRUE, to control the weight of the cost parameter
-for each possible y value.  Weights multiply against the cost vector. If
-TRUE, weights are calculated based on inverse counts of bags with given label.
-Otherwise, names must match the levels of \code{y}.}
+\item{weights}{named vector, or TRUE, to control the weight of the cost
+parameter for each possible y value.  Weights multiply against the cost
+vector. If TRUE, weights are calculated based on inverse counts of
+instances with given label, where we only count one positive instance per
+bag. Otherwise, names must match the levels of \code{y}.}
 
 \item{control}{list of additional parameters passed to the method that
 control computation with the following components:
