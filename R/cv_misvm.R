@@ -156,7 +156,7 @@ cv_misvm.default <- function(x, y, bags, cost_seq, n_fold, fold_id,
     names(weights) <- c("0", "1")
   } else if (weights) {
     bag_labels <- sapply(split(y, factor(bags)), unique)
-    weights <- c("0" = sum(bag_labels == 1) / sum(bag_labels == 0), "1" = 1)
+    weights <- c("0" = sum(bag_labels == 1) / sum(y == 0), "1" = 1)
   } else {
     weights <- NULL
   }

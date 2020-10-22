@@ -43,10 +43,11 @@ validate_misvm <- function(x) {
 #' @param method MI-SVM algorithm to use in fitting; default is 'heuristic',
 #'   which employs an algorithm similar to Andrews et al. (2003). When `method`
 #'   = 'mip', the novel MIP method will be used.  See details.
-#' @param weights named vector, or TRUE, to control the weight of the cost parameter
-#'   for each possible y value.  Weights multiply against the cost vector. If
-#'   TRUE, weights are calculated based on inverse counts of bags with given label.
-#'   Otherwise, names must match the levels of `y`.
+#' @param weights named vector, or TRUE, to control the weight of the cost
+#'   parameter for each possible y value.  Weights multiply against the cost
+#'   vector. If TRUE, weights are calculated based on inverse counts of
+#'   instances with given label, where we only count one positive instance per
+#'   bag. Otherwise, names must match the levels of `y`.
 #' @param control list of additional parameters passed to the method that
 #'   control computation with the following components:
 #'   - `kernel` argument used when `method` = 'heuristic'.  The kernel function
@@ -181,7 +182,7 @@ misvm.default <- function(x, y, bags, cost = 1, method = c("heuristic", "mip"), 
     names(weights) <- c("0", "1")
   } else if (weights) {
     bag_labels <- sapply(split(y, factor(bags)), unique)
-    weights <- c("0" = sum(bag_labels == 1) / sum(bag_labels == 0), "1" = 1)
+    weights <- c("0" = sum(bag_labels == 1) / sum(y == 0), "1" = 1)
   } else {
     weights <- NULL
   }
