@@ -141,9 +141,10 @@ test_that("misvm.R functions have identical output.", {
     MilDistribution_pred$instance_level_prediction
   )
   expect_equivalent(
-    mildsvm_bag_pred %>% select(-bag_label) %>% arrange(.pred),
-    MilDistribution_pred$bag_level_prediction %>% arrange(bag_score_pred)
+    mildsvm_bag_pred %>% arrange(.pred) %>% pull(.pred),
+    MilDistribution_pred$bag_level_prediction %>% arrange(bag_score_pred) %>% pull(bag_score_pred)
   )
+
 
 })
 
@@ -194,8 +195,8 @@ test_that("cv_misvm.R functions have identical output.", {
     MilDistribution_pred$instance_level_prediction
   )
   expect_equivalent(
-    mildsvm_bag_pred %>% select(-bag_label) %>% arrange(.pred),
-    MilDistribution_pred$bag_level_prediction %>% arrange(bag_score_pred)
+    mildsvm_bag_pred %>% arrange(.pred) %>% pull(.pred),
+    MilDistribution_pred$bag_level_prediction %>% arrange(bag_score_pred) %>% pull(bag_score_pred)
   )
 
 })
