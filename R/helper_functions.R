@@ -11,7 +11,8 @@
 
   list(y = y[data_order],
        b = b[data_order],
-       X = as.matrix(X[data_order, ]))
+       X = as.matrix(X[data_order, ]),
+       order = data_order)
 }
 
 #' Classify y from bags

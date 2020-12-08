@@ -98,7 +98,8 @@ cv_misvm.formula <- function(formula, data, cost_seq, n_fold, fold_id,
                                             type = "C-classification",
                                             scale = TRUE,
                                             verbose = FALSE,
-                                            time_limit = 60)) {
+                                            time_limit = 60,
+                                            start = FALSE)) {
 
   mi_names <- as.character(stats::terms(formula, data = data)[[2]])
   bag_label <- mi_names[[2]]
@@ -136,7 +137,8 @@ cv_misvm.default <- function(x, y, bags, cost_seq, n_fold, fold_id,
                                          type = "C-classification",
                                          scale = TRUE,
                                          verbose = FALSE,
-                                         time_limit = 60)) {
+                                         time_limit = 60,
+                                         start = FALSE)) {
 
   method = match.arg(method)
   if (!missing(n_fold) & !missing(fold_id)) {

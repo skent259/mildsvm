@@ -12,7 +12,8 @@ misvm_qpheuristic_fit(
   rescale = TRUE,
   weights = NULL,
   verbose = FALSE,
-  time_limit = FALSE
+  time_limit = FALSE,
+  max_step = 500
 )
 }
 \arguments{

@@ -13,7 +13,7 @@
   method = c("heuristic", "mip", "qp-heuristic"),
   weights = TRUE,
   control = list(kernel = "radial", max_step = 500, type = "C-classification", scale =
-    TRUE, verbose = FALSE, time_limit = 60)
+    TRUE, verbose = FALSE, time_limit = 60, start = FALSE)
 )
 
 \method{misvm}{default}(
@@ -24,7 +24,7 @@
   method = c("heuristic", "mip", "qp-heuristic"),
   weights = TRUE,
   control = list(kernel = "radial", max_step = 500, type = "C-classification", scale =
-    TRUE, verbose = FALSE, time_limit = 60)
+    TRUE, verbose = FALSE, time_limit = 60, start = FALSE)
 )
 }
 \arguments{
@@ -65,6 +65,9 @@ to the console.
 \item \code{time_limit} argument used when \code{method} = 'mip'. FALSE, or a time limit
 (in seconds) passed to \code{gurobi} parameters.  If FALSE< no time limit is
 given.
+\item \code{start} argument used when \code{method} = 'mip'.  If TRUE, the mip program
+will be warm_started with the solution from \code{method} = 'qp-heuristic' to
+improve speed.
 }}
 
 \item{x}{a data.frame, matrix, or similar object of covariates, where each

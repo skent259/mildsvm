@@ -12,7 +12,8 @@ misvm_mip_fit(
   rescale = TRUE,
   weights = NULL,
   verbose = FALSE,
-  time_limit = FALSE
+  time_limit = FALSE,
+  start = FALSE
 )
 }
 \arguments{
@@ -37,6 +38,10 @@ for each possible y value.  Weights multiply against the cost vector.}
 
 \item{time_limit}{FALSE, or a time limit (in seconds) passed to gurobi
 parameters. If FALSE, no time limit is given.}
+
+\item{start}{logical; whether to warm start the MIP program with the
+heuristic fit.  For large problems, it's expected that this will speed up
+the algorithm.}
 }
 \value{
 \code{misvm_mip_fit()} returns an object of class \code{"misvm"}.

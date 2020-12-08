@@ -63,6 +63,9 @@ validate_misvm <- function(x) {
 #'   - `time_limit` argument used when `method` = 'mip'. FALSE, or a time limit
 #'   (in seconds) passed to `gurobi` parameters.  If FALSE< no time limit is
 #'   given.
+#'   - `start` argument used when `method` = 'mip'.  If TRUE, the mip program
+#'   will be warm_started with the solution from `method` = 'qp-heuristic' to
+#'   improve speed.
 #'
 #' @return an object of class 'misvm'.  The object contains the following
 #'   components:
@@ -130,7 +133,8 @@ misvm.formula <- function(formula, data, cost = 1, method = c("heuristic", "mip"
                                          type = "C-classification",
                                          scale = TRUE,
                                          verbose = FALSE,
-                                         time_limit = 60)) {
+                                         time_limit = 60,
+                                         start = FALSE)) {
   # NOTE: other 'professional' functions use a different type of call that I
   #   couldn't get to work. See https://github.com/therneau/survival/blob/master/R/survfit.R
   #   or https://github.com/cran/e1071/blob/master/R/svm.R
@@ -160,7 +164,8 @@ misvm.default <- function(x, y, bags, cost = 1, method = c("heuristic", "mip", "
                                          type = "C-classification",
                                          scale = TRUE,
                                          verbose = FALSE,
-                                         time_limit = 60)) {
+                                         time_limit = 60,
+                                         start = FALSE)) {
 
   method <- match.arg(method)
   if ("kernel" %ni% names(control)) control$kernel <- "radial"
@@ -169,6 +174,7 @@ misvm.default <- function(x, y, bags, cost = 1, method = c("heuristic", "mip", "
   if ("scale" %ni% names(control)) control$scale <- TRUE
   if ("verbose" %ni% names(control)) control$verbose <- FALSE
   if ("time_limit" %ni% names(control)) control$time_limit <- 60
+  if ("start" %ni% names(control)) control$start <- FALSE
 
   # store the levels of y and convert to 0,1 numeric format.
   y_info <- convert_y(y)
@@ -206,7 +212,8 @@ misvm.default <- function(x, y, bags, cost = 1, method = c("heuristic", "mip", "
                          rescale = control$scale,
                          weights = weights,
                          verbose = control$verbose,
-                         time_limit = control$time_limit)
+                         time_limit = control$time_limit,
+                         start = control$start)
   } else if (method == "qp-heuristic") {
     y = 2*y - 1 # convert {0,1} to {-1, 1}
     res <- misvm_qpheuristic_fit(y, bags, x,
@@ -214,7 +221,8 @@ misvm.default <- function(x, y, bags, cost = 1, method = c("heuristic", "mip", "
                                  rescale = control$scale,
                                  weights = weights,
                                  verbose = control$verbose,
-                                 time_limit = control$time_limit)
+                                 time_limit = control$time_limit,
+                                 max_step = control$max_step)
   } else {
     stop("misvm requires method = 'heuristic', 'mip', or 'qp-heuristic'.")
   }
@@ -345,6 +353,9 @@ predict.misvm <- function(object, new_data,
 #' @param verbose whether to message output to the console; default is FALSE.
 #' @param time_limit FALSE, or a time limit (in seconds) passed to gurobi
 #'   parameters. If FALSE, no time limit is given.
+#' @param start logical; whether to warm start the MIP program with the
+#'   heuristic fit.  For large problems, it's expected that this will speed up
+#'   the algorithm.
 #'
 #' @return `misvm_mip_fit()` returns an object of class `"misvm"`.
 #'   An object of class "misvm" is a list containing at least the following
@@ -366,12 +377,21 @@ predict.misvm <- function(object, new_data,
 #' @author Sean Kent
 #' @keywords internal
 misvm_mip_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
-                          verbose = FALSE, time_limit = FALSE) {
+                          verbose = FALSE, time_limit = FALSE, start = FALSE) {
   # TODO: maybe change function call to y, X, bags?
   if (rescale) X <- scale(X)
   bags <- as.numeric(factor(bags, levels = unique(bags)))
 
-  model <- misvm_mip_model(y, bags, X, c, weights)
+  warm_start <- NULL
+  if (start) {
+    qp_fit <- misvm_qpheuristic_fit(y, bags, X, c, rescale, weights, verbose = FALSE, time_limit)
+    warm_start <- list(
+      opt = c(qp_fit$model$w, qp_fit$model$b, rep(NA, length(qp_fit$model$xi))),
+      selected = qp_fit$representative_inst
+    )
+  }
+
+  model <- misvm_mip_model(y, bags, X, c, weights, warm_start)
   params <- list()
   params$OutputFlag = 1*verbose
   params$IntFeasTol = 1e-5
@@ -412,12 +432,15 @@ misvm_mip_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
 #' `gurobi::gurobi`) based on the MI-SVM problem.
 #'
 #' @inheritParams misvm_mip_fit
+#' @param warm_start NULL, or a list with components 'opt' and 'selected' which
+#'   provide the warm start values to use for the (w, b, xi) and (z)
+#'   constraints, respectively.
 #' @return a model that can be passed to `gurobi::gurobi` that contains the MIQP
 #'   problem defined by MI-SVM in Andrews et al. (2003)
 #'
 #' @author Sean Kent
 #' @keywords internal
-misvm_mip_model <- function(y, bags, X, c, weights = NULL) {
+misvm_mip_model <- function(y, bags, X, c, weights = NULL, warm_start = NULL) {
   L <- 1e0 * sum(abs(X))
   # TODO: check that y has only -1 and 1
   r <- .reorder(y, bags, X)
@@ -481,6 +504,8 @@ misvm_mip_model <- function(y, bags, X, c, weights = NULL) {
   model$rhs <- c(rhs1, rhs2)
   model$vtype <- c(rep("C", n_w + n_b + n_xi), rep("B", n_z))
   model$lb <- c(rep(-Inf, n_w + n_b), rep(0, n_xi + n_z))
+  ## Advanced
+  if (!is.null(warm_start)) model$start <- c(warm_start[["opt"]], warm_start[["selected"]][r$order][y == 1])
   return(model)
 }
 
@@ -637,7 +662,7 @@ misvm_heuristic_fit <- function(data, cost, weights, kernel = "radial",
 #' @author Sean Kent
 #' @keywords internal
 misvm_qpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
-                                  verbose = FALSE, time_limit = FALSE) {
+                                  verbose = FALSE, time_limit = FALSE, max_step = 500) {
   r <- .reorder(y, bags, X)
   y <- r$y
   bags <- r$b
@@ -663,9 +688,8 @@ misvm_qpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
   itercount = 0
   baritercount = 0
   n_selections = 0
-  max_n_selections <- 5000
 
-  while (selection_changed & n_selections < max_n_selections) {
+  while (selection_changed & n_selections < max_step) {
     y_model <- c(y[y == -1], rep(1, nrow(X_selected)))
     b_model <- c(bags[y == -1], pos_bags)
     X_model <- rbind(X[y == -1, , drop = FALSE],
@@ -686,8 +710,8 @@ misvm_qpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
       n_selections = n_selections + 1
     }
   }
-  if (n_selections == max_n_selections) {
-    message = paste0("Number of iterations of heuristic algorithm reached threshold of ", max_n_selections, ". Stopping with current selection.")
+  if (n_selections == max_step) {
+    message = paste0("Number of iterations of heuristic algorithm reached threshold of ", max_step, ". Stopping with current selection.")
     warning(message)
     cat(message, "Value of c is ", c, "\n")
   }
@@ -696,6 +720,10 @@ misvm_qpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
     b_ <- b_ - sum(attr(X, "scaled:center") * w / attr(X, "scaled:scale"))
     w <- w / attr(X, "scaled:scale")
   }
+  # vector representing selected positive instances
+  selected_vec <- rep(0, length(y))
+  selected_vec[selected] <- 1
+  selected_vec <- selected_vec[order(r$order)] # un-order the vector
 
   res <- list(
     model = list(
@@ -709,7 +737,7 @@ misvm_qpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
       c = c,
       n_selections = n_selections
     ),
-    representative_inst = NULL, # TODO: fill in these parameters or remove
+    representative_inst = selected_vec,
     traindata = NULL,
     useful_inst_idx = NULL
   )

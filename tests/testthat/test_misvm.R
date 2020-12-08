@@ -284,3 +284,39 @@ test_that("misvm() has correct argument handling", {
 
 
 })
+
+
+
+test_that("misvm mip can warm start", {
+  set.seed(8)
+  mil_data <- GenerateMilData(positive_dist = 'mvt',
+                              negative_dist = 'mvnormal',
+                              remainder_dist = 'mvnormal',
+                              nbag = 20,
+                              nsample = 20,
+                              positive_degree = 3,
+                              positive_prob = 0.15,
+                              positive_mean = rep(0, 5))
+
+  df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
+  verbose <- interactive()
+
+  # manually check that the output says "User MIP start produced solution with objective ..."
+  mdl1 <- misvm(x = df1[, 4:123],
+               y = df1$bag_label,
+               bags = df1$bag_name,
+               method = "mip",
+               control = list(start = TRUE, verbose = verbose))
+
+  mdl2 <- misvm(x = df1[, 4:123],
+               y = df1$bag_label,
+               bags = df1$bag_name,
+               method = "mip",
+               control = list(start = FALSE, verbose = verbose))
+
+  expect_equal(mdl1$model[c("w", "b", "xi", "z")],
+               mdl2$model[c("w", "b", "xi", "z")])
+
+  # Hard to test whether the warm start improves the time to reach a solution without testing large problems
+
+})
