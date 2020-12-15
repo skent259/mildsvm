@@ -5,9 +5,12 @@
 \title{INTERNAL MI-SVM algorithm implementation in R}
 \usage{
 misvm_heuristic_fit(
-  data,
-  cost,
-  weights,
+  y,
+  bags,
+  X,
+  c,
+  rescale = TRUE,
+  weights = NULL,
   kernel = "radial",
   max_step = 500,
   type = "C-classification",
@@ -15,15 +18,15 @@ misvm_heuristic_fit(
 )
 }
 \arguments{
-\item{data}{A data.frame whose first three columns are \code{bag_label}, \code{bag_name} and \code{instance_name}.}
-
-\item{cost}{The cost parameter to be fed to \code{e1071::svm}.}
-
 \item{kernel}{The kernel function to be used for \code{e1071::svm}.}
 
 \item{max_step}{Maximum steps of iteration for the iterative SVM methods.}
 
 \item{type}{type that to be used for \code{e1071::svm}.}
+
+\item{data}{A data.frame whose first three columns are \code{bag_label}, \code{bag_name} and \code{instance_name}.}
+
+\item{cost}{The cost parameter to be fed to \code{e1071::svm}.}
 }
 \value{
 An object of class 'MI_SVM'

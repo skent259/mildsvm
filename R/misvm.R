@@ -185,10 +185,10 @@ misvm.default <- function(x, y, bags, cost = 1, method = c("heuristic", "mip", "
   if (is.numeric(weights)) {
     stopifnot(names(weights) == lev | names(weights) == rev(lev))
     weights <- weights[lev]
-    names(weights) <- c("0", "1")
+    names(weights) <- c("-1", "1")
   } else if (weights) {
     bag_labels <- sapply(split(y, factor(bags)), unique)
-    weights <- c("0" = sum(bag_labels == 1) / sum(y == 0), "1" = 1)
+    weights <- c("-1" = sum(bag_labels == 1) / sum(y == 0), "1" = 1)
   } else {
     weights <- NULL
   }
@@ -198,8 +198,10 @@ misvm.default <- function(x, y, bags, cost = 1, method = c("heuristic", "mip", "
                   bag_name = bags,
                   instance_name = as.character(1:length(y)),
                   x)
-    res <- misvm_heuristic_fit(data,
-                               cost = cost,
+    y = 2*y - 1 # convert {0,1} to {-1, 1}
+    res <- misvm_heuristic_fit(y, bags, x,
+                               c = cost,
+                               rescale = control$scale,
                                weights = weights,
                                kernel = control$kernel,
                                max_step = control$max_step,
@@ -317,7 +319,7 @@ predict.misvm <- function(object, new_data,
     scores <- classify_bags(scores, bags, condense = FALSE)
     pos <- classify_bags(pos, bags, condense = FALSE)
   }
-  pos <- factor(pos, levels = c(0, 1), labels = object$levels)
+  pos <- factor(pos, levels = c(-1, 1), labels = object$levels)
 
   res <- switch(type,
                 "raw" = tibble::tibble(.pred = as.numeric(scores)),
@@ -489,7 +491,7 @@ misvm_mip_model <- function(y, bags, X, c, weights = NULL, warm_start = NULL) {
   } else {
     c_vec <- numeric(n_xi)
     c_vec[which(unique(bags) %in% pos_bags)] <- weights[["1"]] * c
-    c_vec[which(unique(bags) %ni% pos_bags)] <- weights[["0"]] * c
+    c_vec[which(unique(bags) %ni% pos_bags)] <- weights[["-1"]] * c
   }
 
   model <- list()
@@ -530,107 +532,96 @@ misvm_mip_model <- function(y, bags, X, c, weights = NULL, warm_start = NULL) {
 #' df1 <- build_instance_feature(MilData1, seq(0.05, 0.95, length.out = 10))
 #' mdl <- MI_SVM(data = df1, cost = 1, kernel = 'radial')
 #' @importFrom e1071 svm
-#' @author Yifei Liu
+#' @author Yifei Liu, Sean Kent 
 #' @keywords internal
-misvm_heuristic_fit <- function(data, cost, weights, kernel = "radial",
-                                max_step = 500, type = "C-classification",
+misvm_heuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
+                                kernel = "radial", max_step = 500, type = "C-classification",
                                 scale = TRUE) {
+  r <- .reorder(y, bags, X)
+  y <- r$y
+  bags <- r$b
+  X <- r$X
+  # if (rescale) X <- scale(X)
 
-  ## divide the bags to positive bags and negative bags The format of
-  ## data is bag_label | bag_name | instance_name
-
-  bag_name <- data$bag_name
-  bag_label <- data$bag_label
-  if (length(unique(bag_label)) == 1)
-    stop("Only one class label, cannot perform classification!")
-  positive_bag_name <- unique(bag_name[bag_label == 1])
-  negative_bag_name <- unique(bag_name[bag_label == 0])
-  unique_bag_name <- unique(bag_name)
-  n_bag <- length(unique_bag_name)
-
-  ## initialize the feature
-  sample_instance <- NULL  ## this records the instances selected by finding the largest score positive instance of a bag and all negative instances.
-  sample_label <- NULL
-
-  for (i in 1:n_bag) {
-    data_i <- data[data$bag_name == unique_bag_name[i], , drop = FALSE]  ## find data from i-th bag
-    n_inst <- nrow(data_i)
-    bag_i_label <- data_i$bag_label[1]
-    if (bag_i_label == 0) {
-      ## this indicates a negative bag
-      sample_instance <- rbind(sample_instance, data_i[, -(1:3), drop = FALSE])
-      sample_label <- c(sample_label, rep(0, n_inst))
-
-    } else if (bag_i_label == 1) {
-      sample_instance <- rbind(sample_instance, colMeans(data_i[, -(1:3), drop = FALSE]))
-      sample_label <- c(sample_label, 1)
-    }
+  # compute initial selection variables for the positively labeled bags as mean within each bag
+  pos_bags <- unique(bags[y==1])
+  if (ncol(X) == 1) {
+    X_selected <- sapply(pos_bags, function(bag) { mean(X[bags == bag, ]) })
+    X_selected <- as.matrix(X_selected)
+  } else {
+    X_selected <- t(sapply(pos_bags,
+                           function(bag) { apply(X[bags == bag, , drop = FALSE], 2, mean) }))
   }
-  sample_label <- factor(sample_label, levels = c(0, 1), labels = c("0", "1"))
 
-  n_negative_inst <- length(sample_label) - length(positive_bag_name)
-  # weights <- c(1, length(positive_bag_name)/n_negative_inst)
-  # names(weights) <- c("1", "0")
-  ## iterate between updating the model and selecting the most positive
-  ## bag from an instance.
+  past_selection <- matrix(NA, length(pos_bags), max_step+1)
+  past_selection[, 1] <- rep(0, length(pos_bags))
+  selection_changed <- TRUE
+  n_selections = 0
 
-  selection <- rep(0, length(positive_bag_name))
-  past_selection <- matrix(NA, length(positive_bag_name), max_step)
-  past_selection[, 1] <- selection
-  step <- 1
-  while (step < max_step) {
+  while (selection_changed & n_selections < max_step) {
+    y_model <- c(rep(1, nrow(X_selected)), y[y == -1])
+    b_model <- c(pos_bags, bags[y == -1])
+    X_model <- rbind(X_selected,
+                     X[y == -1, , drop = FALSE])
 
-    model <- e1071::svm(x = sample_instance, y = sample_label,
-                        class.weights = weights, cost = cost,
-                        kernel = kernel, scale = scale,
+    # y_model <- c(y[y == -1], rep(1, nrow(X_selected)))
+    # b_model <- c(bags[y == -1], pos_bags)
+    # X_model <- rbind(X[y == -1, , drop = FALSE],
+    #                  X_selected)
+
+    # browser()
+    model <- e1071::svm(x = X_model,
+                        y = y_model,
+                        class.weights = weights,
+                        cost = c,
+                        kernel = kernel,
+                        scale = rescale,
                         type = type)
-    pred_all_inst <- predict(object = model, newdata = data[, -(1:3), drop = FALSE], decision.values = TRUE)
+
+    pred_all_inst <- predict(object = model, newdata = X, decision.values = TRUE)
     pred_all_score <- attr(pred_all_inst, "decision.values")
-    ## update sample
-    idx <- 1
-    pos_idx <- 1
-    sample_instance <- NULL
-    sample_label <- NULL
 
-    for (i in 1:n_bag) {
-      data_i <- data[data$bag_name == unique_bag_name[i], , drop = FALSE]
-      n_inst <- nrow(data_i)
-      bag_label_i <- data_i$bag_label[1]
-      if (bag_label_i == 0) {
-        sample_instance <- rbind(sample_instance, data_i[, -(1:3), drop = FALSE])
-        sample_label <- c(sample_label, rep(0, n_inst))
-      } else if (bag_label_i == 1) {
-        id_max <- which.max(pred_all_score[idx:(idx + n_inst - 1)])
-        sample_instance <- rbind(sample_instance, data_i[id_max, -(1:3), drop = FALSE])
-        sample_label <- c(sample_label, 1)
-        selection[pos_idx] <- id_max
-        pos_idx <- pos_idx + 1
-      } else stop(paste("The sample_label for the ", i, "th bag doesn't belong to either 1 or 0!"))
-      idx <- idx + n_inst
-
-    }
-
-    difference = sum(past_selection[, step] != selection)
-    if (difference == 0)
-      break
-
-    repeat_selection <- 0
-    for (i in 1:step) {
-      if (all(selection == past_selection[, i])) {
-        repeat_selection <- 1
+    # update selections and check for repeats
+    selected <- sapply(pos_bags, function(bag) { which(pred_all_score == max(pred_all_score[bags == bag]))[1] })
+    n_selections = n_selections + 1
+    # selection_changed <- !identical(X_selected, X[selected, , drop = FALSE])
+    for (i in 1:n_selections) {
+      # cat("Selected:", selected)
+      selection_changed <- !all(selected == past_selection[, i])
+      if (!selection_changed) {
         break
       }
+      # cat("n_selections", n_selections, "Selection changed", selection_changed, "selection", selected, "\n")
     }
-
-    if (repeat_selection == 1)
-      break
-
-    step <- step + 1
-    past_selection[, step] <- selection
+    if (selection_changed) {
+      X_selected <- X[selected, , drop = FALSE]
+      past_selection[, (n_selections+1)] <- selected
+    }
   }
-  return(list(model = model, total_step = step,
-              representative_inst = cbind(positive_bag_name, selection)))
+  if (n_selections == max_step) {
+    message = paste0("Number of iterations of heuristic algorithm reached threshold of ", max_step, ". Stopping with current selection.")
+    warning(message)
+    cat(message, "Value of c is ", c, "\n")
+  }
+
+  # vector representing selected positive instances
+  selected_vec <- rep(0, length(y))
+  selected_vec[selected] <- 1
+  selected_vec <- selected_vec[order(r$order)] # un-order the vector
+
+  return(list(
+    model = model,
+    total_step = n_selections,
+    representative_inst = selected_vec
+  ))
 }
+
+
+
+
+
+
+
 
 #' INTERNAL Fit MI-SVM model based on heuristic method and QP optimization
 #'
@@ -784,7 +775,7 @@ misvm_qpheuristic_model <- function(y, bags, X, c, weights = NULL) {
   } else {
     c_vec <- numeric(n_xi)
     c_vec[which(unique(bags) %in% pos_bags)] <- weights[["1"]] * c
-    c_vec[which(unique(bags) %ni% pos_bags)] <- weights[["0"]] * c
+    c_vec[which(unique(bags) %ni% pos_bags)] <- weights[["-1"]] * c
   }
 
   model <- list()

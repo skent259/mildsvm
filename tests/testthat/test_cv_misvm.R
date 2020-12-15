@@ -47,9 +47,9 @@ test_that("cv_misvm() works for data-frame-like inputs", {
     distinct(bag_label, .pred, .pred_class)
   expect_equal(dim(pred_bag), c(20, 4))
   expect_equal(round(pred_bag$.pred[1:5], 4),
-               c(1.1936, 1.0489, 1.1277, 1.2788, 0.9450))
+               c(0.7899, 0.6934, 0.7366, 0.7662, 0.7914))
   expect_equal(round(as.numeric(pROC::auc(response = pred_bag$bag_label, predictor = pred_bag$.pred)), 4),
-               0.5824)
+               0.8791)
 
   set.seed(8)
   model <- cv_misvm(x = df1[, 4:123],

@@ -60,8 +60,8 @@ test_that("misvm.R examples work", {
 
   mdl2 <- misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean + X3_mean, data = df)
   expect_equal(round(mdl2$model$coefs[1:10],4),
-               c(0.4798,  1.0000,  1.0000,  0.7273,  0.6235,  0.8403, -0.1346,
-                 -0.1346, -0.1346, -0.1346))
+               c(0.4798,  1.0000,  0.7273,  0.6235,  0.8403,  1.0000, -0.1346,
+                 -0.1346, -0.0162, -0.1346))
 
   if (require(gurobi)) {
     # solve using the MIP method
