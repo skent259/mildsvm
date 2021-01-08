@@ -12,7 +12,8 @@
   cost = 1,
   method = c("heuristic", "mip", "qp-heuristic"),
   weights = TRUE,
-  control = list(kernel = "radial", max_step = 500, type = "C-classification", scale =
+  control = list(kernel = "linear", sigma = 1, nystrom_args = list(m = nrow(x), r =
+    nrow(x), sampling = "random"), max_step = 500, type = "C-classification", scale =
     TRUE, verbose = FALSE, time_limit = 60, start = FALSE)
 )
 
@@ -23,7 +24,8 @@
   cost = 1,
   method = c("heuristic", "mip", "qp-heuristic"),
   weights = TRUE,
-  control = list(kernel = "radial", max_step = 500, type = "C-classification", scale =
+  control = list(kernel = "linear", sigma = 1, nystrom_args = list(m = nrow(x), r =
+    nrow(x), sampling = "random"), max_step = 500, type = "C-classification", scale =
     TRUE, verbose = FALSE, time_limit = 60, start = FALSE)
 )
 }
@@ -53,7 +55,8 @@ bag. Otherwise, names must match the levels of \code{y}.}
 control computation with the following components:
 \itemize{
 \item \code{kernel} argument used when \code{method} = 'heuristic'.  The kernel function
-to be used for \code{e1071::svm}.
+to be used for \code{e1071::svm}. Currently, only 'radial' is supported.
+\item \code{sigma} argument needed for radial basis kernel.
 \item \code{max_step} argument used when \code{method} = 'heuristic'. Maximum steps of
 iteration for the heuristic algorithm.
 \item \code{type} argument used when \code{method} = 'heuristic'. The \code{type} argument is

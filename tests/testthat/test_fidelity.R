@@ -114,7 +114,9 @@ test_that("misvm.R functions have identical output.", {
                                    y = df1$bag_label,
                                    bags = df1$bag_name,
                                    cost = 1,
-                                   method = "heuristic")
+                                   method = "heuristic",
+                                   control = list(kernel = "radial",
+                                                  sigma = 1 / length(4:123)))
   set.seed(8)
   MilDistribution_output <- MilDistribution::MI_SVM(df1, cost = 1)
 
@@ -165,7 +167,9 @@ test_that("cv_misvm.R functions have identical output.", {
                                          bags = df1$bag_name,
                                          cost_seq = 2^(-2:2),
                                          n_fold = 3,
-                                         method = "heuristic")
+                                         method = "heuristic",
+                                         control = list(kernel = "radial",
+                                                        sigma = 1 / length(4:123)))
   set.seed(8)
   MilDistribution_cv_output <- MilDistribution::cv_MI_SVM(df1, n_fold = 3, cost_seq = 2^(-2:2))
 

@@ -53,15 +53,16 @@ test_that("misvm.R examples work", {
 
   # Heuristic method
   mdl1 <- misvm(x = df[, 4:123], y = df$bag_label,
-                bags = df$bag_name, method = "heuristic")
+                bags = df$bag_name, method = "heuristic",
+                control = list(kernel = "radial", sigma = 1 / 120))
   expect_equal(round(mdl1$model$coefs[8:10], 4),
                c(-0.1346, -0.1346, -0.1346))
 
 
   mdl2 <- misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean + X3_mean, data = df)
   expect_equal(round(mdl2$model$coefs[1:10],4),
-               c(0.4798,  1.0000,  0.7273,  0.6235,  0.8403,  1.0000, -0.1346,
-                 -0.1346, -0.0162, -0.1346))
+               c(1.0000,  0.0654,  1.0000,  0.9245, -0.1346, -0.1346, -0.1346,
+                 -0.1346, -0.1346, -0.1346))
 
   if (require(gurobi)) {
     # solve using the MIP method
@@ -79,7 +80,7 @@ test_that("misvm.R examples work", {
     bind_cols(predict(mdl2, df, type = "raw")) %>%
     distinct(bag_name, bag_label, .pred_class, .pred)
 
-  expect_equal(round(preds$.pred[1:5], 4), c(0.9998,  1.0332, -0.1538,  0.8888, -0.3413))
+  expect_equal(round(preds$.pred[1:5], 4), c(0.9669,  1.3092, -0.0781, 1.2562, 1.3084))
   expect_equal(dim(preds), c(20, 4))
 })
 

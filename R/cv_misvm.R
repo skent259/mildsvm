@@ -93,7 +93,9 @@ cv_misvm <- function(x, y, bags, ...) {
 #' @export
 cv_misvm.formula <- function(formula, data, cost_seq, n_fold, fold_id,
                              method = c("heuristic", "mip", "qp-heuristic"), weights = TRUE,
-                             control = list(kernel = "radial",
+                             control = list(kernel = "linear",
+                                            sigma = 1,
+                                            nystrom_args = list(m = nrow(x), r = nrow(x), sampling = 'random'),
                                             max_step = 500,
                                             type = "C-classification",
                                             scale = TRUE,
@@ -132,7 +134,9 @@ cv_misvm.formula <- function(formula, data, cost_seq, n_fold, fold_id,
 #' @export
 cv_misvm.default <- function(x, y, bags, cost_seq, n_fold, fold_id,
                           method = c("heuristic", "mip", "qp-heuristic"), weights = TRUE,
-                          control = list(kernel = "radial",
+                          control = list(kernel = "linear",
+                                         sigma = 1,
+                                         nystrom_args = list(m = nrow(x), r = nrow(x), sampling = 'random'),
                                          max_step = 500,
                                          type = "C-classification",
                                          scale = TRUE,
@@ -171,22 +175,23 @@ cv_misvm.default <- function(x, y, bags, cost_seq, n_fold, fold_id,
   for (i in 1:length(cost_seq)) {
     # auc_sum <- 0
     for (fold in 1:n_fold) {
-      ind <- fold_id != fold
+      train <- fold_id != fold
+      val <- fold_id == fold
 
-      model_i_fold <- misvm(x[ind, , drop = FALSE], y[ind], bags[ind],
+      model_i_fold <- misvm(x[train, , drop = FALSE], y[train], bags[train],
                             cost = cost_seq[i], method = method,
                             weights = weights, control = control)
       pred_i_fold <- predict(model_i_fold,
-                             new_data = x[!ind, , drop = FALSE],
-                             new_bags = bags[!ind],
+                             new_data = x[val, , drop = FALSE],
+                             new_bags = bags[val],
                              type = "raw")
 
-      if (length(unique(y[!ind])) != 2) {
+      if (length(unique(y[val])) != 2) {
         aucs[i, fold] <- NA
       } else {
         suppressMessages({
-          aucs[i, fold] <- pROC::auc(response = classify_bags(y[!ind], bags[!ind]),
-                                     predictor = classify_bags(pred_i_fold$.pred, bags[!ind]))
+          aucs[i, fold] <- pROC::auc(response = classify_bags(y[val], bags[val]),
+                                     predictor = classify_bags(pred_i_fold$.pred, bags[val]))
         })
       }
     }

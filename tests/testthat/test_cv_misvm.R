@@ -29,7 +29,10 @@ test_that("cv_misvm() works for data-frame-like inputs", {
                     y = df1$bag_label,
                     bags = df1$bag_name,
                     n_fold = 3,
-                    cost_seq = 2^seq(-5, 7, length.out = 5))
+                    cost_seq = 2^seq(-5, 7, length.out = 5),
+                    control = list(kernel = "radial",
+                                   sigma = 1 / length(4:123))
+                    )
 
   expect_equal(names(model), c("model", "cost_seq", "cost_aucs", "best_cost"))
   expect_equal(class(model), "cv_misvm")

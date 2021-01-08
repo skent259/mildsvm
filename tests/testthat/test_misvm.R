@@ -267,10 +267,10 @@ test_that("misvm() has correct argument handling", {
     misvm(mi(bag_label, bag_name) ~ ., data = df1, method = "heuristic", control = list(kernel = "radial")),
     misvm(mi(bag_label, bag_name) ~ ., data = df1, method = "heuristic", control = list(kernel = "linear"))
   )))
-  expect_equal(
+  expect_false(isTRUE(all.equal(
     misvm(mi(bag_label, bag_name) ~ ., data = df1, method = "mip", control = list(kernel = "radial")),
     misvm(mi(bag_label, bag_name) ~ ., data = df1, method = "mip", control = list(kernel = "linear"))
-  )
+  )))
 
   ## scale
   expect_false(isTRUE(all.equal(
@@ -318,5 +318,61 @@ test_that("misvm mip can warm start", {
                mdl2$model[c("w", "b", "xi", "z")])
 
   # Hard to test whether the warm start improves the time to reach a solution without testing large problems
+
+})
+
+
+test_that("misvm mip works with radial kernel", {
+  set.seed(8)
+  mil_data <- GenerateMilData(positive_dist = 'mvt',
+                              negative_dist = 'mvnormal',
+                              remainder_dist = 'mvnormal',
+                              nbag = 10,
+                              nsample = 20,
+                              positive_degree = 3,
+                              positive_prob = 0.15,
+                              positive_mean = rep(0, 5))
+
+  df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
+
+  mdl1 <- misvm.default(x = df1[, 4:12],
+                        y = df1$bag_label,
+                        bags = df1$bag_name,
+                        method = "mip",
+                        control = list(kernel = "radial",
+                                       sigma = 1))
+  expect(!is.null(mdl1$kfm_fit), failure_message = "Kfm_fit was not found in the model")
+
+  predict(mdl1, new_data = df1, type = "class", layer = "bag")
+  predict(mdl1, new_data = df1, type = "class", layer = "instance")
+  predict(mdl1, new_data = df1, type = "raw", layer = "bag")
+  predict(mdl1, new_data = df1, type = "raw", layer = "instance")
+
+  mdl2 <- misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean + X3_mean,
+                data = df1,
+                method = "mip",
+                control = list(kernel = "radial",
+                               sigma = 1))
+  expect(!is.null(mdl1$kfm_fit), failure_message = "Kfm_fit was not found in the model")
+
+  m <- 20
+  r <- 10
+  mdl2 <- misvm.default(x = df1[, 4:12],
+                        y = df1$bag_label,
+                        bags = df1$bag_name,
+                        method = "mip",
+                        control = list(kernel = "radial",
+                                       sigma = 1,
+                                       nystrom_args = list(m = m, r = r)))
+
+  expect_equal(dim(mdl2$kfm_fit$dv), c(r, m))
+  expect_equal(dim(mdl2$kfm_fit$df_sub), c(m, length(4:12)))
+
+  # Running with defaults (linear kernel) shouldn't have the kfm_fit element
+  mdl1 <- misvm.default(x = df1[, 4:12],
+                        y = df1$bag_label,
+                        bags = df1$bag_name,
+                        method = "mip")
+  expect_null(mdl1$kfm_fit)
 
 })

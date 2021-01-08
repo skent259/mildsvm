@@ -12,6 +12,7 @@ misvm_heuristic_fit(
   rescale = TRUE,
   weights = NULL,
   kernel = "radial",
+  sigma = 1,
   max_step = 500,
   type = "C-classification",
   scale = TRUE
@@ -47,6 +48,6 @@ df1 <- build_instance_feature(MilData1, seq(0.05, 0.95, length.out = 10))
 mdl <- MI_SVM(data = df1, cost = 1, kernel = 'radial')
 }
 \author{
-Yifei Liu
+Yifei Liu, Sean Kent
 }
 \keyword{internal}

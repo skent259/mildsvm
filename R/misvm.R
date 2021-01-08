@@ -51,7 +51,8 @@ validate_misvm <- function(x) {
 #' @param control list of additional parameters passed to the method that
 #'   control computation with the following components:
 #'   - `kernel` argument used when `method` = 'heuristic'.  The kernel function
-#'   to be used for `e1071::svm`.
+#'   to be used for `e1071::svm`. Currently, only 'radial' is supported.
+#'   - `sigma` argument needed for radial basis kernel.
 #'   - `max_step` argument used when `method` = 'heuristic'. Maximum steps of
 #'   iteration for the heuristic algorithm.
 #'   - `type` argument used when `method` = 'heuristic'. The `type` argument is
@@ -128,7 +129,9 @@ misvm <- function(x, y, bags, ...) {
 #' @describeIn misvm Method for passing formula
 #' @export
 misvm.formula <- function(formula, data, cost = 1, method = c("heuristic", "mip", "qp-heuristic"), weights = TRUE,
-                          control = list(kernel = "radial",
+                          control = list(kernel = "linear",
+                                         sigma = 1,
+                                         nystrom_args = list(m = nrow(x), r = nrow(x), sampling = 'random'),
                                          max_step = 500,
                                          type = "C-classification",
                                          scale = TRUE,
@@ -159,7 +162,9 @@ misvm.formula <- function(formula, data, cost = 1, method = c("heuristic", "mip"
 #' @describeIn misvm Method for data.frame-like objects
 #' @export
 misvm.default <- function(x, y, bags, cost = 1, method = c("heuristic", "mip", "qp-heuristic"), weights = TRUE,
-                          control = list(kernel = "radial",
+                          control = list(kernel = "linear",
+                                         sigma = 1,
+                                         nystrom_args = list(m = nrow(x), r = nrow(x), sampling = 'random'),
                                          max_step = 500,
                                          type = "C-classification",
                                          scale = TRUE,
@@ -168,7 +173,9 @@ misvm.default <- function(x, y, bags, cost = 1, method = c("heuristic", "mip", "
                                          start = FALSE)) {
 
   method <- match.arg(method)
-  if ("kernel" %ni% names(control)) control$kernel <- "radial"
+  if ("kernel" %ni% names(control)) control$kernel <- "linear"
+  if ("sigma" %ni% names(control)) control$sigma <- 1
+  if ("nystrom_args" %ni% names(control)) control$nystrom_args = list(m = nrow(x), r = nrow(x), sampling = 'random')
   if ("max_step" %ni% names(control)) control$max_step <- 500
   if ("type" %ni% names(control)) control$type <- "C-classification"
   if ("scale" %ni% names(control)) control$scale <- TRUE
@@ -180,6 +187,9 @@ misvm.default <- function(x, y, bags, cost = 1, method = c("heuristic", "mip", "
   y_info <- convert_y(y)
   y <- y_info$y
   lev <- y_info$lev
+
+  # store colnames of x
+  col_x <- colnames(x)
 
   ## weights
   if (is.numeric(weights)) {
@@ -193,6 +203,17 @@ misvm.default <- function(x, y, bags, cost = 1, method = c("heuristic", "mip", "
     weights <- NULL
   }
 
+  ## Nystrom approximation to x for mip and qp-heuristic methods
+  # NOTE: this isn't strictly necessary for qp-heuristic, but it's the easiest way to implement
+  if (method %in% c("mip", "qp-heuristic") & control$kernel == "radial") {
+    control$nystrom_args$df <- x
+    control$nystrom_args$kernel <- "rbf"
+    control$nystrom_args$sigma <- control$sigma
+    kfm_fit <- do.call(kfm_nystrom, args = control$nystrom_args)
+
+    x <- predict_kfm_nystrom(kfm_fit, x)
+  }
+
   if (method == "heuristic") {
     data <- cbind(bag_label = y,
                   bag_name = bags,
@@ -204,6 +225,7 @@ misvm.default <- function(x, y, bags, cost = 1, method = c("heuristic", "mip", "
                                rescale = control$scale,
                                weights = weights,
                                kernel = control$kernel,
+                               sigma = control$sigma,
                                max_step = control$max_step,
                                type = control$type,
                                scale = control$scale)
@@ -229,10 +251,13 @@ misvm.default <- function(x, y, bags, cost = 1, method = c("heuristic", "mip", "
     stop("misvm requires method = 'heuristic', 'mip', or 'qp-heuristic'.")
   }
 
-  res$features <- colnames(x)
+  res$features <- col_x
   res$call_type <- "misvm.default"
   res$bag_name <- NULL
   res$levels <- lev
+  if (method %in% c("mip", "qp-heuristic") & control$kernel == "radial") {
+    res$kfm_fit <- kfm_fit
+  }
   new_misvm(res, method = method)
   # return(res)
 }
@@ -293,6 +318,9 @@ predict.misvm <- function(object, new_data,
   } else {
     new_x <- new_data[, object$features, drop = FALSE]
   }
+  if ("kfm_fit" %in% names(object)) {
+    new_x <- predict_kfm_nystrom(object$kfm_fit, new_x)
+  }
 
   if (method == "heuristic") {
     pos <- predict(object = object$model, newdata = new_x, decision.values = TRUE)
@@ -301,7 +329,7 @@ predict.misvm <- function(object, new_data,
 
   } else if (method == "mip" | method == "qp-heuristic") {
     scores <- as.matrix(new_x) %*% object$model$w + object$model$b
-    pos <- 1*(scores > 0)
+    pos <- 2*(scores > 0) - 1
 
   } else {
     stop("predict.misvm requires method = 'heuristic' or 'mip'.")
@@ -532,10 +560,10 @@ misvm_mip_model <- function(y, bags, X, c, weights = NULL, warm_start = NULL) {
 #' df1 <- build_instance_feature(MilData1, seq(0.05, 0.95, length.out = 10))
 #' mdl <- MI_SVM(data = df1, cost = 1, kernel = 'radial')
 #' @importFrom e1071 svm
-#' @author Yifei Liu, Sean Kent 
+#' @author Yifei Liu, Sean Kent
 #' @keywords internal
 misvm_heuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
-                                kernel = "radial", max_step = 500, type = "C-classification",
+                                kernel = "radial", sigma = 1, max_step = 500, type = "C-classification",
                                 scale = TRUE) {
   r <- .reorder(y, bags, X)
   y <- r$y
@@ -575,6 +603,7 @@ misvm_heuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
                         class.weights = weights,
                         cost = c,
                         kernel = kernel,
+                        gamma = sigma,
                         scale = rescale,
                         type = type)
 
