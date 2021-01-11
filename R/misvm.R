@@ -471,7 +471,7 @@ misvm_mip_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
 #' @author Sean Kent
 #' @keywords internal
 misvm_mip_model <- function(y, bags, X, c, weights = NULL, warm_start = NULL) {
-  L <- 1e0 * sum(abs(X))
+  L <- 1e2 * sum(abs(X) / nrow(X))
   # TODO: check that y has only -1 and 1
   r <- .reorder(y, bags, X)
   y <- r$y
