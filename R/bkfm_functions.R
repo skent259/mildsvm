@@ -208,6 +208,12 @@ kfm_nystrom.default <- function(df, m = nrow(df), r = m, kernel = "rbf", samplin
   }
 
   e <- eigen(k_hat)
+  # sometimes when data is duplicated we get 0 eigenvalues and NA columns in the output
+  n_rep <- sum(e$values[1:r] < 1e-10)
+  if (n_rep > 0) {
+    r <- r - n_rep
+    warning(paste0("Data chosen in subsample appears to be duplicated, reducing number of features to ", r))
+  }
   D <- diag(1 / sqrt(e$values[1:r]))
   V <- t(e$vectors[, 1:r])
 

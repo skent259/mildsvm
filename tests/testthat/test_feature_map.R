@@ -322,4 +322,19 @@ test_that("Stratified sampling works with bag structure", {
 
 })
 
+test_that("Nystrom sampling works with duplicated data", {
+  set.seed(8)
+  df <- data.frame(
+    X1 = c(2,   3,   4,   5,   6, 7, 8),
+    X2 = c(1, 1.2, 1.3, 1.4, 1.1, 7, 1),
+    X3 = rnorm(7)
+  )
+  df <- rbind(df, df[1, ])
 
+  expect_warning({
+    fit <- kfm_nystrom(df, m = 8, r = 8, kernel = "rbf", sampling = 1:8, sigma = 0.05)
+  })
+  fm <- build_kernel_feature_map(fit, df)
+  expect_equal(dim(fm), c(8,7))
+  
+})

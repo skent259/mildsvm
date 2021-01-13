@@ -597,7 +597,6 @@ misvm_heuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
     # X_model <- rbind(X[y == -1, , drop = FALSE],
     #                  X_selected)
 
-    # browser()
     model <- e1071::svm(x = X_model,
                         y = y_model,
                         class.weights = weights,
