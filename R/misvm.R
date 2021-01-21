@@ -445,6 +445,7 @@ misvm_mip_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
       itercount = gurobi_result$itercount,
       baritercount = gurobi_result$baritercount,
       objval = gurobi_result$objval,
+      mipgap = gurobi_result$mipgap,
       c = c
     ),
     representative_inst = NULL, # TODO: fill in these parameters or remove
