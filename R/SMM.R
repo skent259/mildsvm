@@ -145,7 +145,7 @@ predict.smm <- function(object, ...) {
 
     beta_0 <- -ksvm_res@b
     if (is.matrix(kernel_mild)) {
-        kernel_matrix <- kernel_mild[ksvm_res@alphaindex[[1]], ]
+        kernel_matrix <- kernel_mild[ksvm_res@alphaindex[[1]], ] # future note, I don't think this actually filters anything out...
         return((t(ksvm_res@coef[[1]]) %*% kernel_matrix + beta_0)[1, ])
     } else {
         if (is.null(kernel_mild))

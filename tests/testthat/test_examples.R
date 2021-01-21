@@ -5,37 +5,82 @@ suppressWarnings({
 })
 
 
-test_that("predict.mild function works without error", {
-  set.seed(8)
-  MilData1 <- GenerateMilData(positive_dist = 'mvt',
-                              negative_dist = 'mvnormal',
-                              remainder_dist = 'mvnormal',
-                              nbag = 10,
-                              positive_degree = 3,
-                              nsample = 20
-  )
-  foo <- mil_distribution(data = MilData1, cost = 1) ## uses about 10 seconds.
-  predictions_mild <- predict(object = foo, newdata = MilData1)
-  # predictions_mild <- predict.mild(object = foo, newdata = MilData1)
-
-  expect_equal(attributes(predictions_mild), list(names = c("final_pred", "AUC", "ROC")))
-
-})
+# test_that("predict.mild function works without error", {
+#   set.seed(8)
+#   mil_data <- GenerateMilData(positive_dist = 'mvt',
+#                               negative_dist = 'mvnormal',
+#                               remainder_dist = 'mvnormal',
+#                               nbag = 10,
+#                               positive_degree = 3,
+#                               nsample = 20
+#   )
+#   foo <- mil_distribution(data = mil_data, cost = 1) ## uses about 10 seconds.
+#   predictions_mild <- predict(object = foo, newdata = mil_data)
+#   # predictions_mild <- predict.mild(object = foo, newdata = MilData1)
+#
+#   expect_equal(attributes(predictions_mild), list(names = c("final_pred", "AUC", "ROC")))
+#
+# })
 
 test_that("mildsvm example works", {
-  MilData1 <- GenerateMilData(positive_dist = 'mvt',
+  set.seed(8)
+  mil_data <- GenerateMilData(positive_dist = 'mvt',
                               negative_dist = 'mvnormal',
                               remainder_dist = 'mvnormal',
                               nbag = 15,
                               positive_degree = 3,
                               nsample = 20
   )
-  foo <- mildsvm(MilData1, method = "mip", m = 10)
-  # predict(foo, MilData1)
+  # Heuristic method
+  mdl1 <- mildsvm(mil_data)
+  mdl2 <- mildsvm(mild(bag_label, bag_name, instance_name) ~ X1 + X2 + X3, data = mil_data)
+
+  expect_warning({
+    if (require(gurobi)) {
+      foo <- mildsvm(mil_data, method = "mip", control = list(nystrom_args = list(m = 10, r = 10)))
+      predict(foo, mil_data)
+    }
+  })
+
+
+  predict(mdl1, new_data = mil_data, type = "raw", layer = "bag")
+
+  # summarize predictions at the bag layer
+  library(dplyr)
+  mil_data %>%
+    bind_cols(predict(mdl2, mil_data, type = "class")) %>%
+    bind_cols(predict(mdl2, mil_data, type = "raw")) %>%
+    distinct(bag_name, bag_label, .pred_class, .pred)
 
 })
 
+test_that("predict.mildsvm examples work", {
+  mil_data <- GenerateMilData(
+    positive_dist = 'mvt',
+    negative_dist = 'mvnormal',
+    remainder_dist = 'mvnormal',
+    nbag = 20,
+    ncov = 5,
+    nsample = 50,
+    positive_degree = 3,
+    positive_mean = rep(5, 5)
+  )
 
+  mdl1 <- mildsvm(mil_data, control = list(sigma = 0.05))
+
+  # bag level predictions
+  mil_data %>%
+    bind_cols(predict(mdl1, mil_data, type = "class")) %>%
+    bind_cols(predict(mdl1, mil_data, type = "raw")) %>%
+    distinct(bag_name, bag_label, .pred_class, .pred)
+
+  # instance level prediction
+  mil_data %>%
+    bind_cols(predict(mdl1, mil_data, type = "class", layer = "instance")) %>%
+    bind_cols(predict(mdl1, mil_data, type = "raw", layer = "instance")) %>%
+    distinct(bag_name, instance_name, bag_label, .pred_class, .pred)
+
+})
 
 test_that("misvm.R examples work", {
   set.seed(8)

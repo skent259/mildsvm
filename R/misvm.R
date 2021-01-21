@@ -146,7 +146,7 @@ misvm.formula <- function(formula, data, cost = 1, method = c("heuristic", "mip"
   mi_names <- as.character(stats::terms(formula, data = data)[[2]])
   bag_name <- mi_names[[3]]
 
-  x <- x_from_formula(formula, data)
+  x <- x_from_mi_formula(formula, data)
   response <- stats::get_all_vars(formula, data = data)
   y <- response[, 1]
   bags <- response[, 2]
@@ -314,7 +314,7 @@ predict.misvm <- function(object, new_data,
   method <- attr(object, "method")
 
   if (object$call_type == "misvm.formula") {
-    new_x <- x_from_formula(object$formula, new_data)
+    new_x <- x_from_mi_formula(object$formula, new_data)
   } else {
     new_x <- new_data[, object$features, drop = FALSE]
   }

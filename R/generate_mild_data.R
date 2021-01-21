@@ -64,10 +64,10 @@ validate_MilData <- function(x) {
     }
 
     ## bag_label should be of numeric 0, 1 or T, F
-    if (!all(as.numeric(unique(value$bag_label)) %in% c(0, 1))) {
-        stop("Bag_label should be one of 0 (negative) or 1 (positive)")
-        call. = FALSE
-    }
+    # if (!all(as.numeric(unique(value$bag_label)) %in% c(0, 1))) {
+    #     stop("Bag_label should be one of 0 (negative) or 1 (positive)")
+    #     call. = FALSE
+    # }
 
     ## verify that the same bag names correspond to the same bag label.
     consist <- unclass(value %>% dplyr::group_by(bag_name) %>% dplyr::summarise(consist = length(unique(bag_label)) ==

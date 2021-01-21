@@ -76,7 +76,7 @@ initialize_instance_selection <- function(data) {
   s_inst <- split(data, factor(data$instance_name, levels = unique(data$instance_name)))
   yy <-  unlist(lapply(s_inst, FUN = unique_bag_label),
                 use.names = FALSE)
-  yy <- factor(yy, levels = c(0, 1), labels = c("0", "1"))  ## change yy to a factor.
+  yy <- factor(yy, levels = c(-1, 1), labels = c("-1", "1"))  ## change yy to a factor.
 
   return(list(useful_inst_names = useful_inst_names,
               useful_inst_idx = useful_inst_idx,
@@ -168,11 +168,23 @@ select_cv_folds2 <- function(y, bags, n_fold, fold_id) {
   return(list(n_fold = n_fold, fold_id = fold_id))
 }
 
-x_from_formula <- function(formula, data) {
+x_from_mi_formula <- function(formula, data) {
   mi_names <- as.character(terms(formula, data = data)[[2]])
   bag_label <- mi_names[[2]]
   bag_name <- mi_names[[3]]
   predictors <- setdiff(colnames(data), c(bag_label, bag_name))
+
+  x <- model.matrix(formula[-2], data = data[, predictors])
+  if (attr(stats::terms(formula, data = data), "intercept") == 1) x <- x[, -1, drop = FALSE]
+  x <- as.data.frame(x)
+}
+
+x_from_mild_formula <- function(formula, data) {
+  mild_names <- as.character(terms(formula, data = data)[[2]])
+  bag_label <- mild_names[[2]]
+  bag_name <- mild_names[[3]]
+  instance_name <- mild_names[[4]]
+  predictors <- setdiff(colnames(data), c(bag_label, bag_name, instance_name))
 
   x <- model.matrix(formula[-2], data = data[, predictors])
   if (attr(stats::terms(formula, data = data), "intercept") == 1) x <- x[, -1, drop = FALSE]
@@ -199,3 +211,17 @@ convert_y <- function(y) {
   y <- as.numeric(y) - 1
   list(y = y, lev = lev)
 }
+
+
+#' Take the average of a data frame over the instances
+#' @keywords internal
+#' @author Sean Kent
+average_over_instances <- function(x, instances) {
+  instances <- factor(instances, levels = unique(instances))
+  x <- as.data.frame(x)
+  x <- split(x, instances)
+  x <- lapply(x, colMeans)
+  as.data.frame(do.call(rbind, x))
+}
+
+

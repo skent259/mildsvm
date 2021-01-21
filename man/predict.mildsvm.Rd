@@ -4,17 +4,79 @@
 \alias{predict.mildsvm}
 \title{Predict method for 'mildsvm' object}
 \usage{
-\method{predict}{mildsvm}(object, newX, type = c("prediction", "score"))
+\method{predict}{mildsvm}(
+  object,
+  new_data,
+  type = c("class", "raw"),
+  layer = c("bag", "instance"),
+  new_bags = "bag_name",
+  new_instances = "instance_name",
+  kernel = NULL
+)
 }
 \arguments{
-\item{object}{an object of class 'mildsvm'}
+\item{object}{an object of class mildsvm}
 
-\item{newX}{TODO:}
+\item{new_data}{matrix to predict from.  Needs to have the same number of
+columns as the X that trained the mildsvm object}
 
-\item{type}{TODO:}
+\item{type}{if 'class', return predicted values with threshold of 0 as
+-1 or +1.  If 'raw', return the raw predicted scores.}
+
+\item{layer}{if 'bag', return predictions at the bag level.  If 'instance',
+return predictions at the instance level.}
+
+\item{new_bags}{character or character vector.  Can specify a singular
+character that provides the column name for the bag names in \code{new_data},
+default = "bag_name".  Can also specify a vector of length \code{nrow(new_data)}
+that has bag name for each instance.  When \code{object} was fitted with
+\code{mildsvm.formula}, this parameter is not necessary as the bag name can be
+pulled directly from new_data, if available.}
+
+\item{new_instances}{character or character vector.  Can specify a singular
+character that provides the column name for the instance names in
+\code{new_data}, default = "instance_name".  Can also specify a vector of length
+\code{nrow(new_data)} that has instance name for each row.  When \code{object} was
+fitted with \code{mildsvm.formula}, this parameter is not necessary as the bag
+name can be pulled directly from new_data, if available.}
+
+\item{kernel}{optional fitted kernel that can be specified to speed up
+computations, default = NULL.}
+}
+\value{
+tibble with \code{nrow(new_data)} rows.  If type = 'class', the tibble
+will have a column '.pred_class'.  If type = 'raw', the tibble will have a
+column '.pred'.
 }
 \description{
 Predict method for 'mildsvm' object
+}
+\examples{
+mil_data <- GenerateMilData(
+    positive_dist = 'mvt',
+    negative_dist = 'mvnormal',
+    remainder_dist = 'mvnormal',
+    nbag = 20,
+    ncov = 5,
+    nsample = 50,
+    positive_degree = 3,
+    positive_mean = rep(5, 5)
+)
+
+mdl1 <- mildsvm(mil_data, control = list(sigma = 0.05))
+
+# bag level predictions
+mil_data \%>\%
+    bind_cols(predict(mdl1, mil_data, type = "class")) \%>\%
+    bind_cols(predict(mdl1, mil_data, type = "raw")) \%>\%
+    distinct(bag_name, bag_label, .pred_class, .pred)
+
+# instance level prediction
+mil_data \%>\%
+    bind_cols(predict(mdl1, mil_data, type = "class", layer = "instance")) \%>\%
+    bind_cols(predict(mdl1, mil_data, type = "raw", layer = "instance")) \%>\%
+    distinct(bag_name, instance_name, bag_label, .pred_class, .pred)
+
 }
 \author{
 Sean Kent

@@ -3,7 +3,7 @@ new_mi <- function(x = matrix()) {
   structure(x, class = "mi")
 }
 
-validate_misvm <- function(x) {
+validate_mi <- function(x) {
   message("No validations currently in place for object of class 'mi'.")
   x
 }
