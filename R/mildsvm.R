@@ -29,7 +29,7 @@ validate_mildsvm <- function(x) {
 #'   row represents a sample.
 #' @param y a numeric, character, or factor vector of bag labels for each
 #'   instance.  Must satisfy `length(y) == nrow(x)`. Suggest that one of the
-#'   levels is 1, '1', of TRUE, which becomes the positive class in MI-SVM;
+#'   levels is 1, '1', or TRUE, which becomes the positive class;
 #'   otherwise, a positive class is chosen and a message will be supplied.
 #' @param bags a vector specifying which instance belongs to each bag.  Can be a
 #'   string, numeric, of factor.
@@ -42,7 +42,7 @@ validate_mildsvm <- function(x) {
 #' @param data If `formula` is provided, a data.frame or similar from which
 #'   formula elements will be extracted.  Otherwise, a 'MilData' object from
 #'   which `x, y, bags, instances` are automatically extracted. If a 'MilData'
-#'   object is used, all columns will be used as predicotrs.
+#'   object is used, all columns will be used as predictors.
 #' @param cost The cost parameter in SVM. If `method` = 'heuristic', this will
 #'   be fed to `kernlab::ksvm`, otherwise it is similarly in internal functions.
 #' @param method MILD-SVM algorithm to use in fitting; default is 'heuristic',
@@ -272,6 +272,8 @@ mildsvm.default <- function(x, y, bags, instances, cost = 1,
                                 kernel = control$kernel,
                                 max.step = control$max_step,
                                 sigma = control$sigma)
+        res$model$features <- col_x
+        res$model$traindata <- res$traindata
 
     } else if (method == "mip") {
 
@@ -354,8 +356,10 @@ mildsvm.MilData <- function(data, cost = 1,
 #'   `nrow(new_data)` that has instance name for each row.  When `object` was
 #'   fitted with `mildsvm.formula`, this parameter is not necessary as the bag
 #'   name can be pulled directly from new_data, if available.
-#' @param kernel optional fitted kernel that can be specified to speed up
-#' computations, default = NULL.
+#' @param kernel optional pre-computed kernel matrix at the instance level,
+#'   default = NULL. This can be specified to speed up computations.  The rows
+#'   should correspond to instances in the original training data, and columns
+#'   should correspond to instances in the new data to predict.
 #'
 #' @return tibble with `nrow(new_data)` rows.  If type = 'class', the tibble
 #'   will have a column '.pred_class'.  If type = 'raw', the tibble will have a
@@ -426,13 +430,14 @@ predict.mildsvm <- function(object, new_data,
         # these scores are at the instance level
         if (!is.null(kernel)) {
             # TODO: would be good to check that matrix is of the right size here
-            scores <- predict.smm(object$model, newdata = new_x, traindata = object$traindata,
-                                  kernel_mild = kernel[object$useful_inst_idx, ])
+            scores <- predict(object$model, new_data = new_x,
+                              type = "raw",
+                              kernel = kernel[, object$useful_inst_idx])
+            scores <- scores$.pred
         } else {
-            scores <- predict.smm(object$model, newdata = new_x, traindata = object$traindata)
+            scores <- predict(object$model, new_data = new_x, type = "raw")
+            scores <- scores$.pred
         }
-        # map scores back to the sample level to match nrow(new_data)
-        scores <- sapply(instances, function(i) scores[which(unique(instances) == i)])
 
     } else if (method == "mip") {
         # these scores are at the instance level
@@ -506,13 +511,21 @@ kernel_mil <- function(kernel_full, data_info, max.step, cost, weights,
     yy_inst <- yy[useful_inst_idx]
     step <- 1
     while (step < max.step) {
-        svm_model <- SMM(df = NULL, kernel_mild = kernel_full[useful_inst_idx,
-            useful_inst_idx], cost = cost, class.weights = weights, sigma = sigma,
-            y = yy_inst)
-        ## need to get the predicted score for each instance of the original
-        ## data. This should be carefully handled
+        svm_model <- smm(x = 1:length(yy_inst),
+                         y = yy_inst,
+                         instances = 1:length(yy_inst),
+                         cost = cost,
+                         weights = weights,
+                         control = list(kernel = kernel_full[useful_inst_idx, useful_inst_idx],
+                                        sigma = sigma,
+                                        scale = FALSE))
 
-        pred_all_score <- predict(object = svm_model, kernel_mild = kernel_full[useful_inst_idx, ])  ## uses lazy evaluation scheme in R
+        pred_all_score <- predict(svm_model,
+                                  type = "raw",
+                                  new_data = NULL,
+                                  new_instances = 1:nrow(kernel_full),
+                                  kernel = kernel_full[, useful_inst_idx])
+        pred_all_score <- pred_all_score$.pred
 
         ## update sample
         last_inst_idx <- 0

@@ -41,12 +41,12 @@ test_that("mildsvm() works for data-frame-like inputs", {
                           method = "heuristic")
 
   expect_equal(
-    predict(mdl2, new_data = df1, type = "class", layer = "bag"),
-    predict(mdl2, new_data = df1, type = "class", layer = "bag", new_bags = df1$bag_name)
+    predict(mdl2, new_data = df1, type = "raw", layer = "bag"),
+    predict(mdl2, new_data = df1, type = "raw", layer = "bag", new_bags = df1$bag_name)
   )
   expect_equal(
-    predict(mdl2, new_data = df1, type = "class", layer = "bag"),
-    predict(mdl2, new_data = df1, type = "class", layer = "bag", new_bags = df1$bag_name, new_instances = df1$instance_name)
+    predict(mdl2, new_data = df1, type = "raw", layer = "bag"),
+    predict(mdl2, new_data = df1, type = "raw", layer = "bag", new_bags = df1$bag_name, new_instances = df1$instance_name)
   )
 
   predict(mdl2, new_data = df1, type = "class", layer = "bag")
@@ -441,7 +441,7 @@ test_that("Passing kernel matrix into mildsvm works", {
                          positive_mean = rep(0, 5))
 
   mdl1 <- mildsvm(df1, control = list(kernel = kme(df1, sigma = 0.05), sigma = 0.05))
-  pred1 <- predict(mdl1, new_data = df2, type = "raw", kernel = kme(df1, df2, sigma = 0.05))
+  pred1 <- predict(mdl1, new_data = df2, type = "raw", kernel = kme(df2, df1, sigma = 0.05))
 
   mdl2 <- mildsvm(df1, control = list(sigma = 0.05, scale = FALSE))
   pred2 <- predict(mdl2, new_data = df2, type = "raw")

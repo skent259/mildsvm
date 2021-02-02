@@ -168,6 +168,16 @@ select_cv_folds2 <- function(y, bags, n_fold, fold_id) {
   return(list(n_fold = n_fold, fold_id = fold_id))
 }
 
+x_from_formula <- function(formula, data, skip = NULL) {
+  response <- as.character(formula[[2]])
+  skip <- c(skip, response)
+  predictors <- setdiff(colnames(data), skip)
+
+  x <- model.matrix(formula[-2], data = data[, predictors])
+  if (attr(stats::terms(formula, data = data), "intercept") == 1) x <- x[, -1, drop = FALSE]
+  x <- as.data.frame(x)
+}
+
 x_from_mi_formula <- function(formula, data) {
   mi_names <- as.character(terms(formula, data = data)[[2]])
   bag_label <- mi_names[[2]]

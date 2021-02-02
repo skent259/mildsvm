@@ -50,7 +50,7 @@ requires the \code{data} argument. See examples.}
 \item{data}{If \code{formula} is provided, a data.frame or similar from which
 formula elements will be extracted.  Otherwise, a 'MilData' object from
 which \verb{x, y, bags, instances} are automatically extracted. If a 'MilData'
-object is used, all columns will be used as predicotrs.}
+object is used, all columns will be used as predictors.}
 
 \item{cost}{The cost parameter in SVM. If \code{method} = 'heuristic', this will
 be fed to \code{kernlab::ksvm}, otherwise it is similarly in internal functions.}
@@ -93,7 +93,7 @@ row represents a sample.}
 
 \item{y}{a numeric, character, or factor vector of bag labels for each
 instance.  Must satisfy \code{length(y) == nrow(x)}. Suggest that one of the
-levels is 1, '1', of TRUE, which becomes the positive class in MI-SVM;
+levels is 1, '1', or TRUE, which becomes the positive class;
 otherwise, a positive class is chosen and a message will be supplied.}
 
 \item{bags}{a vector specifying which instance belongs to each bag.  Can be a

@@ -33,7 +33,6 @@ test_that("GenerateData.R functions have identical output", {
   expect_equal(mildsvm_data, MilDistribution_data)
 })
 
-
 test_that("kme.R functions have identical output", {
   mil_data <- mildsvm::GenerateMilData(positive_dist = "mvt",
                                        negative_dist = "mvnormal",
@@ -65,8 +64,7 @@ test_that("kme.R functions have identical output", {
   expect_equal(mildsvm::kme(sub1, sub2), MilDistribution::kme(sub1, sub2))
 })
 
-
-test_that("mil_distribution.R functions have identical output", {
+test_that("mildsvm.R functions have identical output", {
   set.seed(8)
   mil_data <- mildsvm::GenerateMilData(positive_dist = "mvt",
                                        negative_dist = "mvnormal",
@@ -91,12 +89,12 @@ test_that("mil_distribution.R functions have identical output", {
   mdl2 <- MilDistribution::mil_distribution(mil_data_, cost = 1)
 
   # models are equal on key components, just differ some naming
-  expect_equal(mdl1$model$ksvm_res@alpha, mdl2$model$ksvm_res@alpha)
-  expect_equal(mdl1$model$ksvm_res@b, mdl2$model$ksvm_res@b)
+  expect_equal(mdl1$model$model@alpha, mdl2$model$ksvm_res@alpha)
+  expect_equal(mdl1$model$model@b, mdl2$model$ksvm_res@b)
   expect_equal(mdl1$total_step, mdl2$total_step)
   expect_equal(mdl1$representative_inst, mdl2$representative_inst)
   expect_equal(mdl1$traindata, mdl2$traindata)
-  expect_equal(mdl1$useful_inst_idx, mdl2$useful_inst_idx)
+  expect_equivalent(mdl1$useful_inst_idx, mdl2$useful_inst_idx)
 
   # predictions should match
   expect_equivalent(
@@ -238,6 +236,42 @@ test_that("cv_misvm.R functions have identical output.", {
     mildsvm_bag_pred %>% arrange(.pred) %>% pull(.pred),
     MilDistribution_pred$bag_level_prediction %>% arrange(bag_score_pred) %>% pull(bag_score_pred)
   )
+
+})
+
+test_that("smm.R functions have identical output", {
+  set.seed(8)
+  n_instances <- 10
+  n_samples <- 20
+  y <- rep(c(1, -1), each = n_samples * n_instances / 2)
+  instances <- as.character(rep(1:n_instances, each = n_samples))
+  x <- data.frame(x1 = rnorm(length(y), mean = 1*(y==1)),
+                  x2 = rnorm(length(y), mean = 2*(y==1)),
+                  x3 = rnorm(length(y), mean = 3*(y==1)))
+
+  # NOTE: yifei's code has a bug in `SMM()` where instance_names are re-ordered
+  # in y, but not in the x.  This comes from a dplyr::summarize ordering by the
+  # instance_name, which might not align with the way the data was ordered.
+  # Thus, we order by the instance_name here.
+
+  # NOTE: also, we need to pass a factor as `y` for `ksvm`, which wasn't made
+  # explicit in yifei's code
+  df <- data.frame(instance_label = factor(y), instance_name = instances, x) %>%
+    arrange(instance_name)
+
+  mdl1 <- mildsvm::smm(x = df[, c("x1", "x2", "x3")],
+                       y = df$instance_label,
+                       instances = df$instance_name,
+                       cost = 1,
+                       weights = FALSE,
+                       control = list(sigma = 0.05, scale = FALSE))
+  mdl2 <- MilDistribution::SMM(df %>% arrange(instance_name))
+
+  expect_equal(mdl1$model, mdl2$ksvm_res)
+  common_components <- c("sigma", "cost")
+  expect_equal(mdl1[common_components], mdl2[common_components])
+  expect_equivalent(mdl1$traindata,
+                    mdl2$traindata %>% select(-instance_label))
 
 })
 

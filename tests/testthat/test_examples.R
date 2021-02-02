@@ -129,7 +129,6 @@ test_that("misvm.R examples work", {
   expect_equal(dim(preds), c(20, 4))
 })
 
-
 test_that("cv_misvm.R examples work", {
   set.seed(8)
   mil_data <- GenerateMilData(
@@ -168,6 +167,30 @@ test_that("cv_misvm.R examples work", {
     bind_cols(predict(mdl2, df, type = "raw")) %>%
     distinct(bag_name, bag_label, .pred_class, .pred)
 
+})
+
+test_that("smm() examples work", {
+  set.seed(8)
+  n_instances <- 10
+  n_samples <- 20
+  y <- rep(c(1, -1), each = n_samples * n_instances / 2)
+  instances <- as.character(rep(1:n_instances, each = n_samples))
+  x <- data.frame(x1 = rnorm(length(y), mean = 1*(y==1)),
+                  x2 = rnorm(length(y), mean = 2*(y==1)),
+                  x3 = rnorm(length(y), mean = 3*(y==1)))
+
+  df <- data.frame(instance_name = instances, y = y, x)
+
+  mdl <- smm(x, y, instances)
+  mdl2 <- smm(y ~ ., data = df)
+
+  # instance level predictions
+  df %>%
+    bind_cols(predict(mdl, type = "raw", new_data = x, new_instances = instances)) %>%
+    bind_cols(predict(mdl, type = "class", new_data = x, new_instances = instances)) %>%
+    distinct(instance_name, y, .pred, .pred_class)
+
+  expect_s3_class(mdl1, "smm")
 })
 
 # test_that("build_poly_instance_feature works", {

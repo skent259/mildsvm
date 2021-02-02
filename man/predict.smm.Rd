@@ -2,34 +2,79 @@
 % Please edit documentation in R/smm.R
 \name{predict.smm}
 \alias{predict.smm}
-\title{Prediction function for smm objects (the return from SMM())}
+\title{Predict method for 'smm' object}
 \usage{
-\method{predict}{smm}(object, ...)
+\method{predict}{smm}(
+  object,
+  new_data,
+  type = c("class", "raw"),
+  new_instances = "instance_name",
+  kernel = NULL,
+  ...
+)
 }
 \arguments{
-\item{object}{An smm object.}
+\item{object}{an object of class smm}
 
-\item{...}{\code{newdata}, new data whose first column should be \code{instance_name}. \code{traindata}, training data used to train res. The first column should be \code{instance_name}. \code{kernel_mild}, currently only support 'rbf'}
+\item{new_data}{matrix to predict from.  Needs to have the same number of
+columns as the X that trained the 'smm' object}
+
+\item{type}{if 'class', return predicted values with threshold of 0 as
+-1 or +1.  If 'raw', return the raw predicted scores.}
+
+\item{new_instances}{character or character vector.  Can specify a singular
+character that provides the column name for the instance names in
+\code{new_data}, default = "instance_name".  Can also specify a vector of length
+\code{nrow(new_data)} that has instance name for each row.  When \code{object} was
+fitted with \code{smm.formula}, this parameter is not necessary as the bag name
+can be pulled directly from new_data, if available.}
+
+\item{kernel}{optional pre-computed kernel matrix at the instance level,
+default = NULL. This can be specified to speed up computations.  The rows
+should correspond to instances in the original training data, and columns
+should correspond to instances in the new data to predict.}
 }
 \value{
-A vector of length of the instances in newdata.
+tibble with \code{nrow(new_data)} rows.  If type = 'class', the tibble
+will have a column named '.pred_class'.  If type = 'raw', the tibble will
+have a column name '.pred'.
 }
 \description{
-This function gives the prediction of an smm object in the scale of score. A higher score indicates the observation is more likely to be of class \code{1}.
+Predict method for 'smm' object
 }
 \examples{
-x = data.frame('bag_LABEL' = factor(c(1, 1, 0)),
-               'bag_name' = c(rep('bag_1', 2), 'bag_2'),
-               'instance_name' = c('bag_1_inst_1', 'bag_1_inst_2', 'bag_2_inst_1'),
-               'X1' = c(-0.4, 0.5, 2),
-               'instance_label' = c(0, 1, 0)
-)
-mdl <- SMM(df = MilData(x), cost = 10, sigma = 0.05)
-x_inst <- data.frame('instance_name' = c('bag_1_inst_1', 'bag_1_inst_2', 'bag_2_inst_1'),
-               'X1' = c(-0.4, 0.5, 2)
-               )
-predictions <- predict(object = mdl, kernel_mild = 'rbf', newdata = x_inst, traindata = x_inst)
+# Some fake data
+set.seed(8)
+n_instances <- 10
+n_samples <- 20
+y <- rep(c(1, -1), each = n_samples * n_instances / 2)
+instances <- as.character(rep(1:n_instances, each = n_samples))
+x <- data.frame(x1 = rnorm(length(y), mean = 1*(y==1)),
+                x2 = rnorm(length(y), mean = 2*(y==1)),
+                x3 = rnorm(length(y), mean = 3*(y==1)))
+
+mdl <- smm(x, y, instances, control = list(sigma = 1/3))
+
+# instance level predictions (training data)
+data.frame(instance_name = instances, y = y, x) \%>\%
+  bind_cols(predict(mdl, type = "raw", new_data = x, new_instances = instances)) \%>\%
+  bind_cols(predict(mdl, type = "class", new_data = x, new_instances = instances)) \%>\%
+  distinct(instance_name, y, .pred, .pred_class)
+
+# test data
+new_inst <- rep(c("11", "12"), each = 30)
+new_y <- rep(c(1, -1), each = 30)
+new_x <- data.frame(x1 = rnorm(length(new_inst), mean = 1*(new_inst=="11")),
+                    x2 = rnorm(length(new_inst), mean = 2*(new_inst=="11")),
+                    x3 = rnorm(length(new_inst), mean = 3*(new_inst=="11")))
+
+# instance level predictions (test data)
+data.frame(instance_name = new_inst, y = new_y, new_x) \%>\%
+  bind_cols(predict(mdl, type = "raw", new_data = new_x, new_instances = new_inst)) \%>\%
+  bind_cols(predict(mdl, type = "class", new_data = new_x, new_instances = new_inst)) \%>\%
+    distinct(instance_name, y, .pred, .pred_class)
+
 }
 \author{
-Yifei Liu
+Sean Kent
 }
