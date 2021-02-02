@@ -1,6 +1,7 @@
 context("Check that examples in mildsvm package work.")
 suppressWarnings({
   library(mildsvm)
+  library(dplyr)
   # library(MilDistribution)
 })
 
@@ -46,7 +47,6 @@ test_that("mildsvm example works", {
   predict(mdl1, new_data = mil_data, type = "raw", layer = "bag")
 
   # summarize predictions at the bag layer
-  library(dplyr)
   mil_data %>%
     bind_cols(predict(mdl2, mil_data, type = "class")) %>%
     bind_cols(predict(mdl2, mil_data, type = "raw")) %>%
@@ -80,6 +80,7 @@ test_that("predict.mildsvm examples work", {
     bind_cols(predict(mdl1, mil_data, type = "raw", layer = "instance")) %>%
     distinct(bag_name, instance_name, bag_label, .pred_class, .pred)
 
+  expect_s3_class(mdl1, "mildsvm")
 })
 
 test_that("misvm.R examples work", {
@@ -161,12 +162,12 @@ test_that("cv_misvm.R examples work", {
   predict(mdl1, new_data = df, type = "raw", layer = "bag")
 
   # summarize predictions at the bag layer
-  library(dplyr)
   df %>%
     bind_cols(predict(mdl2, df, type = "class")) %>%
     bind_cols(predict(mdl2, df, type = "raw")) %>%
     distinct(bag_name, bag_label, .pred_class, .pred)
 
+  expect_s3_class(mdl1, "cv_misvm")
 })
 
 test_that("smm() examples work", {
@@ -190,7 +191,7 @@ test_that("smm() examples work", {
     bind_cols(predict(mdl, type = "class", new_data = x, new_instances = instances)) %>%
     distinct(instance_name, y, .pred, .pred_class)
 
-  expect_s3_class(mdl1, "smm")
+  expect_s3_class(mdl, "smm")
 })
 
 # test_that("build_poly_instance_feature works", {
