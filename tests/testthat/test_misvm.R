@@ -1,5 +1,23 @@
 context("Testing the functions in misvm.R")
 
+mil_data <- GenerateMilData(positive_dist = 'mvt',
+                            negative_dist = 'mvnormal',
+                            remainder_dist = 'mvnormal',
+                            nbag = 20,
+                            nsample = 20,
+                            positive_degree = 3,
+                            positive_prob = 0.15,
+                            positive_mean = rep(0, 5))
+
+mil_data_test <- GenerateMilData(positive_dist = 'mvt',
+                            negative_dist = 'mvnormal',
+                            remainder_dist = 'mvnormal',
+                            nbag = 40,
+                            nsample = 20,
+                            positive_degree = 3,
+                            positive_prob = 0.15,
+                            positive_mean = rep(0, 5))
+
 test_that("misvm() works for data-frame-like inputs", {
   set.seed(8)
   mil_data <- GenerateMilData(positive_dist = 'mvt',
@@ -71,7 +89,6 @@ test_that("misvm() works for data-frame-like inputs", {
 
 
 })
-
 
 test_that("misvm() works with formula method", {
   set.seed(8)
@@ -285,8 +302,6 @@ test_that("misvm() has correct argument handling", {
 
 })
 
-
-
 test_that("misvm mip can warm start", {
   set.seed(8)
   mil_data <- GenerateMilData(positive_dist = 'mvt',
@@ -320,7 +335,6 @@ test_that("misvm mip can warm start", {
   # Hard to test whether the warm start improves the time to reach a solution without testing large problems
 
 })
-
 
 test_that("misvm mip works with radial kernel", {
   set.seed(8)
@@ -375,4 +389,65 @@ test_that("misvm mip works with radial kernel", {
                         method = "mip")
   expect_null(mdl1$kfm_fit)
 
+})
+
+test_that("misvm() works on 'MilData' objects", {
+  # minimal arguments
+  mdl <- misvm(mil_data)
+  expect_equal(mdl$call_type, "misvm.MilData")
+  expect_equal(mdl$summary_fns, list(mean = mean, sd = sd))
+  expect_equal(mdl$features, paste0(colnames(mil_data)[4:13], rep(c("_mean", "_sd"), each = 10)))
+
+  # bag level predictions
+  pred <- predict(mdl, new_data = mil_data, type = "raw")
+  expect_equal(nrow(pred), nrow(mil_data))
+  expect_lte(length(unique(pred$.pred)), length(unique(mil_data$bag_name)))
+
+  # instance level predictions
+  pred <- predict(mdl, new_data = mil_data, type = "raw", layer = "instance")
+  expect_equal(nrow(pred), nrow(mil_data))
+  expect_lte(length(unique(pred$.pred)), length(unique(mil_data$instance_name)))
+
+  # predictions on new data
+  pred <- predict(mdl, new_data = mil_data_test, type = "raw", layer = "instance")
+  expect_equal(nrow(pred), nrow(mil_data_test))
+  expect_lte(length(unique(pred$.pred)), length(unique(mil_data_test$instance_name)))
+
+  # make sure when new data is scrambled things don't get out of order
+  scrambled <- mil_data_test[sample(1:nrow(mil_data_test)), ]
+
+  instance_level <- scrambled %>%
+    bind_cols(predict(mdl, scrambled, type = "raw", layer = "instance")) %>%
+    distinct(bag_label, instance_name, .pred)
+  expect_equal(nrow(instance_level), length(unique(scrambled$instance_name)))
+
+  bag_level <- scrambled %>%
+    bind_cols(predict(mdl, scrambled, type = "raw", layer = "bag")) %>%
+    distinct(bag_label, bag_name, .pred)
+  expect_equal(nrow(bag_level), length(unique(scrambled$bag_name)))
+
+  # cor = TRUE
+  mdl <- misvm(mil_data, cor = TRUE)
+  expect_equal(mdl$call_type, "misvm.MilData")
+  expect_equal(mdl$summary_fns, list(mean = mean, sd = sd))
+  expect_equal(mdl$summary_cor, TRUE)
+  expect_equal(length(mdl$features), 2*10 + choose(10, 2))
+
+  pred <- predict(mdl, new_data = mil_data, type = "raw")
+  expect_equal(nrow(pred), nrow(mil_data))
+  expect_lte(length(unique(pred$.pred)), length(unique(mil_data$bag_name)))
+
+  # alternative methods
+  mdl <- misvm(mil_data, method = "mip")
+  pred <- predict(mdl, new_data = mil_data_test, type = "raw")
+
+  mdl <- misvm(mil_data, method = "qp-heuristic")
+  pred <- predict(mdl, new_data = mil_data_test, type = "raw")
+
+  # different summary functions
+  mdl <- misvm(mil_data, .fns = list(mean = mean, med = median, qtl25 = ~quantile(.x, 0.25)))
+  expect_equal(length(mdl$features), 3*10)
+  expect_equal(mdl$call_type, "misvm.MilData")
+  expect_equal(mdl$summary_fns, list(mean = mean, med = median, qtl25 = ~quantile(.x, 0.25)))
+  pred <- predict(mdl, new_data = mil_data_test, type = "raw")
 })

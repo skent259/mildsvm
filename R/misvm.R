@@ -67,6 +67,10 @@ validate_misvm <- function(x) {
 #'   - `start` argument used when `method` = 'mip'.  If TRUE, the mip program
 #'   will be warm_started with the solution from `method` = 'qp-heuristic' to
 #'   improve speed.
+#' @param .fns (argument for `misvm.MilData()` method) list of functions to
+#'   summarize instances over.
+#' @param cor (argument for `misvm.MilData()` method) logical, whether to
+#'   include correlations between all features in the summarization.
 #'
 #' @return an object of class 'misvm'.  The object contains the following
 #'   components:
@@ -262,6 +266,25 @@ misvm.default <- function(x, y, bags, cost = 1, method = c("heuristic", "mip", "
   # return(res)
 }
 
+#' @describeIn misvm Method for 'MilData' objects. Summarize samples to the
+#'   instance level based on specified functions, then perform misvm on instance
+#'   level data.
+#' @export
+misvm.MilData <- function(data, .fns = list(mean = mean, sd = sd), cor = FALSE, ...)
+{
+  form <- mi(bag_label, bag_name) ~ . - instance_name
+  instance_data <- summarize_samples(data, .fns, cor)
+  res <- misvm(form, data = instance_data, ...)
+
+  res$call_type <- "misvm.MilData"
+  res$instance_name <- "instance_name"
+  res$summary_fns <- .fns
+  res$summary_cor <- cor
+  return(res)
+}
+
+
+
 #' Predict method for 'misvm' object
 #' @param object an object of class misvm
 #' @param new_data matrix to predict from.  Needs to have the same number of
@@ -308,10 +331,20 @@ misvm.default <- function(x, y, bags, cost = 1, method = c("heuristic", "mip", "
 #' @author Sean Kent
 predict.misvm <- function(object, new_data,
                           type = c("class", "raw"), layer = c("bag", "instance"),
-                          new_bags = "bag_name") {
+                          new_bags = "bag_name")
+{
   type <- match.arg(type)
   layer <- match.arg(layer)
   method <- attr(object, "method")
+
+  if (object$call_type == "misvm.MilData") {
+    mil_cols <- c("bag_label", "bag_name", "instance_name")
+    mil_info <- new_data[, mil_cols]
+    new_data <- summarize_samples(new_data,
+                                  group_cols = mil_cols,
+                                  .fns = object$summary_fns,
+                                  cor = object$summary_cor)
+  }
 
   if (object$call_type == "misvm.formula") {
     new_x <- x_from_mi_formula(object$formula, new_data)
@@ -353,6 +386,11 @@ predict.misvm <- function(object, new_data,
                 "raw" = tibble::tibble(.pred = as.numeric(scores)),
                 "class" = tibble::tibble(.pred_class = pos))
 
+  if (object$call_type == "misvm.MilData") {
+    # bring back the predictions from instance level to the sample level
+    ind <- match(mil_info$instance_name, new_data$instance_name)
+    res <- res[ind, ]
+  }
   # TODO: consider returning the AUC here as an attribute.  Can only do if we have the true bag labels
   # attr(res, "AUC") <- calculated_auc
   attr(res, "layer") <- layer

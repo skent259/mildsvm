@@ -4,6 +4,7 @@
 \alias{misvm}
 \alias{misvm.formula}
 \alias{misvm.default}
+\alias{misvm.MilData}
 \title{Fit MI-SVM model to the data}
 \usage{
 \method{misvm}{formula}(
@@ -28,6 +29,8 @@
     nrow(x), sampling = "random"), max_step = 500, type = "C-classification", scale =
     TRUE, verbose = FALSE, time_limit = 60, start = FALSE)
 )
+
+\method{misvm}{MilData}(data, .fns = list(mean = mean, sd = sd), cor = FALSE, ...)
 }
 \arguments{
 \item{formula}{a formula with specification \code{mi(y, bags) ~ x} which uses the
@@ -83,6 +86,12 @@ otherwise, a positive class is chosen and a message will be supplied.}
 
 \item{bags}{a vector specifying which instance belongs to each bag.  Can be
 a string, numeric, of factor.}
+
+\item{.fns}{(argument for \code{misvm.MilData()} method) list of functions to
+summarize instances over.}
+
+\item{cor}{(argument for \code{misvm.MilData()} method) logical, whether to
+include correlations between all features in the summarization.}
 }
 \value{
 an object of class 'misvm'.  The object contains the following
@@ -116,6 +125,10 @@ the \code{gurobi} optimization back-end.
 \item \code{formula}: Method for passing formula
 
 \item \code{default}: Method for data.frame-like objects
+
+\item \code{MilData}: Method for 'MilData' objects. Summarize samples to the
+instance level based on specified functions, then perform misvm on instance
+level data.
 }}
 
 \examples{
