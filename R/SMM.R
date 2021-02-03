@@ -215,12 +215,20 @@ smm.MilData <- function(data, ...)
 #' @param object an object of class smm
 #' @param new_data matrix to predict from.  Needs to have the same number of
 #'   columns as the X that trained the 'smm' object
+#' @param layer If 'instance', return predictions at the instance level. Option
+#'   'bag' returns predictions at the bag level, but only if the model was fit
+#'   with `smm.MilData()`,
 #' @param new_instances character or character vector.  Can specify a singular
 #'   character that provides the column name for the instance names in
 #'   `new_data`, default = "instance_name".  Can also specify a vector of length
 #'   `nrow(new_data)` that has instance name for each row.  When `object` was
-#'   fitted with `smm.formula`, this parameter is not necessary as the bag name
-#'   can be pulled directly from new_data, if available.
+#'   fitted with `smm.formula()`, this parameter is not necessary as the bag
+#'   name can be pulled directly from new_data, if available.
+#' @param new_bags character or character vector.  Only relevant when fit with
+#'   `smm.MilData()`, which contains bag level information.  Can specify a
+#'   singular character that provides the column name for the bag names in
+#'   `new_data`, default = "bag_name".  Can also specify a vector of length
+#'   `nrow(new_data)` that has bag name for each instance.
 #'
 #' @return tibble with `nrow(new_data)` rows.  If type = 'class', the tibble
 #'   will have a column named '.pred_class'.  If type = 'raw', the tibble will
@@ -264,11 +272,20 @@ smm.MilData <- function(data, ...)
 predict.smm <- function(object,
                         new_data,
                         type = c("class", "raw"),
+                        layer = "instance",
                         new_instances = "instance_name",
+                        new_bags = NULL,
                         kernel = NULL,
                         ...)
 {
     type <- match.arg(type)
+    layer <- match.arg(layer, c("instance", "bag"))
+
+    if (layer == "bag" && object$call_type != "smm.MilData") {
+        message("`layer` = 'bag' is not permitted unless model was fit with `smm.MilData()`.")
+        message("Changing `layer` to 'instance'.")
+        layer <- "instance"
+    }
 
     if (is.matrix(kernel) && !is.null(object$center)) {
         message("Model was fit using scaling, make sure that kernel matrix was similarly scaled.")
@@ -285,6 +302,17 @@ predict.smm <- function(object,
         instances <- new_data[[new_instances]]
     } else {
         instances <- new_instances
+    }
+
+    # bag information (for `smm.MilData()`)
+    if (layer == "bag") {
+        if (is.null(new_bags)) {
+            bags <- new_data[[object$bag_name]]
+        } else if (length(new_bags) == 1 & new_bags[1] %in% colnames(new_data)) {
+            bags <- new_data[[new_bags]]
+        } else {
+            bags <- new_bags
+        }
     }
 
     # new_x
@@ -322,5 +350,8 @@ predict.smm <- function(object,
         "raw" = tibble::tibble(.pred = raw[instances]),
         "class" = tibble::tibble(.pred_class = pos[instances])
     )
+    if (layer == "bag") {
+        res[[1]] <- classify_bags(res[[1]], bags, condense = FALSE)
+    }
     return(res)
 }

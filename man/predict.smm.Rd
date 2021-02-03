@@ -8,7 +8,9 @@
   object,
   new_data,
   type = c("class", "raw"),
+  layer = "instance",
   new_instances = "instance_name",
+  new_bags = NULL,
   kernel = NULL,
   ...
 )
@@ -22,12 +24,22 @@ columns as the X that trained the 'smm' object}
 \item{type}{if 'class', return predicted values with threshold of 0 as
 -1 or +1.  If 'raw', return the raw predicted scores.}
 
+\item{layer}{If 'instance', return predictions at the instance level. Option
+'bag' returns predictions at the bag level, but only if the model was fit
+with \code{smm.MilData()},}
+
 \item{new_instances}{character or character vector.  Can specify a singular
 character that provides the column name for the instance names in
 \code{new_data}, default = "instance_name".  Can also specify a vector of length
 \code{nrow(new_data)} that has instance name for each row.  When \code{object} was
-fitted with \code{smm.formula}, this parameter is not necessary as the bag name
-can be pulled directly from new_data, if available.}
+fitted with \code{smm.formula()}, this parameter is not necessary as the bag
+name can be pulled directly from new_data, if available.}
+
+\item{new_bags}{character or character vector.  Only relevant when fit with
+\code{smm.MilData()}, which contains bag level information.  Can specify a
+singular character that provides the column name for the bag names in
+\code{new_data}, default = "bag_name".  Can also specify a vector of length
+\code{nrow(new_data)} that has bag name for each instance.}
 
 \item{kernel}{optional pre-computed kernel matrix at the instance level,
 default = NULL. This can be specified to speed up computations.  The rows

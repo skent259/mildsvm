@@ -16,6 +16,14 @@ new_x <- data.frame(x1 = rnorm(length(new_inst), mean = 1*(new_inst=="11")),
                     x2 = rnorm(length(new_inst), mean = 2*(new_inst=="11")),
                     x3 = rnorm(length(new_inst), mean = 3*(new_inst=="11")))
 
+## MilData set to work with
+mil_df <- GenerateMilData(positive_dist = 'mvnormal',
+                          negative_dist = 'mvnormal',
+                          remainder_dist = 'mvnormal',
+                          nbag = 10,
+                          nsample = 20,
+                          positive_prob = 0.15,
+                          positive_mean = rep(4, 5))
 
 test_that("smm() works for data-frame-like inputs", {
 
@@ -79,24 +87,16 @@ test_that("smm() works with formula method", {
 })
 
 test_that("smm() works with MilData method", {
-  df <- GenerateMilData(positive_dist = 'mvt',
-                        negative_dist = 'mvnormal',
-                        remainder_dist = 'mvnormal',
-                        nbag = 10,
-                        nsample = 20,
-                        positive_degree = 3,
-                        positive_prob = 0.15,
-                        positive_mean = rep(0, 5))
 
-  mdl <- smm(df)
+  mdl <- smm(mil_df)
   expect_s3_class(mdl, "smm")
   expect_equal(mdl$call_type, "smm.MilData")
   expect_s4_class(mdl$model, "ksvm")
 
-  pred <- predict(mdl, df, type = "raw")
-  expect_equal(nrow(pred), nrow(df))
+  pred <- predict(mdl, mil_df, type = "raw")
+  expect_equal(nrow(pred), nrow(mil_df))
   expect_equal(colnames(pred), ".pred")
-  expect_equal(length(unique(pred$.pred)), length(unique(df$instance_name)))
+  expect_equal(length(unique(pred$.pred)), length(unique(mil_df$instance_name)))
 
 })
 
@@ -279,6 +279,27 @@ test_that("predict.smm has correct argument handling", {
     predict(mdl_x, new_data = NULL, new_instances = instances, type = "raw", kernel = kernel_mat)
   ))))
 
+
+})
+
+test_that("predict.smm() works when fit with smm.MilData()", {
+  mdl <- smm(mil_df)
+
+  expect_equal(
+    predict(mdl, new_data = mil_df, type = "raw", layer = "bag"),
+    predict(mdl, new_data = mil_df, type = "raw", layer = "bag", new_bags = "bag_name")
+  )
+  expect_equal(
+    predict(mdl, new_data = mil_df, type = "raw", layer = "bag"),
+    predict(mdl, new_data = mil_df %>% select(-bag_name),
+            type = "raw", layer = "bag", new_bags = mil_df$bag_name)
+  )
+
+  pred <- predict(mdl, new_data = mil_df, type = "raw", layer = "bag")
+  expect_lte(nrow(distinct(pred)), length(unique(mil_df$bag_name)))
+
+  pred <- predict(mdl, new_data = mil_df, type = "raw", layer = "instance")
+  expect_lte(nrow(distinct(pred)), length(unique(mil_df$instance_name)))
 
 })
 
