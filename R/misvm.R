@@ -280,6 +280,7 @@ misvm.MilData <- function(data, .fns = list(mean = mean, sd = sd), cor = FALSE, 
   res$instance_name <- "instance_name"
   res$summary_fns <- .fns
   res$summary_cor <- cor
+  res$features <- setdiff(colnames(instance_data), c("bag_label", "bag_name", "instance_name"))
   return(res)
 }
 
