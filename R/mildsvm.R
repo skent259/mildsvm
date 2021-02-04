@@ -358,8 +358,8 @@ mildsvm.MilData <- function(data, cost = 1,
 #'   name can be pulled directly from new_data, if available.
 #' @param kernel optional pre-computed kernel matrix at the instance level,
 #'   default = NULL. This can be specified to speed up computations.  The rows
-#'   should correspond to instances in the original training data, and columns
-#'   should correspond to instances in the new data to predict.
+#'   should correspond to instances in the new data to predict, and columns
+#'   should correspond to instances in the original training data.
 #'
 #' @return tibble with `nrow(new_data)` rows.  If type = 'class', the tibble
 #'   will have a column '.pred_class'.  If type = 'raw', the tibble will have a
