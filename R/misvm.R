@@ -272,15 +272,18 @@ misvm.default <- function(x, y, bags, cost = 1, method = c("heuristic", "mip", "
 #' @export
 misvm.MilData <- function(data, .fns = list(mean = mean, sd = sd), cor = FALSE, ...)
 {
-  form <- mi(bag_label, bag_name) ~ . - instance_name
   instance_data <- summarize_samples(data, .fns, cor)
-  res <- misvm(form, data = instance_data, ...)
+  res <- misvm.default(
+    x = subset(instance_data, select = -c(bag_label, bag_name, instance_name)),
+    y = instance_data$bag_label,
+    bags = instance_data$bag_name,
+    ...
+  )
 
   res$call_type <- "misvm.MilData"
   res$instance_name <- "instance_name"
   res$summary_fns <- .fns
   res$summary_cor <- cor
-  res$features <- setdiff(colnames(instance_data), c("bag_label", "bag_name", "instance_name"))
   return(res)
 }
 
