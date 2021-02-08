@@ -5,7 +5,7 @@
 \title{Function to reorder the data by bag label, bag number, and then first data
 column}
 \usage{
-.reorder(y, b, X)
+.reorder(y, b, X, i = NULL)
 }
 \description{
 Function to reorder the data by bag label, bag number, and then first data

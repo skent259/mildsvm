@@ -43,8 +43,8 @@ singular character that provides the column name for the bag names in
 
 \item{kernel}{optional pre-computed kernel matrix at the instance level,
 default = NULL. This can be specified to speed up computations.  The rows
-should correspond to instances in the original training data, and columns
-should correspond to instances in the new data to predict.}
+should correspond to instances in the new data to predict, and columns
+should correspond to instances in the original training data.}
 }
 \value{
 tibble with \code{nrow(new_data)} rows.  If type = 'class', the tibble

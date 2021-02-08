@@ -1,5 +1,20 @@
 context("Testing the functions in mildsvm.R")
 
+set.seed(8)
+mil_data <- GenerateMilData(positive_dist = "mvnormal",
+                            negative_dist = "mvnormal",
+                            remainder_dist = "mvnormal",
+                            nbag = 10,
+                            nsample = 5,
+                            positive_mean = rep(2, 5))
+
+mil_data_test <- GenerateMilData(positive_dist = "mvnormal",
+                                 negative_dist = "mvnormal",
+                                 remainder_dist = "mvnormal",
+                                 nbag = 20,
+                                 nsample = 5,
+                                 positive_mean = rep(2, 5))
+
 test_that("mildsvm() works for data-frame-like inputs", {
   set.seed(8)
   df1 <- GenerateMilData(positive_dist = 'mvt',
@@ -440,6 +455,8 @@ test_that("Passing kernel matrix into mildsvm works", {
                          positive_prob = 0.15,
                          positive_mean = rep(0, 5))
 
+  df1 <- df1[sample(1:nrow(df1)), ]
+
   mdl1 <- mildsvm(df1, control = list(kernel = kme(df1, sigma = 0.05), sigma = 0.05))
   pred1 <- predict(mdl1, new_data = df2, type = "raw", kernel = kme(df2, df1, sigma = 0.05))
 
@@ -450,3 +467,28 @@ test_that("Passing kernel matrix into mildsvm works", {
   expect_equal(pred1, pred2)
 
 })
+
+test_that("Re-ordering data doesn't reduce performance", {
+
+  set.seed(8)
+  mdl1 <- mildsvm(mil_data, control = list(sigma = 0.1))
+  mdl2 <- mildsvm(mil_data[sample(1:nrow(mil_data)), ], control = list(sigma = 0.1))
+
+  pred1 <- predict(mdl1, mil_data_test, type = "raw")
+  pred2 <- predict(mdl2, mil_data_test, type = "raw")
+
+  auc1 <- with(mil_data_test,
+       pROC::auc(response = classify_bags(bag_label, bag_name),
+                 predictor = classify_bags(pred1$.pred, bag_name)))
+  auc2 <- with(mil_data_test,
+       pROC::auc(response = classify_bags(bag_label, bag_name),
+                 predictor = classify_bags(pred2$.pred, bag_name)))
+
+  # the auc2 should be in the neighborhood of auc1
+  auc1; auc2
+  eps <- 0.01
+  expect_gte(auc2, auc1 - eps)
+  expect_lte(auc2, auc1 + eps)
+})
+
+

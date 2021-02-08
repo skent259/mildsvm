@@ -261,11 +261,20 @@ mildsvm.default <- function(x, y, bags, instances, cost = 1,
             x <- as.data.frame(x)
         }
         y = 2*y - 1 # convert {0,1} to {-1, 1}
-        data <- MilData(cbind(bag_label = y,
-                              bag_name = bags,
-                              instance_name = instances,
-                              x))
 
+        r <- .reorder(y, bags, x, instances)
+
+        data <- MilData(cbind(bag_label = y[r$order],
+                              bag_name = bags[r$order],
+                              instance_name = instances[r$order],
+                              x[r$order, , drop = FALSE]))
+        data <- dplyr::arrange(data, bag_label, bag_name, instance_name)
+
+        inst_order <- match(unique(instances[r$order]), unique(instances))
+        if (is.matrix(control$kernel)) {
+            control$kernel <- control$kernel[inst_order, inst_order]
+        }
+        
         res <- mil_distribution(data,
                                 cost = cost,
                                 weights = weights,
@@ -274,6 +283,7 @@ mildsvm.default <- function(x, y, bags, instances, cost = 1,
                                 sigma = control$sigma)
         res$model$features <- col_x
         res$model$traindata <- res$traindata
+        res$model$inst_order <- inst_order
 
     } else if (method == "mip") {
 
@@ -323,7 +333,8 @@ mildsvm.MilData <- function(data, cost = 1,
                                            scale = TRUE,
                                            verbose = FALSE,
                                            time_limit = 60,
-                                           start = FALSE)) {
+                                           start = FALSE))
+{
     method <- match.arg(method)
 
     x <- as.data.frame(subset(data, select = -c(bag_label, bag_name, instance_name)))
@@ -396,7 +407,8 @@ mildsvm.MilData <- function(data, cost = 1,
 predict.mildsvm <- function(object, new_data,
                           type = c("class", "raw"), layer = c("bag", "instance"),
                           new_bags = "bag_name", new_instances = "instance_name",
-                          kernel = NULL) {
+                          kernel = NULL)
+{
     type <- match.arg(type)
     layer <- match.arg(layer)
     method <- attr(object, "method")
@@ -429,6 +441,7 @@ predict.mildsvm <- function(object, new_data,
         new_x$instance_name <- instances
         # these scores are at the instance level
         if (!is.null(kernel)) {
+            kernel <- kernel[, object$model$inst_order]
             # TODO: would be good to check that matrix is of the right size here
             scores <- predict(object$model, new_data = new_x,
                               type = "raw",

@@ -23,7 +23,15 @@ mil_df <- GenerateMilData(positive_dist = 'mvnormal',
                           nbag = 10,
                           nsample = 20,
                           positive_prob = 0.15,
-                          positive_mean = rep(4, 5))
+                          positive_mean = rep(2, 5))
+
+mil_df_test <- GenerateMilData(positive_dist = 'mvnormal',
+                          negative_dist = 'mvnormal',
+                          remainder_dist = 'mvnormal',
+                          nbag = 20,
+                          nsample = 20,
+                          positive_prob = 0.15,
+                          positive_mean = rep(2, 5))
 
 test_that("smm() works for data-frame-like inputs", {
 
@@ -350,5 +358,28 @@ test_that("predict.smm returns labels that match the input labels", {
   expect_equal(predict(mdl1, df1, type = "class"),
                predict(mdl2, df2, type = "class"))
 
+})
+
+test_that("Re-ordering data doesn't reduce performance", {
+
+  set.seed(8)
+  mdl1 <- smm(mil_df, control = list(sigma = 0.1))
+  mdl2 <- smm(mil_df[sample(1:nrow(mil_df)), ], control = list(sigma = 0.1))
+
+  pred1 <- predict(mdl1, mil_df_test, type = "raw", layer = "bag")
+  pred2 <- predict(mdl2, mil_df_test, type = "raw", layer = "bag")
+
+  auc1 <- with(mil_df_test,
+               pROC::auc(response = classify_bags(bag_label, bag_name),
+                         predictor = classify_bags(pred1$.pred, bag_name)))
+  auc2 <- with(mil_df_test,
+               pROC::auc(response = classify_bags(bag_label, bag_name),
+                         predictor = classify_bags(pred2$.pred, bag_name)))
+
+  # the auc2 should be in the neighborhood of auc1
+  auc1; auc2
+  eps <- 0.05
+  expect_gte(auc2, auc1 - eps)
+  expect_lte(auc2, auc1 + eps)
 })
 

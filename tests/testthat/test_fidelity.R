@@ -81,6 +81,9 @@ test_that("mildsvm.R functions have identical output", {
   ind2 <- which(mil_data$instance_name == unique(mil_data$instance_name)[2])[1]
   mil_data_ <- mil_data[-c(ind1, ind2), ]
 
+  mil_data_ <- mil_data_ %>%
+    arrange(bag_label, bag_name, instance_name, X1)
+
   set.seed(8)
   mdl1 <- mildsvm::mildsvm(mil_data_, cost = 1,
                            weights = c("0" = 0.375, "1" = 1),
@@ -123,6 +126,9 @@ test_that("mildsvm.R functions have identical output", {
   #     distinct(bag_name, bag_score, bag_label) %>%
   #     dplyr::mutate(bag_label = as.factor(bag_label))
   # )
+
+  # there is another bug in the mil_distribution code where it will not work
+  # when the data is passed out of order.
 
   # set.seed(8)
   # mildsvm_cv_output <- mildsvm::cv_mild(mil_data, n_fold = 3)
