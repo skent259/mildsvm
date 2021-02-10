@@ -1,37 +1,27 @@
 context("Testing the functions in misvm.R")
 
-mil_data <- GenerateMilData(positive_dist = 'mvt',
+set.seed(8)
+mil_data <- GenerateMilData(positive_dist = 'mvnormal',
                             negative_dist = 'mvnormal',
                             remainder_dist = 'mvnormal',
                             nbag = 20,
                             nsample = 20,
-                            positive_degree = 3,
                             positive_prob = 0.15,
-                            positive_mean = rep(0, 5))
+                            positive_mean = rep(2, 5))
 
-mil_data_test <- GenerateMilData(positive_dist = 'mvt',
+mil_data_test <- GenerateMilData(positive_dist = 'mvnormal',
                             negative_dist = 'mvnormal',
                             remainder_dist = 'mvnormal',
                             nbag = 40,
                             nsample = 20,
-                            positive_degree = 3,
                             positive_prob = 0.15,
-                            positive_mean = rep(0, 5))
+                            positive_mean = rep(2, 5))
+
+df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10)) %>%
+  select(-instance_name)
 
 test_that("misvm() works for data-frame-like inputs", {
-  set.seed(8)
-  mil_data <- GenerateMilData(positive_dist = 'mvt',
-                              negative_dist = 'mvnormal',
-                              remainder_dist = 'mvnormal',
-                              nbag = 20,
-                              nsample = 20,
-                              positive_degree = 3,
-                              positive_prob = 0.15,
-                              positive_mean = rep(0, 5))
-
-  # mip method
-  df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
-  mdl1 <- misvm.default(x = df1[, 4:123],
+  mdl1 <- misvm.default(x = df1[, 3:122],
                         y = df1$bag_label,
                         bags = df1$bag_name,
                         method = "mip")
@@ -46,7 +36,7 @@ test_that("misvm() works for data-frame-like inputs", {
   predict(mdl1, new_data = df1, type = "raw", layer = "instance")
 
   # heuristic method
-  mdl2 <- misvm.default(x = df1[, 4:123],
+  mdl2 <- misvm.default(x = df1[, 3:122],
                         y = df1$bag_label,
                         bags = df1$bag_name,
                         method = "heuristic")
@@ -72,7 +62,7 @@ test_that("misvm() works for data-frame-like inputs", {
   expect_setequal(bag_preds$bag_name, unique(df1$bag_name))
 
   # qp-heuristic method
-  mdl3 <- misvm.default(x = df1[, 4:123],
+  mdl3 <- misvm.default(x = df1[, 3:122],
                         y = df1$bag_label,
                         bags = df1$bag_name,
                         method = "qp-heuristic")
@@ -87,22 +77,15 @@ test_that("misvm() works for data-frame-like inputs", {
   predict(mdl3, new_data = df1, type = "raw", layer = "bag")
   predict(mdl3, new_data = df1, type = "raw", layer = "instance")
 
+  df1 %>%
+    bind_cols(predict(mdl3, new_data = df1, type = "raw", layer = "bag")) %>%
+    bind_cols(predict(mdl3, new_data = df1, type = "class", layer = "bag")) %>%
+    distinct(bag_label, bag_name, .pred, .pred_class) %>%
+    as_tibble()
 
 })
 
 test_that("misvm() works with formula method", {
-  set.seed(8)
-  mil_data <- GenerateMilData(positive_dist = 'mvt',
-                              negative_dist = 'mvnormal',
-                              remainder_dist = 'mvnormal',
-                              nbag = 20,
-                              nsample = 20,
-                              positive_degree = 3,
-                              positive_prob = 0.15,
-                              positive_mean = rep(0, 5))
-
-  df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
-
   mdl1 <- misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean + X3_mean, data = df1)
   mdl2 <- misvm(x = df1[, c("X1_mean", "X2_mean", "X3_mean")],
                 y = df1$bag_label,
@@ -141,7 +124,7 @@ test_that("misvm() works with formula method", {
 test_that("predict.misvm returns labels that match the input labels", {
   test_prediction_levels_equal <- function(df, method, class = "default") {
     mdl <- switch(class,
-                  "default" = misvm(x = df[, 4:123],
+                  "default" = misvm(x = df[, 3:122],
                                     y = df$bag_label,
                                     bags = df$bag_name,
                                     method = method),
@@ -151,18 +134,6 @@ test_that("predict.misvm returns labels that match the input labels", {
     preds <- predict(mdl, df, type = "class")
     expect_setequal(levels(preds$.pred_class), levels(df$bag_label))
   }
-
-  set.seed(8)
-  mil_data <- GenerateMilData(positive_dist = 'mvt',
-                              negative_dist = 'mvnormal',
-                              remainder_dist = 'mvnormal',
-                              nbag = 20,
-                              nsample = 20,
-                              positive_degree = 3,
-                              positive_prob = 0.15,
-                              positive_mean = rep(0, 5))
-
-  df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
 
   # 0/1
   df2 <- df1 %>% mutate(bag_label = factor(bag_label))
@@ -203,44 +174,20 @@ test_that("predict.misvm returns labels that match the input labels", {
 })
 
 test_that("Dots work in misvm() formula", {
-  set.seed(8)
-  mil_data <- GenerateMilData(positive_dist = 'mvt',
-                              negative_dist = 'mvnormal',
-                              remainder_dist = 'mvnormal',
-                              nbag = 20,
-                              nsample = 20,
-                              positive_degree = 3,
-                              positive_prob = 0.15,
-                              positive_mean = rep(0, 5))
+  df2 <- df1 %>% select(bag_label, bag_name, X1_mean, X2_mean, X3_mean)
 
-  df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10)) %>%
-    select(bag_label, bag_name, X1_mean, X2_mean, X3_mean)
-
-  misvm_dot <- misvm(mi(bag_label, bag_name) ~ ., data = df1)
-  misvm_nodot <- misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean + X3_mean, data = df1)
+  misvm_dot <- misvm(mi(bag_label, bag_name) ~ ., data = df2)
+  misvm_nodot <- misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean + X3_mean, data = df2)
 
   expect_equal(misvm_dot$model, misvm_nodot$model)
   expect_equal(misvm_dot$features, misvm_nodot$features)
   expect_equal(misvm_dot$bag_name, misvm_nodot$bag_name)
 
-  expect_equal(predict(misvm_dot, new_data = df1), predict(misvm_nodot, new_data = df1))
+  expect_equal(predict(misvm_dot, new_data = df2), predict(misvm_nodot, new_data = df2))
 
 })
 
 test_that("misvm() has correct argument handling", {
-  set.seed(8)
-  mil_data <- GenerateMilData(positive_dist = 'mvt',
-                              negative_dist = 'mvnormal',
-                              remainder_dist = 'mvnormal',
-                              nbag = 20,
-                              nsample = 20,
-                              positive_degree = 3,
-                              positive_prob = 0.15,
-                              positive_mean = rep(0, 5))
-
-  df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10)) %>%
-    select(-instance_name)
-
   ## weights
   misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = TRUE)
   expect_equal(
@@ -284,9 +231,13 @@ test_that("misvm() has correct argument handling", {
     misvm(mi(bag_label, bag_name) ~ ., data = df1, method = "heuristic", control = list(kernel = "radial")),
     misvm(mi(bag_label, bag_name) ~ ., data = df1, method = "heuristic", control = list(kernel = "linear"))
   )))
+  expect_warning(expect_false(isTRUE(all.equal(
+    misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean, data = df1, method = "mip", control = list(kernel = "radial")),
+    misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean, data = df1, method = "mip", control = list(kernel = "linear"))
+  ))))
   expect_false(isTRUE(all.equal(
-    misvm(mi(bag_label, bag_name) ~ ., data = df1, method = "mip", control = list(kernel = "radial")),
-    misvm(mi(bag_label, bag_name) ~ ., data = df1, method = "mip", control = list(kernel = "linear"))
+    misvm(mi(bag_label, bag_name) ~ ., data = df1, method = "qp-heuristic", control = list(kernel = "radial")),
+    misvm(mi(bag_label, bag_name) ~ ., data = df1, method = "qp-heuristic", control = list(kernel = "linear"))
   )))
 
   ## scale
@@ -295,35 +246,30 @@ test_that("misvm() has correct argument handling", {
     misvm(mi(bag_label, bag_name) ~ ., data = df1, method = "heuristic", control = list(scale = FALSE))
   )))
   expect_false(isTRUE(all.equal(
-    misvm(mi(bag_label, bag_name) ~ ., data = df1, method = "mip", control = list(scale = TRUE)),
-    misvm(mi(bag_label, bag_name) ~ ., data = df1, method = "mip", control = list(scale = FALSE))
+    misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean, data = df1, method = "mip", control = list(scale = TRUE)),
+    misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean, data = df1, method = "mip", control = list(scale = FALSE))
   )))
+
+  # `start`
+  expect_warning(expect_message({
+    fit <- misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean, data = df1,
+                 method = "mip", control = list(kernel = "radial", start = TRUE))
+  }))
 
 
 })
 
 test_that("misvm mip can warm start", {
-  set.seed(8)
-  mil_data <- GenerateMilData(positive_dist = 'mvt',
-                              negative_dist = 'mvnormal',
-                              remainder_dist = 'mvnormal',
-                              nbag = 20,
-                              nsample = 20,
-                              positive_degree = 3,
-                              positive_prob = 0.15,
-                              positive_mean = rep(0, 5))
-
-  df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
   verbose <- interactive()
 
   # manually check that the output says "User MIP start produced solution with objective ..."
-  mdl1 <- misvm(x = df1[, 4:123],
+  mdl1 <- misvm(x = df1[, 3:122],
                y = df1$bag_label,
                bags = df1$bag_name,
                method = "mip",
                control = list(start = TRUE, verbose = verbose))
 
-  mdl2 <- misvm(x = df1[, 4:123],
+  mdl2 <- misvm(x = df1[, 3:122],
                y = df1$bag_label,
                bags = df1$bag_name,
                method = "mip",

@@ -141,7 +141,8 @@ misvm.formula <- function(formula, data, cost = 1, method = c("heuristic", "mip"
                                          scale = TRUE,
                                          verbose = FALSE,
                                          time_limit = 60,
-                                         start = FALSE)) {
+                                         start = FALSE))
+{
   # NOTE: other 'professional' functions use a different type of call that I
   #   couldn't get to work. See https://github.com/therneau/survival/blob/master/R/survfit.R
   #   or https://github.com/cran/e1071/blob/master/R/svm.R
@@ -174,7 +175,8 @@ misvm.default <- function(x, y, bags, cost = 1, method = c("heuristic", "mip", "
                                          scale = TRUE,
                                          verbose = FALSE,
                                          time_limit = 60,
-                                         start = FALSE)) {
+                                         start = FALSE))
+{
 
   method <- match.arg(method)
   if ("kernel" %ni% names(control)) control$kernel <- "linear"
@@ -187,6 +189,13 @@ misvm.default <- function(x, y, bags, cost = 1, method = c("heuristic", "mip", "
   if ("time_limit" %ni% names(control)) control$time_limit <- 60
   if ("start" %ni% names(control)) control$start <- FALSE
 
+  if (control$start && control$kernel != "linear") {
+    control$start <- FALSE
+    rlang::inform(c(
+      "Warm start is not available when `kernel` is not equal to 'linear'.",
+      i = "Setting `start` = FALSE. "
+    ))
+  }
   # store the levels of y and convert to 0,1 numeric format.
   y_info <- convert_y(y)
   y <- y_info$y
@@ -209,7 +218,7 @@ misvm.default <- function(x, y, bags, cost = 1, method = c("heuristic", "mip", "
 
   ## Nystrom approximation to x for mip and qp-heuristic methods
   # NOTE: this isn't strictly necessary for qp-heuristic, but it's the easiest way to implement
-  if (method %in% c("mip", "qp-heuristic") & control$kernel == "radial") {
+  if (method %in% c("mip") & control$kernel == "radial") {
     control$nystrom_args$df <- x
     control$nystrom_args$kernel <- "rbf"
     control$nystrom_args$sigma <- control$sigma
@@ -244,13 +253,15 @@ misvm.default <- function(x, y, bags, cost = 1, method = c("heuristic", "mip", "
                          start = control$start)
   } else if (method == "qp-heuristic") {
     y = 2*y - 1 # convert {0,1} to {-1, 1}
-    res <- misvm_qpheuristic_fit(y, bags, x,
-                                 c = cost,
-                                 rescale = control$scale,
-                                 weights = weights,
-                                 verbose = control$verbose,
-                                 time_limit = control$time_limit,
-                                 max_step = control$max_step)
+    res <- misvm_dualqpheuristic_fit(y, bags, x,
+                                     c = cost,
+                                     rescale = control$scale,
+                                     weights = weights,
+                                     kernel = control$kernel,
+                                     sigma = control$sigma,
+                                     verbose = control$verbose,
+                                     time_limit = control$time_limit,
+                                     max_step = control$max_step)
   } else {
     stop("misvm requires method = 'heuristic', 'mip', or 'qp-heuristic'.")
   }
@@ -259,7 +270,7 @@ misvm.default <- function(x, y, bags, cost = 1, method = c("heuristic", "mip", "
   res$call_type <- "misvm.default"
   res$bag_name <- NULL
   res$levels <- lev
-  if (method %in% c("mip", "qp-heuristic") & control$kernel == "radial") {
+  if (method %in% c("mip") & control$kernel == "radial") {
     res$kfm_fit <- kfm_fit
   }
   new_misvm(res, method = method)
@@ -358,14 +369,29 @@ predict.misvm <- function(object, new_data,
   if ("kfm_fit" %in% names(object)) {
     new_x <- predict_kfm_nystrom(object$kfm_fit, new_x)
   }
+  if (method == "qp-heuristic" & "center" %in% names(object)) {
+    new_x <- as.data.frame(scale(new_x, center = object$center, scale = object$scale))
+  }
+
+  # kernel
+  if (method == "qp-heuristic") {
+    kernel <- compute_kernel(as.matrix(new_x),
+                             object$model$xmatrix,
+                             type = object$model$kernel,
+                             sigma = object$model$sigma)
+  }
 
   if (method == "heuristic") {
     pos <- predict(object = object$model, newdata = new_x, decision.values = TRUE)
     scores <- attr(pos, "decision.values")
     pos <- as.numeric(as.character(pos))
 
-  } else if (method == "mip" | method == "qp-heuristic") {
+  } else if (method == "mip") {
     scores <- as.matrix(new_x) %*% object$model$w + object$model$b
+    pos <- 2*(scores > 0) - 1
+
+  } else if (method == "qp-heuristic") {
+    scores <- kernel %*% object$model$ay + object$model$b
     pos <- 2*(scores > 0) - 1
 
   } else {
@@ -687,13 +713,6 @@ misvm_heuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
   ))
 }
 
-
-
-
-
-
-
-
 #' INTERNAL Fit MI-SVM model based on heuristic method and QP optimization
 #'
 #' Function to train an MI-SVM classifier based on the heuristic method proposed
@@ -808,6 +827,134 @@ misvm_qpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
   return(new_misvm(res, method = "qp-heuristic"))
 }
 
+
+#' INTERNAL Fit MI-SVM model based on heuristic method and dual QP optimization
+#'
+#' Function to train an MI-SVM classifier based on the heuristic method proposed
+#' by Andrews et al. (2003) where each step is solved with the Quadratic
+#' Programming (QP) problem with correct constraints.  This is solved in the
+#' dual and so it offers kernel options.  The optimization problem is solved
+#' using the `gurobi` R package through the Gurobi backend.
+#'
+#' @inheritParams misvm_mip_fit
+#'
+#' @return `misvm_qpheuristic_fit()` returns an object of class `"misvm"`.
+#'   An object of class "misvm" is a list containing at least the following
+#'   components:
+#'   - `model`: a list with components:
+#'     - `b`: intercept term used to make the classifier
+#'     - `xmatrix`: data used in future kernel calculations
+#'     - `ay`: alpha vectors multiplied by y
+#'     - `status`: solution status from `gurobi::gurobi`
+#'     - `itercount`: itercount from `gurobi::gurobi`
+#'     - `baritercount`: baritercount from `gurobi::gurobi`
+#'     - `objval`: value of the objective at the solution
+#'     - `c`: value of the cost parameter used in solving the optimization
+#'     - `n_selections`: the number of selections used in fitting
+#'   - `representative_inst`: NULL, TODO: mesh with other misvm method
+#'   - `traindata`: NULL, TODO: mesh with other misvm method
+#'   - `useful_inst_idx`: NULL, TODO: mesh with other misvm method
+#'   - `center`: vector of centering means, if `rescale`
+#'   - `scale`: vector of scaling sds, if `rescale`
+#'
+#' @author Sean Kent
+#' @keywords internal
+misvm_dualqpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
+                                      kernel = "linear", sigma = NULL,
+                                      verbose = FALSE, time_limit = FALSE, max_step = 500) {
+  r <- .reorder(y, bags, X)
+  y <- r$y
+  bags <- r$b
+  X <- r$X
+  if (rescale) X <- scale(X)
+
+  # randomly select initial representative instances
+  pos_bags <- unique(bags[y==1])
+  selected <- sapply(pos_bags, function(bag) {sample(which(bags == bag), size = 1)})
+
+  K <- compute_kernel(X, type = kernel, sigma = sigma)
+
+  params <- list()
+  params$OutputFlag = 1*verbose
+  params$IntFeasTol = 1e-5
+  if (time_limit) params$TimeLimit = time_limit
+
+  selection_changed <- TRUE
+  itercount = 0
+  baritercount = 0
+  n_selections = 0
+
+  while (selection_changed & n_selections < max_step) {
+    ind <- c(which(y == -1), selected) # effective set for this iteration
+    K_ind <- K[ind, ind, drop = FALSE]
+
+    opt_model <- misvm_dualqpheuristic_model(y[ind], bags[ind], K_ind, c, weights)
+    gurobi_result <- gurobi::gurobi(opt_model, params = params)
+
+    a <- gurobi_result$x
+    # TODO: need a better way to figure out which a to compute b_ over
+    # want to exclude those where sum a_i = C in each bag
+
+    b_ <- as.vector(1 / y[ind] - K_ind %*% (a * y[ind]))
+    b_ <- mean(b_[(a > 1e-9) & (a < c)])
+    f <- K[, ind, drop = FALSE] %*% (a * y[ind]) + b_
+
+    itercount <- itercount + gurobi_result$itercount
+    baritercount <- baritercount + gurobi_result$baritercount
+
+    new_selection <- sapply(pos_bags, function(bag) {
+      b_ind <- bags == bag
+      which(f == max(f[b_ind]) & b_ind)[1]
+    })
+
+    selection_changed <- !identical(selected, new_selection)
+    if (selection_changed) {
+      selected <- new_selection
+      n_selections = n_selections + 1
+    }
+  }
+  if (n_selections == max_step) {
+    message = paste0("Number of iterations of heuristic algorithm reached threshold of ", max_step, ". Stopping with current selection.")
+    warning(message)
+    cat(message, "Value of c is ", c, "\n")
+  }
+
+  # vector representing selected positive instances
+  selected_vec <- rep(0, length(y))
+  selected_vec[selected] <- 1
+  selected_vec <- selected_vec[order(r$order)] # un-order the vector
+
+  res <- list(
+    model = list(
+      # w = w,
+      b = b_,
+      xmatrix = X[ind, , drop = FALSE],
+      ay = a * y[ind],
+      kernel = kernel,
+      sigma = sigma,
+      # xi = gurobi_result$x[grepl("xi", model$varnames)],
+      status = gurobi_result$status,
+      itercount = itercount,
+      baritercount = baritercount,
+      objval = gurobi_result$objval,
+      c = c,
+      n_selections = n_selections
+    ),
+    representative_inst = selected_vec,
+    traindata = NULL,
+    useful_inst_idx = NULL
+  )
+  if (rescale) {
+    res$center <- attr(X, "scaled:center")
+    res$scale <- attr(X, "scaled:scale")
+  }
+
+  # TODO: return the scale parameters so they can be used in prediction
+  # names(res$model$w) <- colnames(X)
+
+  return(new_misvm(res, method = "qp-heuristic"))
+}
+
 #' INTERNAL Create optimization model for MI-SVM problem
 #'
 #' Internal function to build an optimization model (that can be passed to
@@ -861,6 +1008,61 @@ misvm_qpheuristic_model <- function(y, bags, X, c, weights = NULL) {
   model$sense <- rep(">=", nrow(X))
   model$rhs <- rep(1, nrow(X))
   model$lb <- c(rep(-Inf, n_w + n_b), rep(0, n_xi))
+
+  return(model)
+}
+
+#' INTERNAL Create optimization model for MI-SVM problem
+#'
+#' Internal function to build an optimization model (that can be passed to
+#' `gurobi::gurobi`) based on the MI-SVM quadratic problem for the
+#' representative instances in the dual
+#'
+#' @inheritParams misvm_mip_fit
+#' @param K kernel matrix.  This represents `X %*% t(X)` in the linear kernel,
+#'   and has a more complicated form for other kernels.
+#' @return a model that can be passed to `gurobi::gurobi` that contains the dual
+#'   QP problem defined by MI-SVM in Andrews et al. (2003)
+#'
+#' @author Sean Kent
+#' @keywords internal
+misvm_dualqpheuristic_model <- function(y, bags, K, c, weights = NULL) {
+  # assumes that the data is already re-ordered to save time
+
+  n_a <- length(y)
+  n_bags <- length(unique(bags))
+
+  e_vec <- function(b, len) {
+    # puts a 1 in the `b`th entry of a `len`-length 0 vector
+    vec <- rep(0, len)
+    vec[b] <- 1
+    return(vec)
+  }
+  bag_sum_constr <- sapply(bags, e_vec, len = n_bags)
+
+  constraint <- as.matrix(rbind(bag_sum_constr, -bag_sum_constr, t(y), -t(y)))
+
+  pos_bags <- unique(bags[y == 1])
+  if (is.null(weights)) {
+    c_vec <- rep(c, n_bags)
+  } else {
+    c_vec <- numeric(n_bags)
+    c_vec[which(unique(bags) %in% pos_bags)] <- weights[["1"]] * c
+    c_vec[which(unique(bags) %ni% pos_bags)] <- weights[["-1"]] * c
+  }
+
+  model <- list()
+
+  ## Objective
+  model$modelsense <- "max"
+  model$obj <- rep(1, n_a)
+  model$Q <- - 1/2 * y %*% t(y) * K # TODO: replace this with kernel at some point
+  ## Constraints
+  model$varnames <- c(paste0("a", 1:n_a))
+  model$A <- constraint
+  model$sense <- rep(">=", nrow(constraint))
+  model$rhs <- c(rep(0, n_bags), -c_vec, 0, 0)
+  model$lb <- c(rep(0, n_a))
 
   return(model)
 }

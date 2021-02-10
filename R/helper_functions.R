@@ -237,4 +237,25 @@ average_over_instances <- function(x, instances) {
   as.data.frame(do.call(rbind, x))
 }
 
+#' Compute kernel matrix based on type
+#' @keywords internal
+#' @author Sean Kent
+compute_kernel <- function(x, x2 = NULL, type = "linear", sigma = NULL) {
+  if (is.null(x2)) x2 <- x
+
+  if (type == "linear") {
+    k <- x %*% t(x2)
+  } else if (type == "radial") {
+    if (!is.numeric(sigma)) {
+      sigma <- 1 / ncol(x)
+      rlang::inform(c(
+        "Argument `sigma` was not provided.",
+        i = paste0("Defaulting to `sigma` = ", sigma)
+      ))
+    }
+    k <- rbf_kernel_matrix(sigma, x, x2)
+  }
+  return(k)
+}
+
 
