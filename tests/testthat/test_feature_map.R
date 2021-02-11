@@ -172,94 +172,6 @@ test_that("Nystrom method works with various sampling parameters", {
 
 })
 
-test_that("fit_kernel_feature_map works for appropriate methods", {
-
-  set.seed(8)
-  df <- mildsvm::GenerateMilData(positive_dist = "mvt",
-                                 negative_dist = "mvnormal",
-                                 remainder_dist = "mvnormal",
-                                 ncov = 5,
-                                 nbag = 7,
-                                 nsample = 7,
-                                 positive_degree = 3,
-                                 positive_prob = 0.15,
-                                 positive_mean = rep(0, 5))
-
-  fit <- fit_kernel_feature_map(df, method = "nystrom", kernel = "rbf", m = 100, r = 50, sigma = 0.05)
-  expect_equal(names(fit), c("df_sub", "dv", "method", "kernel", "kernel_params"))
-  expect_message(fit_kernel_feature_map(df, method = "nystrom", kernel = "rbf", sigma = 0.05),
-                 "Using parameter m = 196")
-  expect_message(fit_kernel_feature_map(df, method = "nystrom", kernel = "rbf", sigma = 0.05),
-                 "Using parameter r = 196")
-  expect_error(fit_kernel_feature_map(df, method = "nystrom", kernel = "rbf", m = 100, r = 50))
-
-  fit <- fit_kernel_feature_map(df, method = "exact", kernel = "polynomial", degree = 2, const = 1)
-  expect_equal(names(fit), c("method", "kernel", "kernel_params"))
-  expect_message(fit_kernel_feature_map(df, method = "exact", kernel = "polynomial"),
-                 "Using parameter degree = 2")
-  expect_message(fit_kernel_feature_map(df, method = "exact", kernel = "polynomial"),
-                 "Using parameter const = 1")
-
-
-
-})
-
-test_that("build_kernel_feature_map works for appropriate methods", {
-  set.seed(8)
-  df <- mildsvm::GenerateMilData(positive_dist = "mvt",
-                                 negative_dist = "mvnormal",
-                                 remainder_dist = "mvnormal",
-                                 ncov = 5,
-                                 nbag = 7,
-                                 nsample = 7,
-                                 positive_degree = 3,
-                                 positive_prob = 0.15,
-                                 positive_mean = rep(0, 5))
-
-  fit <- fit_kernel_feature_map(df, method = "nystrom", kernel = "rbf", m = 100, r = 50, sigma = 0.05)
-  fm <- build_kernel_feature_map(fit, df[1:75, ])
-  expect_equal(build_kernel_feature_map(fit, df[1:10, ]), build_kernel_feature_map(fit, df)[1:10, ])
-  expect_equal(dim(fm), c(75, 50+3))
-
-  fit <- fit_kernel_feature_map(df, method = "exact", kernel = "polynomial", degree = 2, const = 1)
-  fm <- build_kernel_feature_map(fit, df[1:75, ])
-  expect_equal(dim(fm), c(75, 20+3))
-
-})
-
-test_that("build_kernel_mean_map works for appropriate methods", {
-  set.seed(8)
-  df <- mildsvm::GenerateMilData(positive_dist = "mvt",
-                                 negative_dist = "mvnormal",
-                                 remainder_dist = "mvnormal",
-                                 ncov = 5,
-                                 nbag = 7,
-                                 nsample = 7,
-                                 positive_degree = 3,
-                                 positive_prob = 0.15,
-                                 positive_mean = rep(0, 5))
-
-  ## Nystrom, rbf
-  set.seed(8)
-  fit <- fit_kernel_feature_map(df, method = "nystrom", kernel = "rbf", m = 100, r = 50, sigma = 0.05)
-  fm <- build_kernel_mean_map(fit, df)
-
-  expect_equal(dim(fm), c(7*4, 50+3))
-  expect_equal(fm$instance_name, unique(fm$instance_name))
-  expect_equal(unique(fm$instance_name), unique(df$instance_name))
-
-  set.seed(8)
-  fm2 <- fit_kernel_feature_map(df, method = "nystrom", kernel = "rbf", output = "mean_map",
-                                m = 100, r = 50, sigma = 0.05)
-  expect_equal(fm, fm2)
-
-  ## Exact, polynomial
-  fit <- fit_kernel_feature_map(df, method = "exact", kernel = "polynomial", degree = 2, const = 1)
-  fm <- build_kernel_mean_map(fit, df)
-  expect_equal(dim(fm), c(7*4, 20+3))
-
-})
-
 test_that("Stratified sampling works with bag structure", {
   set.seed(8)
   df <- mildsvm::GenerateMilData(positive_dist = "mvt",
@@ -334,7 +246,7 @@ test_that("Nystrom sampling works with duplicated data", {
   expect_warning({
     fit <- kfm_nystrom(df, m = 8, r = 8, kernel = "rbf", sampling = 1:8, sigma = 0.05)
   })
-  fm <- build_kernel_feature_map(fit, df)
+  fm <- predict_kfm_nystrom(fit, df)
   expect_equal(dim(fm), c(8,7))
-  
+
 })

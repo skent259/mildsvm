@@ -228,7 +228,7 @@ test_that("Dots work in mildsvm() formula", {
                               positive_prob = 0.15,
                               positive_mean = rep(0, 5))
 
-  df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10)) %>%
+  df1 <- summarize_samples(mil_data, .fns = list(mean = mean)) %>%
     select(bag_label, bag_name, X1_mean, X2_mean, X3_mean)
 
   misvm_dot <- misvm(mi(bag_label, bag_name) ~ ., data = df1)
