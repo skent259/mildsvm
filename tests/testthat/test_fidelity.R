@@ -281,19 +281,50 @@ test_that("smm.R functions have identical output", {
 
 })
 
-test_that("misvm.R functions have identical output.", {
+test_that("misvm.R functions have identical output on MilData object.", {
   set.seed(8)
-  mil_data <- GenerateMilData(positive_dist = 'mvt',
-                              negative_dist = 'mvnormal',
-                              remainder_dist = 'mvnormal',
-                              nbag = 50,
-                              nsample = 20,
-                              positive_degree = 3,
-                              positive_prob = 0.15,
-                              positive_mean = rep(0, 5))
+  mil_data <- mildsvm::GenerateMilData(positive_dist = 'mvt',
+                                       negative_dist = 'mvnormal',
+                                       remainder_dist = 'mvnormal',
+                                       nbag = 10,
+                                       nsample = 7,
+                                       positive_degree = 3,
+                                       positive_prob = 0.15,
+                                       positive_mean = rep(0, 5))
+
+  # make the quantile functions
+  qtls <- seq(0.05, 0.95, length.out = 10)
+  q_funs <- purrr::map(qtls,
+                       function(qtl) { return(~quantile(.x, qtl)) })
+  names(q_funs) <- paste0("q", qtls)
 
 
-  expect_equal(mildsvm::mil_with_feature(data = mil_data),
-               MilDistribution::mil_with_feature(data = mil_data))
+  set.seed(8)
+  mdl1 <- mildsvm::misvm(mil_data, cost = 1,
+                         .fns = c(list(mean = mean, sd = sd), q_funs),
+                         method = "heuristic",
+                         control = list(kernel = "radial",
+                                        sigma = 1 / 120))
+
+  mdl2 <- MilDistribution::mil_with_feature(mil_data, cost = 1)
+
+  expect_equal(mdl1$model$coefs, mdl2$svm_mdl$coefs)
+  expect_equal(mdl1$total_step, mdl2$total_step)
+
+  # objects are quite different because of different ordering, but as long as predictions match that is okay
+  mildsvm_bag_pred <- mil_data %>%
+    select(bag_label, bag_name) %>%
+    bind_cols(predict(mdl1, new_data = mil_data, type = "raw", layer = "bag")) %>%
+    bind_cols(predict(mdl1, new_data = mil_data, layer = "bag")) %>%
+    distinct()
+
+  # Note prediction doesn't work in MilDistribution, but this is what it should do
+  MilDistribution_pred <- predict(mdl2, newdata = MilDistribution::build_instance_feature(mil_data))
+
+  expect_equivalent(
+    mildsvm_bag_pred %>% arrange(.pred) %>% pull(.pred),
+    MilDistribution_pred$bag_level_prediction %>% arrange(bag_score_pred) %>% pull(bag_score_pred)
+  )
+
 })
 
