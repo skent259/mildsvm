@@ -1,14 +1,32 @@
-#' Predict feature map using exact features
+new_kfm_exact <- function(x = list()) {
+  stopifnot(is.list(x))
+  structure(x, class = "kfm_exact")
+}
+
+validate_kfm_exact <- function(x) {
+  message("No validations currently in place for object of class 'kfm_exact'.")
+  x
+}
+
+#' Create an exact kernel feature map
 #'
-#' TODO: add description
+#' For some kernels, it is possible to create the exact features from given
+#' data. This function stores the information needed to build those exact
+#' features.
 #'
-#' @param object a object from a call to `fit_kernel_feature_map()` with
-#'   `method` = 'exact'.
-#' @param newx An object containing features for prediction. Usually a data.frame
-#'   or matrix.
+#' @inheritParams kfm_nystrom
+#' @param degree numeric (default 2), provides the degree for `kernel` =
+#'   'polynomial'
+#' @param const numeric (default 1), constant term for `kernel` = 'polynomial'
 #'
-#' @return a matrix of features that use the exact kernel feature map for each
-#'   observation in `newx`.
+#' @return an object of class 'kfm_exact' with the following components,
+#'   returned from the inputs:
+#'   * `kernel`
+#'   * `degree`
+#'   * `const`
+#'
+#' @details Currently, the following kernels are supported:
+#'   - 'polynomial', with `degree` = d and `const` = c
 #'
 #' @examples
 #' df <- data.frame(
@@ -17,26 +35,45 @@
 #'   X3 = rnorm(7)
 #' )
 #'
-#' fit <- fit_kernel_feature_map(df, method = "exact", kernel = "polynomial", degree = 2, const = 1)
-#' fm <- predict_exact(fit, df)
+#' fit <- kfm_exact(kernel = "polynomial", degree = 2, const = 1)
+#' fm <- build_fm(fit, df)
 #'
 #' @export
 #' @author Sean Kent
-predict_exact <- function(object, newx) {
-  UseMethod("predict_exact", newx)
+kfm_exact <- function(kernel = "polynomial", degree = 2, const = 1) {
+  if (kernel != "polynomial") {
+    rlang::abort("`kernel` must equal 'polynomial'")
+  }
+  if (degree != 2) {
+    rlang::abort(c(
+      paste0("Using `degree` = ", degree, "is not currently supported."),
+      i = "Choose `degree` = 2."
+    ))
+  }
+
+  return(new_kfm_exact(list(
+    kernel = kernel,
+    degree = degree,
+    const = const
+  )))
 }
 
-#' @describeIn predict_exact For use on objects of class `data.frame` or `matrix`.
+#' @describeIn build_fm Method for 'kfm_exact' class.
 #' @export
-predict_exact.default <- function(object, newx) {
-  if(object$kernel == "polynomial") {
-    stopifnot("degree" %in% names(object$kernel_params))
-    stopifnot("const" %in% names(object$kernel_params))
-    degree <- object$kernel_params$degree
-    const <- object$kernel_params$const
+build_fm.kfm_exact <- function(kfm_fit, new_data, ...) {
+  if (inherits(new_data, "MilData")) {
+    info <- subset(new_data, select = c(bag_label, bag_name, instance_name))
+    new_data <- subset(new_data, select = -c(bag_label, bag_name, instance_name))
+  } else {
+    info <- NULL
+  }
+
+  if (kfm_fit$kernel == "polynomial") {
+    degree <- kfm_fit$degree
+    const <- kfm_fit$const
 
     if (degree == 2) {
-      X <- as.matrix(newx)
+      X <- as.matrix(new_data)
       d <- ncol(X)
 
       x_squared <- X^2
@@ -56,25 +93,13 @@ predict_exact.default <- function(object, newx) {
 
       x_linear <- sqrt(2*const) * X
 
-      res <- cbind(x_squared, x_crossterms, x_linear)
+      fm <- cbind(x_squared, x_crossterms, x_linear)
       # TODO: consider passing the constant term in here, especially if not going to rescale after
-    } else {
-      stop(paste0("degree = ", degree, " not currently supported. Use degree = 2."))
     }
-  } else {
-    stop(paste0("kernel = ", object$kernel, " not currently supported. Use kernel = 'polynomial'."))
   }
 
-  return(res)
-}
-
-#' @describeIn predict_exact Ignore the information columns with 'bag_label',
-#'   'bag_name', and 'instance_name' when calculating kernel approximation.
-#'   These columns are re-appended upon prediction.
-#' @export
-predict_exact.MilData <- function(object, newx) {
-  info <- subset(newx, select = c(bag_label, bag_name, instance_name))
-  newx <- subset(newx, select = -c(bag_label, bag_name, instance_name))
-  fm <- predict_exact.default(object, newx)
-  cbind(info, fm)
+  if (!is.null(info)) {
+    fm <- cbind(info, fm)
+  }
+  return(fm)
 }

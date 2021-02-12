@@ -23,6 +23,9 @@
 #' fit <- kfm_nystrom(df, m = 7, r = 6, kernel = "radial", sigma = 0.05)
 #' fm <- build_fm(fit, df)
 #'
+#' fit <- kfm_exact(kernel = "polynomial", degree = 2, const = 1)
+#' fm <- build_fm(fit, df)
+#'
 #' @author Sean Kent
 #' @export
 build_fm <- function(kfm_fit, new_data, ...) {
