@@ -244,11 +244,11 @@ mildsvm.default <- function(x, y, bags, instances, cost = 1,
     if (method == "mip" && control$kernel == "radial") {
         ## Nystrom approximation to x for mip and qp-heuristic methods
         control$nystrom_args$df <- x
-        control$nystrom_args$kernel <- "rbf"
+        control$nystrom_args$kernel <- control$kernel
         control$nystrom_args$sigma <- control$sigma
         kfm_fit <- do.call(kfm_nystrom.default, args = control$nystrom_args)
 
-        x <- predict_kfm_nystrom.default(kfm_fit, x)
+        x <- build_fm(kfm_fit, x)
         x <- average_over_instances(x, instances)
     }
 
@@ -274,7 +274,7 @@ mildsvm.default <- function(x, y, bags, instances, cost = 1,
         if (is.matrix(control$kernel)) {
             control$kernel <- control$kernel[inst_order, inst_order]
         }
-        
+
         res <- mil_distribution(data,
                                 cost = cost,
                                 weights = weights,
@@ -429,7 +429,7 @@ predict.mildsvm <- function(object, new_data,
         new_x <- new_data[, object$features, drop = FALSE]
     }
     if ("kfm_fit" %in% names(object)) {
-        new_x <- predict_kfm_nystrom.default(object$kfm_fit, new_x)
+        new_x <- build_fm(object$kfm_fit, as.matrix(new_x))
         new_x <- average_over_instances(new_x, instances)
     }
     if (method == "heuristic" & "center" %in% names(object)) {

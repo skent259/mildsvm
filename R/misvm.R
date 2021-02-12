@@ -219,12 +219,12 @@ misvm.default <- function(x, y, bags, cost = 1, method = c("heuristic", "mip", "
   ## Nystrom approximation to x for mip and qp-heuristic methods
   # NOTE: this isn't strictly necessary for qp-heuristic, but it's the easiest way to implement
   if (method %in% c("mip") & control$kernel == "radial") {
-    control$nystrom_args$df <- x
-    control$nystrom_args$kernel <- "rbf"
+    control$nystrom_args$df <- as.matrix(x)
+    control$nystrom_args$kernel <- control$kernel
     control$nystrom_args$sigma <- control$sigma
     kfm_fit <- do.call(kfm_nystrom, args = control$nystrom_args)
 
-    x <- predict_kfm_nystrom(kfm_fit, x)
+    x <- build_fm(kfm_fit, x)
   }
 
   if (method == "heuristic") {
@@ -367,7 +367,7 @@ predict.misvm <- function(object, new_data,
     new_x <- new_data[, object$features, drop = FALSE]
   }
   if ("kfm_fit" %in% names(object)) {
-    new_x <- predict_kfm_nystrom(object$kfm_fit, new_x)
+    new_x <- build_fm(object$kfm_fit, as.matrix(new_x))
   }
   if (method == "qp-heuristic" & "center" %in% names(object)) {
     new_x <- as.data.frame(scale(new_x, center = object$center, scale = object$scale))
