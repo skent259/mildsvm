@@ -258,4 +258,61 @@ compute_kernel <- function(x, x2 = NULL, type = "linear", sigma = NULL) {
   return(k)
 }
 
+#' Sample MilData object by bags and instances
+#'
+#' From a 'MilData' object, return a sample that evenly pulls from the unique
+#' bags and unique instances from each bag as much as possible.  This is a form
+#' of stratified sampling to avoid randomly sampling many rows from a few bags.
+#'
+#' @param data a 'MilData' object containing the data
+#' @param size a non-negative integer giving the number of rows to choose from
+#'   `data`.
+#' @return a numeric vector of length `size` indicating which rows were sampled.
+#'
+#' @examples
+#' mil_data <- mildsvm::GenerateMilData(positive_dist = "mvnormal",
+#'                                      negative_dist = "mvnormal",
+#'                                      remainder_dist = "mvnormal",
+#'                                      nbag = 2,
+#'                                      ninst = 2,
+#'                                      nsample = 2)
+#'
+#' rows <- bag_instance_sampling(mil_data, 6)
+#' table(mil_data$bag_name[rows])
+#' table(mil_data$instance_name[rows])
+#'
+#' rows <- bag_instance_sampling(mil_data, 4)
+#' table(mil_data$bag_name[rows])
+#' table(mil_data$instance_name[rows])
+#'
+#' @export
+#' @author Sean Kent
+bag_instance_sampling <- function(data, size) {
+  stopifnot(inherits(data, "MilData"))
+  resample <- function(x, ...) x[sample.int(length(x), ...)] # safer version of sample
+
+
+  bags <- unique(data$bag_name)
+  sampled_bags <- resample(c(rep(bags, size %/% length(bags)),
+                             sample(bags, size %% length(bags))))
+  sampled_instances <- character(size)
+  sampled_rows <- numeric(size)
+
+  for (bag in unique(sampled_bags)) {
+    ind <- which(bag == sampled_bags)
+    k <- length(ind)
+    instances <- unique(data$instance_name[which(data$bag_name == bag)])
+    sampled_instances[ind] <- resample(c(rep(instances, k %/% length(instances)),
+                                         sample(instances, k %% length(instances))))
+
+    for (instance in instances) {
+      ind2 <- which(instance == sampled_instances)
+      l <- length(ind2)
+      rows <- which(data$instance_name == instance)
+      sampled_rows[ind2] <- resample(c(rep(rows, l %/% length(rows)),
+                                       sample(rows, l %% length(rows))))
+    }
+  }
+  return(sampled_rows)
+}
 
