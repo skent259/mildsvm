@@ -2,14 +2,14 @@ context("Misc testing (usually of helper_functions.R)")
 
 test_that("select_cv_folds2() is the same as select_cv_folds()", {
   set.seed(8)
-  mil_data <- GenerateMilData(positive_dist = 'mvt',
-                              negative_dist = 'mvnormal',
-                              remainder_dist = 'mvnormal',
-                              nbag = 20,
-                              nsample = 20,
-                              positive_degree = 3,
-                              positive_prob = 0.15,
-                              positive_mean = rep(0, 5))
+  mil_data <- generate_mild_df(positive_dist = 'mvt',
+                               negative_dist = 'mvnormal',
+                               remainder_dist = 'mvnormal',
+                               nbag = 20,
+                               nsample = 20,
+                               positive_degree = 3,
+                               positive_prob = 0.15,
+                               positive_mean = rep(0, 5))
 
   ## Data at the instance level
   df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))

@@ -17,7 +17,7 @@ validate_mi <- function(x) {
 #' @return An object of class `mi`.  Currently, no methods are implemented for this
 #' @examples
 #'
-#' mil_data <- GenerateMilData(
+#' mil_data <- generate_mild_df(
 #'   positive_dist = 'mvt',
 #'   negative_dist = 'mvnormal',
 #'   remainder_dist = 'mvnormal',

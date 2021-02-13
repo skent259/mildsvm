@@ -7,22 +7,22 @@ suppressWarnings({
 
 
 test_that("GenerateData.R functions have identical output", {
-  mil_data <- mildsvm::GenerateMilData(positive_dist = "mvt",
-                                       negative_dist = "mvnormal",
-                                       remainder_dist = "mvnormal",
-                                       ncov = 5,
-                                       nbag = 7,
-                                       nsample = 7,
-                                       positive_degree = 3,
-                                       positive_prob = 0.15,
-                                       positive_mean = rep(0, 5))
+  mil_data <- mildsvm::generate_mild_df(positive_dist = "mvt",
+                                        negative_dist = "mvnormal",
+                                        remainder_dist = "mvnormal",
+                                        ncov = 5,
+                                        nbag = 7,
+                                        nsample = 7,
+                                        positive_degree = 3,
+                                        positive_prob = 0.15,
+                                        positive_mean = rep(0, 5))
 
   set.seed(8)
   mildsvm_data <-
-    mildsvm::GenerateMilData(positive_dist = "mvt",
-                             negative_dist = "mvnormal",
-                             remainder_dist = "mvnormal",
-                             positive_degree = 3)
+    mildsvm::generate_mild_df(positive_dist = "mvt",
+                              negative_dist = "mvnormal",
+                              remainder_dist = "mvnormal",
+                              positive_degree = 3)
   set.seed(8)
   MilDistribution_data <-
     MilDistribution::GenerateMilData(positive_dist = "mvt",
@@ -34,15 +34,15 @@ test_that("GenerateData.R functions have identical output", {
 })
 
 test_that("kme.R functions have identical output", {
-  mil_data <- mildsvm::GenerateMilData(positive_dist = "mvt",
-                                       negative_dist = "mvnormal",
-                                       remainder_dist = "mvnormal",
-                                       ncov = 5,
-                                       nbag = 7,
-                                       nsample = 7,
-                                       positive_degree = 3,
-                                       positive_prob = 0.15,
-                                       positive_mean = rep(0, 5))
+  mil_data <- mildsvm::generate_mild_df(positive_dist = "mvt",
+                                        negative_dist = "mvnormal",
+                                        remainder_dist = "mvnormal",
+                                        ncov = 5,
+                                        nbag = 7,
+                                        nsample = 7,
+                                        positive_degree = 3,
+                                        positive_prob = 0.15,
+                                        positive_mean = rep(0, 5))
 
   # remove one instance, and one observation to ensure unequal lengths
   ind1 <- which(mil_data$instance_name == unique(mil_data$instance_name)[1])
@@ -66,15 +66,15 @@ test_that("kme.R functions have identical output", {
 
 test_that("mildsvm.R functions have identical output", {
   set.seed(8)
-  mil_data <- mildsvm::GenerateMilData(positive_dist = "mvt",
-                                       negative_dist = "mvnormal",
-                                       remainder_dist = "mvnormal",
-                                       ncov = 5,
-                                       nbag = 10,
-                                       nsample = 7,
-                                       positive_degree = 3,
-                                       positive_prob = 0.15,
-                                       positive_mean = rep(0, 5))
+  mil_data <- mildsvm::generate_mild_df(positive_dist = "mvt",
+                                        negative_dist = "mvnormal",
+                                        remainder_dist = "mvnormal",
+                                        ncov = 5,
+                                        nbag = 10,
+                                        nsample = 7,
+                                        positive_degree = 3,
+                                        positive_prob = 0.15,
+                                        positive_mean = rep(0, 5))
 
   # remove one instance, and one observation to create unequal lengths
   ind1 <- which(mil_data$instance_name == unique(mil_data$instance_name)[1])
@@ -142,14 +142,14 @@ test_that("mildsvm.R functions have identical output", {
 
 test_that("misvm.R functions have identical output.", {
   set.seed(8)
-  mil_data <- mildsvm::GenerateMilData(positive_dist = 'mvt',
-                                       negative_dist = 'mvnormal',
-                                       remainder_dist = 'mvnormal',
-                                       nbag = 10,
-                                       nsample = 7,
-                                       positive_degree = 3,
-                                       positive_prob = 0.15,
-                                       positive_mean = rep(0, 5))
+  mil_data <- mildsvm::generate_mild_df(positive_dist = 'mvt',
+                                        negative_dist = 'mvnormal',
+                                        remainder_dist = 'mvnormal',
+                                        nbag = 10,
+                                        nsample = 7,
+                                        positive_degree = 3,
+                                        positive_prob = 0.15,
+                                        positive_mean = rep(0, 5))
   df1 <- mildsvm::build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10)) %>%
     arrange(desc(bag_label), bag_name, instance_name)
 
@@ -194,14 +194,14 @@ test_that("misvm.R functions have identical output.", {
 
 test_that("cv_misvm.R functions have identical output.", {
   set.seed(8)
-  mil_data <- mildsvm::GenerateMilData(positive_dist = 'mvt',
-                                       negative_dist = 'mvnormal',
-                                       remainder_dist = 'mvnormal',
-                                       nbag = 10,
-                                       nsample = 7,
-                                       positive_degree = 3,
-                                       positive_prob = 0.15,
-                                       positive_mean = rep(0, 5))
+  mil_data <- mildsvm::generate_mild_df(positive_dist = 'mvt',
+                                        negative_dist = 'mvnormal',
+                                        remainder_dist = 'mvnormal',
+                                        nbag = 10,
+                                        nsample = 7,
+                                        positive_degree = 3,
+                                        positive_prob = 0.15,
+                                        positive_mean = rep(0, 5))
   df1 <- mildsvm::build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
 
 
@@ -283,14 +283,14 @@ test_that("smm.R functions have identical output", {
 
 test_that("misvm.R functions have identical output on MilData object.", {
   set.seed(8)
-  mil_data <- mildsvm::GenerateMilData(positive_dist = 'mvt',
-                                       negative_dist = 'mvnormal',
-                                       remainder_dist = 'mvnormal',
-                                       nbag = 10,
-                                       nsample = 7,
-                                       positive_degree = 3,
-                                       positive_prob = 0.15,
-                                       positive_mean = rep(0, 5))
+  mil_data <- mildsvm::generate_mild_df(positive_dist = 'mvt',
+                                        negative_dist = 'mvnormal',
+                                        remainder_dist = 'mvnormal',
+                                        nbag = 10,
+                                        nsample = 7,
+                                        positive_degree = 3,
+                                        positive_prob = 0.15,
+                                        positive_mean = rep(0, 5))
 
   # make the quantile functions
   qtls <- seq(0.05, 0.95, length.out = 10)

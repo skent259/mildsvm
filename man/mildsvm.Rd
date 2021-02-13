@@ -153,12 +153,12 @@ programming (MIP) problem using the \code{gurobi} optimization back-end.
 
 \examples{
 set.seed(8)
-mil_data <- GenerateMilData(positive_dist = 'mvt',
-                            negative_dist = 'mvnormal',
-                            remainder_dist = 'mvnormal',
-                            nbag = 15,
-                            positive_degree = 3,
-                            nsample = 20
+mil_data <- generate_mild_df(positive_dist = 'mvt',
+                             negative_dist = 'mvnormal',
+                             remainder_dist = 'mvnormal',
+                             nbag = 15,
+                             positive_degree = 3,
+                             nsample = 20
 )
 # Heuristic method
 mdl1 <- mildsvm(mil_data)

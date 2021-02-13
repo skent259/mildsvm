@@ -19,7 +19,7 @@ Create a \code{mi} object, usually used as a response variable in a model formul
 }
 \examples{
 
-mil_data <- GenerateMilData(
+mil_data <- generate_mild_df(
   positive_dist = 'mvt',
   negative_dist = 'mvnormal',
   remainder_dist = 'mvnormal',

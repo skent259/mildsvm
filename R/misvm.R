@@ -88,7 +88,7 @@ validate_misvm <- function(x) {
 #'
 #' @examples
 #' set.seed(8)
-#' mil_data <- GenerateMilData(
+#' mil_data <- generate_mild_df(
 #'   positive_dist = 'mvt',
 #'   negative_dist = 'mvnormal',
 #'   remainder_dist = 'mvnormal',
@@ -320,7 +320,7 @@ misvm.MilData <- function(data, .fns = list(mean = mean, sd = sd), cor = FALSE, 
 #'   a column '.pred'.
 #'
 #' @examples
-#' mil_data <- GenerateMilData(
+#' mil_data <- generate_mild_df(
 #'   positive_dist = 'mvt',
 #'   negative_dist = 'mvnormal',
 #'   remainder_dist = 'mvnormal',
@@ -618,14 +618,14 @@ misvm_mip_model <- function(y, bags, X, c, weights = NULL, warm_start = NULL) {
 #' @param type type that to be used for `e1071::svm`.
 #' @return An object of class 'MI_SVM'
 #' @examples
-#' MilData1 <- GenerateMilData(positive_dist = 'mvt',
-#'                             negative_dist = 'mvnormal',
-#'                             remainder_dist = 'mvnormal',
-#'                             nbag = 50,
-#'                             nsample = 20,
-#'                             positive_degree = 3,
-#'                             positive_prob = 0.15,
-#'                             positive_mean = rep(0, 5))
+#' MilData1 <- generate_mild_df(positive_dist = 'mvt',
+#'                              negative_dist = 'mvnormal',
+#'                              remainder_dist = 'mvnormal',
+#'                              nbag = 50,
+#'                              nsample = 20,
+#'                              positive_degree = 3,
+#'                              positive_prob = 0.15,
+#'                              positive_mean = rep(0, 5))
 #' df1 <- build_instance_feature(MilData1, seq(0.05, 0.95, length.out = 10))
 #' mdl <- MI_SVM(data = df1, cost = 1, kernel = 'radial')
 #' @importFrom e1071 svm

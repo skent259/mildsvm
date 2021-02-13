@@ -1,38 +1,38 @@
 context("Testing the functions in mildsvm.R")
 
 set.seed(8)
-mil_data <- GenerateMilData(positive_dist = "mvnormal",
-                            negative_dist = "mvnormal",
-                            remainder_dist = "mvnormal",
-                            nbag = 10,
-                            nsample = 5,
-                            positive_mean = rep(2, 5))
+mil_data <- generate_mild_df(positive_dist = "mvnormal",
+                             negative_dist = "mvnormal",
+                             remainder_dist = "mvnormal",
+                             nbag = 10,
+                             nsample = 5,
+                             positive_mean = rep(2, 5))
 
-mil_data_test <- GenerateMilData(positive_dist = "mvnormal",
-                                 negative_dist = "mvnormal",
-                                 remainder_dist = "mvnormal",
-                                 nbag = 20,
-                                 nsample = 5,
-                                 positive_mean = rep(2, 5))
+mil_data_test <- generate_mild_df(positive_dist = "mvnormal",
+                                  negative_dist = "mvnormal",
+                                  remainder_dist = "mvnormal",
+                                  nbag = 20,
+                                  nsample = 5,
+                                  positive_mean = rep(2, 5))
 
 test_that("mildsvm() works for data-frame-like inputs", {
   set.seed(8)
-  df1 <- GenerateMilData(positive_dist = 'mvt',
-                              negative_dist = 'mvnormal',
-                              remainder_dist = 'mvnormal',
-                              nbag = 10,
-                              nsample = 10,
-                              positive_degree = 3,
-                              positive_prob = 0.15,
-                              positive_mean = rep(0, 5))
+  df1 <- generate_mild_df(positive_dist = 'mvt',
+                          negative_dist = 'mvnormal',
+                          remainder_dist = 'mvnormal',
+                          nbag = 10,
+                          nsample = 10,
+                          positive_degree = 3,
+                          positive_prob = 0.15,
+                          positive_mean = rep(0, 5))
 
   # mip method
   # df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
   mdl1 <- mildsvm.default(x = df1[, 4:13],
-                        y = df1$bag_label,
-                        bags = df1$bag_name,
-                        instances = df1$instance_name,
-                        method = "mip")
+                          y = df1$bag_label,
+                          bags = df1$bag_name,
+                          instances = df1$instance_name,
+                          method = "mip")
 
   expect_equal(
     predict(mdl1, new_data = df1, type = "class", layer = "bag"),
@@ -84,14 +84,14 @@ test_that("mildsvm() works for data-frame-like inputs", {
 
 test_that("mildsvm() works with formula method", {
   set.seed(8)
-  df1 <- GenerateMilData(positive_dist = 'mvt',
-                         negative_dist = 'mvnormal',
-                         remainder_dist = 'mvnormal',
-                         nbag = 10,
-                         nsample = 10,
-                         positive_degree = 3,
-                         positive_prob = 0.15,
-                         positive_mean = rep(0, 5))
+  df1 <- generate_mild_df(positive_dist = 'mvt',
+                          negative_dist = 'mvnormal',
+                          remainder_dist = 'mvnormal',
+                          nbag = 10,
+                          nsample = 10,
+                          positive_degree = 3,
+                          positive_prob = 0.15,
+                          positive_mean = rep(0, 5))
 
   # df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
 
@@ -131,14 +131,14 @@ test_that("mildsvm() works with formula method", {
 
 test_that("mildsvm() works with MilData method", {
   set.seed(8)
-  df1 <- GenerateMilData(positive_dist = 'mvt',
-                         negative_dist = 'mvnormal',
-                         remainder_dist = 'mvnormal',
-                         nbag = 10,
-                         nsample = 10,
-                         positive_degree = 3,
-                         positive_prob = 0.15,
-                         positive_mean = rep(0, 5))
+  df1 <- generate_mild_df(positive_dist = 'mvt',
+                          negative_dist = 'mvnormal',
+                          remainder_dist = 'mvnormal',
+                          nbag = 10,
+                          nsample = 10,
+                          positive_degree = 3,
+                          positive_prob = 0.15,
+                          positive_mean = rep(0, 5))
 
   mdl1 <- mildsvm(df1)
   mdl2 <- mildsvm.default(x = df1[, 4:13],
@@ -173,14 +173,14 @@ test_that("predict.mildsvm returns labels that match the input labels", {
   }
 
   set.seed(8)
-  df1 <- GenerateMilData(positive_dist = 'mvt',
-                              negative_dist = 'mvnormal',
-                              remainder_dist = 'mvnormal',
-                              nbag = 8,
-                              nsample = 5,
-                              positive_degree = 3,
-                              positive_prob = 0.15,
-                              positive_mean = rep(0, 5))
+  df1 <- generate_mild_df(positive_dist = 'mvt',
+                          negative_dist = 'mvnormal',
+                          remainder_dist = 'mvnormal',
+                          nbag = 8,
+                          nsample = 5,
+                          positive_degree = 3,
+                          positive_prob = 0.15,
+                          positive_mean = rep(0, 5))
   class(df1) <- "data.frame"
 
   # 0/1
@@ -219,14 +219,14 @@ test_that("predict.mildsvm returns labels that match the input labels", {
 
 test_that("Dots work in mildsvm() formula", {
   set.seed(8)
-  mil_data <- GenerateMilData(positive_dist = 'mvt',
-                              negative_dist = 'mvnormal',
-                              remainder_dist = 'mvnormal',
-                              nbag = 20,
-                              nsample = 20,
-                              positive_degree = 3,
-                              positive_prob = 0.15,
-                              positive_mean = rep(0, 5))
+  mil_data <- generate_mild_df(positive_dist = 'mvt',
+                               negative_dist = 'mvnormal',
+                               remainder_dist = 'mvnormal',
+                               nbag = 20,
+                               nsample = 20,
+                               positive_degree = 3,
+                               positive_prob = 0.15,
+                               positive_mean = rep(0, 5))
 
   df1 <- summarize_samples(mil_data, .fns = list(mean = mean)) %>%
     select(bag_label, bag_name, X1_mean, X2_mean, X3_mean)
@@ -244,14 +244,14 @@ test_that("Dots work in mildsvm() formula", {
 
 test_that("misvm() has correct argument handling", {
   set.seed(8)
-  df1 <- GenerateMilData(positive_dist = 'mvt',
-                         negative_dist = 'mvnormal',
-                         remainder_dist = 'mvnormal',
-                         nbag = 10,
-                         nsample = 10,
-                         positive_degree = 3,
-                         positive_prob = 0.15,
-                         positive_mean = rep(0, 5))
+  df1 <- generate_mild_df(positive_dist = 'mvt',
+                          negative_dist = 'mvnormal',
+                          remainder_dist = 'mvnormal',
+                          nbag = 10,
+                          nsample = 10,
+                          positive_degree = 3,
+                          positive_prob = 0.15,
+                          positive_mean = rep(0, 5))
 
   ## weights
   mildsvm(mild(bag_label, bag_name, instance_name) ~ ., data = df1, weights = TRUE)
@@ -335,14 +335,14 @@ test_that("misvm() has correct argument handling", {
 
 test_that("mildsvm mip can warm start", {
   set.seed(8)
-  df1 <- GenerateMilData(positive_dist = 'mvt',
-                         negative_dist = 'mvnormal',
-                         remainder_dist = 'mvnormal',
-                         nbag = 10,
-                         nsample = 10,
-                         positive_degree = 3,
-                         positive_prob = 0.15,
-                         positive_mean = rep(0, 5))
+  df1 <- generate_mild_df(positive_dist = 'mvt',
+                          negative_dist = 'mvnormal',
+                          remainder_dist = 'mvnormal',
+                          nbag = 10,
+                          nsample = 10,
+                          positive_degree = 3,
+                          positive_prob = 0.15,
+                          positive_mean = rep(0, 5))
 
   verbose <- interactive()
 
@@ -376,14 +376,14 @@ test_that("mildsvm mip can warm start", {
 
 test_that("mildsvm mip works with radial kernel", {
   set.seed(8)
-  df1 <- GenerateMilData(positive_dist = 'mvt',
-                         negative_dist = 'mvnormal',
-                         remainder_dist = 'mvnormal',
-                         nbag = 10,
-                         nsample = 10,
-                         positive_degree = 3,
-                         positive_prob = 0.15,
-                         positive_mean = rep(0, 5))
+  df1 <- generate_mild_df(positive_dist = 'mvt',
+                          negative_dist = 'mvnormal',
+                          remainder_dist = 'mvnormal',
+                          nbag = 10,
+                          nsample = 10,
+                          positive_degree = 3,
+                          positive_prob = 0.15,
+                          positive_mean = rep(0, 5))
 
   mdl1 <- mildsvm.default(x = df1[, 4:12],
                           y = df1$bag_label,
@@ -425,11 +425,11 @@ test_that("mildsvm mip works with radial kernel", {
   # Running with linear kernel shouldn't have the kfm_fit element
   expect_warning({
     mdl1 <- mildsvm.default(x = df1[, 4:12],
-                          y = df1$bag_label,
-                          bags = df1$bag_name,
-                          instances = df1$instance_name,
-                          method = "mip",
-                          control = list(kernel = "linear"))
+                            y = df1$bag_label,
+                            bags = df1$bag_name,
+                            instances = df1$instance_name,
+                            method = "mip",
+                            control = list(kernel = "linear"))
   })
   expect(!is.null(mdl1$kfm_fit), failure_message = "Kfm_fit was not found in the model")
 
@@ -437,23 +437,23 @@ test_that("mildsvm mip works with radial kernel", {
 
 test_that("Passing kernel matrix into mildsvm works", {
   set.seed(8)
-  df1 <- GenerateMilData(positive_dist = 'mvt',
-                         negative_dist = 'mvnormal',
-                         remainder_dist = 'mvnormal',
-                         nbag = 10,
-                         nsample = 10,
-                         positive_degree = 3,
-                         positive_prob = 0.15,
-                         positive_mean = rep(0, 5))
+  df1 <- generate_mild_df(positive_dist = 'mvt',
+                          negative_dist = 'mvnormal',
+                          remainder_dist = 'mvnormal',
+                          nbag = 10,
+                          nsample = 10,
+                          positive_degree = 3,
+                          positive_prob = 0.15,
+                          positive_mean = rep(0, 5))
 
-  df2 <- GenerateMilData(positive_dist = 'mvt',
-                         negative_dist = 'mvnormal',
-                         remainder_dist = 'mvnormal',
-                         nbag = 20,
-                         nsample = 10,
-                         positive_degree = 3,
-                         positive_prob = 0.15,
-                         positive_mean = rep(0, 5))
+  df2 <- generate_mild_df(positive_dist = 'mvt',
+                          negative_dist = 'mvnormal',
+                          remainder_dist = 'mvnormal',
+                          nbag = 20,
+                          nsample = 10,
+                          positive_degree = 3,
+                          positive_prob = 0.15,
+                          positive_mean = rep(0, 5))
 
   df1 <- df1[sample(1:nrow(df1)), ]
 
@@ -478,11 +478,11 @@ test_that("Re-ordering data doesn't reduce performance", {
   pred2 <- predict(mdl2, mil_data_test, type = "raw")
 
   auc1 <- with(mil_data_test,
-       pROC::auc(response = classify_bags(bag_label, bag_name),
-                 predictor = classify_bags(pred1$.pred, bag_name)))
+               pROC::auc(response = classify_bags(bag_label, bag_name),
+                         predictor = classify_bags(pred1$.pred, bag_name)))
   auc2 <- with(mil_data_test,
-       pROC::auc(response = classify_bags(bag_label, bag_name),
-                 predictor = classify_bags(pred2$.pred, bag_name)))
+               pROC::auc(response = classify_bags(bag_label, bag_name),
+                         predictor = classify_bags(pred2$.pred, bag_name)))
 
   # the auc2 should be in the neighborhood of auc1
   auc1; auc2

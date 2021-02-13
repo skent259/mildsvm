@@ -1,21 +1,21 @@
 context("Testing the functions in misvm.R")
 
 set.seed(8)
-mil_data <- GenerateMilData(positive_dist = 'mvnormal',
-                            negative_dist = 'mvnormal',
-                            remainder_dist = 'mvnormal',
-                            nbag = 20,
-                            nsample = 20,
-                            positive_prob = 0.15,
-                            positive_mean = rep(2, 5))
+mil_data <- generate_mild_df(positive_dist = 'mvnormal',
+                             negative_dist = 'mvnormal',
+                             remainder_dist = 'mvnormal',
+                             nbag = 20,
+                             nsample = 20,
+                             positive_prob = 0.15,
+                             positive_mean = rep(2, 5))
 
-mil_data_test <- GenerateMilData(positive_dist = 'mvnormal',
-                            negative_dist = 'mvnormal',
-                            remainder_dist = 'mvnormal',
-                            nbag = 40,
-                            nsample = 20,
-                            positive_prob = 0.15,
-                            positive_mean = rep(2, 5))
+mil_data_test <- generate_mild_df(positive_dist = 'mvnormal',
+                                  negative_dist = 'mvnormal',
+                                  remainder_dist = 'mvnormal',
+                                  nbag = 40,
+                                  nsample = 20,
+                                  positive_prob = 0.15,
+                                  positive_mean = rep(2, 5))
 
 df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10)) %>%
   select(-instance_name)
@@ -264,16 +264,16 @@ test_that("misvm mip can warm start", {
 
   # manually check that the output says "User MIP start produced solution with objective ..."
   mdl1 <- misvm(x = df1[, 3:122],
-               y = df1$bag_label,
-               bags = df1$bag_name,
-               method = "mip",
-               control = list(start = TRUE, verbose = verbose))
+                y = df1$bag_label,
+                bags = df1$bag_name,
+                method = "mip",
+                control = list(start = TRUE, verbose = verbose))
 
   mdl2 <- misvm(x = df1[, 3:122],
-               y = df1$bag_label,
-               bags = df1$bag_name,
-               method = "mip",
-               control = list(start = FALSE, verbose = verbose))
+                y = df1$bag_label,
+                bags = df1$bag_name,
+                method = "mip",
+                control = list(start = FALSE, verbose = verbose))
 
   expect_equal(mdl1$model[c("w", "b", "xi", "z")],
                mdl2$model[c("w", "b", "xi", "z")])
@@ -284,14 +284,14 @@ test_that("misvm mip can warm start", {
 
 test_that("misvm mip works with radial kernel", {
   set.seed(8)
-  mil_data <- GenerateMilData(positive_dist = 'mvt',
-                              negative_dist = 'mvnormal',
-                              remainder_dist = 'mvnormal',
-                              nbag = 10,
-                              nsample = 20,
-                              positive_degree = 3,
-                              positive_prob = 0.15,
-                              positive_mean = rep(0, 5))
+  mil_data <- generate_mild_df(positive_dist = 'mvt',
+                               negative_dist = 'mvnormal',
+                               remainder_dist = 'mvnormal',
+                               nbag = 10,
+                               nsample = 20,
+                               positive_degree = 3,
+                               positive_prob = 0.15,
+                               positive_mean = rep(0, 5))
 
   df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
 

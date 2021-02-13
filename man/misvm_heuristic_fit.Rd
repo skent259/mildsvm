@@ -36,14 +36,14 @@ An object of class 'MI_SVM'
 This function implements the MI-SVM algorithm proposed by Andrews et al (2003)
 }
 \examples{
-MilData1 <- GenerateMilData(positive_dist = 'mvt',
-                            negative_dist = 'mvnormal',
-                            remainder_dist = 'mvnormal',
-                            nbag = 50,
-                            nsample = 20,
-                            positive_degree = 3,
-                            positive_prob = 0.15,
-                            positive_mean = rep(0, 5))
+MilData1 <- generate_mild_df(positive_dist = 'mvt',
+                             negative_dist = 'mvnormal',
+                             remainder_dist = 'mvnormal',
+                             nbag = 50,
+                             nsample = 20,
+                             positive_degree = 3,
+                             positive_prob = 0.15,
+                             positive_mean = rep(0, 5))
 df1 <- build_instance_feature(MilData1, seq(0.05, 0.95, length.out = 10))
 mdl <- MI_SVM(data = df1, cost = 1, kernel = 'radial')
 }

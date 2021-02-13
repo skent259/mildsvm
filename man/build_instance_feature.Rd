@@ -27,14 +27,14 @@ A data.frame that is ready to be used in \code{MI_SVM()} function.
 This flatten the MilData type of data to regular multiple instance data where each instance is a vector by extracting distribution sample quantiles, mean and sd.
 }
 \examples{
-MilData1 <- GenerateMilData(positive_dist = 'mvt',
-                            negative_dist = 'mvnormal',
-                            remainder_dist = 'mvnormal',
-                            nbag = 50,
-                            nsample = 20,
-                            positive_degree = 3,
-                            positive_prob = 0.15,
-                            positive_mean = rep(0, 5))
+MilData1 <- generate_mild_df(positive_dist = 'mvt',
+                             negative_dist = 'mvnormal',
+                             remainder_dist = 'mvnormal',
+                             nbag = 50,
+                             nsample = 20,
+                             positive_degree = 3,
+                             positive_prob = 0.15,
+                             positive_mean = rep(0, 5))
 df1 <- build_instance_feature(MilData1, seq(0.05, 0.95, length.out = 10))
 }
 \author{

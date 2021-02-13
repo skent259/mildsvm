@@ -103,11 +103,11 @@ kme.default <- function(df, df2 = NULL, sigma = 0.05) {
 ##' @param sigma Parameter for 'rbf'
 ##' @return A matrix.
 ##' @examples
-##' MilData1 <- GenerateMilData(positive_dist = 'mvt',
-##'                             negative_dist = 'mvnormal',
-##'                             remainder_dist = 'mvnormal',
-##'                             nbag = 10,
-##'                             positive_degree = 3)
+##' MilData1 <- generate_mild_df(positive_dist = 'mvt',
+##'                              negative_dist = 'mvnormal',
+##'                              remainder_dist = 'mvnormal',
+##'                              nbag = 10,
+##'                              positive_degree = 3)
 ##' K <- kme(MilData1) ## About 10 seconds.
 ##' @export
 ##' @author Yifei Liu
@@ -128,11 +128,11 @@ kme.MilData <- function(df, df2 = NULL, sigma = 0.05) {
 ##' @param sigma The parameter for rbf kernel.
 ##' @return A matrix K of number of unique instance labels in df by that in df2.
 ##' @examples
-##' MilData1 <- GenerateMilData(positive_dist = 'mvt',
-##'                             negative_dist = 'mvnormal',
-##'                             remainder_dist = 'mvnormal',
-##'                             nbag = 10,
-##'                             positive_degree = 3)
+##' MilData1 <- generate_mild_df(positive_dist = 'mvt',
+##'                              negative_dist = 'mvnormal',
+##'                              remainder_dist = 'mvnormal',
+##'                              nbag = 10,
+##'                              positive_degree = 3)
 ##' K <- kme(MilData1)
 ##' @export
 ##' @author Yifei Liu, Sean Kent

@@ -22,11 +22,11 @@ Function to calculate the kernel mean embedding for to distributional data sets.
 for a given kernel \eqn{K(\cdot, \cdot)}. Currently only supports radial basis function kernel for fast computation.
 }
 \examples{
-MilData1 <- GenerateMilData(positive_dist = 'mvt',
-                            negative_dist = 'mvnormal',
-                            remainder_dist = 'mvnormal',
-                            nbag = 10,
-                            positive_degree = 3)
+MilData1 <- generate_mild_df(positive_dist = 'mvt',
+                             negative_dist = 'mvnormal',
+                             remainder_dist = 'mvnormal',
+                             nbag = 10,
+                             positive_degree = 3)
 K <- kme(MilData1)
 }
 \author{

@@ -17,21 +17,21 @@ new_x <- data.frame(x1 = rnorm(length(new_inst), mean = 1*(new_inst=="11")),
                     x3 = rnorm(length(new_inst), mean = 3*(new_inst=="11")))
 
 ## MilData set to work with
-mil_df <- GenerateMilData(positive_dist = 'mvnormal',
-                          negative_dist = 'mvnormal',
-                          remainder_dist = 'mvnormal',
-                          nbag = 10,
-                          nsample = 20,
-                          positive_prob = 0.15,
-                          positive_mean = rep(2, 5))
+mil_df <- generate_mild_df(positive_dist = 'mvnormal',
+                           negative_dist = 'mvnormal',
+                           remainder_dist = 'mvnormal',
+                           nbag = 10,
+                           nsample = 20,
+                           positive_prob = 0.15,
+                           positive_mean = rep(2, 5))
 
-mil_df_test <- GenerateMilData(positive_dist = 'mvnormal',
-                          negative_dist = 'mvnormal',
-                          remainder_dist = 'mvnormal',
-                          nbag = 20,
-                          nsample = 20,
-                          positive_prob = 0.15,
-                          positive_mean = rep(2, 5))
+mil_df_test <- generate_mild_df(positive_dist = 'mvnormal',
+                                negative_dist = 'mvnormal',
+                                remainder_dist = 'mvnormal',
+                                nbag = 20,
+                                nsample = 20,
+                                positive_prob = 0.15,
+                                positive_mean = rep(2, 5))
 
 test_that("smm() works for data-frame-like inputs", {
 
@@ -167,14 +167,14 @@ test_that("smm() has correct argument handling", {
     smm(y ~ x1 + x2 + x3, data = df, control = list(sigma = 1/3))
   )
 
-  df <- GenerateMilData(positive_dist = 'mvt',
-                        negative_dist = 'mvnormal',
-                        remainder_dist = 'mvnormal',
-                        nbag = 10,
-                        nsample = 20,
-                        positive_degree = 3,
-                        positive_prob = 0.15,
-                        positive_mean = rep(0, 5))
+  df <- generate_mild_df(positive_dist = 'mvt',
+                         negative_dist = 'mvnormal',
+                         remainder_dist = 'mvnormal',
+                         nbag = 10,
+                         nsample = 20,
+                         positive_degree = 3,
+                         positive_prob = 0.15,
+                         positive_mean = rep(0, 5))
   expect_equal(
     smm(df),
     smm(df, control = list(sigma = 1/10))
@@ -315,8 +315,8 @@ test_that("predict.smm returns labels that match the input labels", {
   test_prediction_levels_equal <- function(df, class = "default") {
     mdl <- switch(class,
                   "default" = smm(x = df[, 3:5],
-                                    y = df$y,
-                                    instances = df$instance_name),
+                                  y = df$y,
+                                  instances = df$instance_name),
                   "formula" = smm(y ~ x1 + x2 + x3, data = df)
     )
     preds <- predict(mdl, df, type = "class")

@@ -8,7 +8,7 @@ suppressWarnings({
 
 # test_that("predict.mild function works without error", {
 #   set.seed(8)
-#   mil_data <- GenerateMilData(positive_dist = 'mvt',
+#   mil_data <- generate_mild_df(positive_dist = 'mvt',
 #                               negative_dist = 'mvnormal',
 #                               remainder_dist = 'mvnormal',
 #                               nbag = 10,
@@ -25,7 +25,7 @@ suppressWarnings({
 
 test_that("mildsvm example works", {
   set.seed(8)
-  mil_data <- GenerateMilData(positive_dist = 'mvt',
+  mil_data <- generate_mild_df(positive_dist = 'mvt',
                               negative_dist = 'mvnormal',
                               remainder_dist = 'mvnormal',
                               nbag = 15,
@@ -55,7 +55,7 @@ test_that("mildsvm example works", {
 })
 
 test_that("predict.mildsvm examples work", {
-  mil_data <- GenerateMilData(
+  mil_data <- generate_mild_df(
     positive_dist = 'mvt',
     negative_dist = 'mvnormal',
     remainder_dist = 'mvnormal',
@@ -85,7 +85,7 @@ test_that("predict.mildsvm examples work", {
 
 test_that("misvm.R examples work", {
   set.seed(8)
-  mil_data <- GenerateMilData(
+  mil_data <- generate_mild_df(
     positive_dist = 'mvt',
     negative_dist = 'mvnormal',
     remainder_dist = 'mvnormal',
@@ -132,7 +132,7 @@ test_that("misvm.R examples work", {
 
 test_that("cv_misvm.R examples work", {
   set.seed(8)
-  mil_data <- GenerateMilData(
+  mil_data <- generate_mild_df(
     positive_dist = 'mvt',
     negative_dist = 'mvnormal',
     remainder_dist = 'mvnormal',
@@ -195,7 +195,7 @@ test_that("smm() examples work", {
 })
 
 # test_that("build_poly_instance_feature works", {
-#   MilData1 <- GenerateMilData(positive_dist = 'mvt',
+#   MilData1 <- generate_mild_df(positive_dist = 'mvt',
 #                               negative_dist = 'mvnormal',
 #                               remainder_dist = 'mvnormal',
 #                               nbag = 50,

@@ -152,7 +152,7 @@ as_mild_df <- function(x, bag_label = "bag_label",
   UseMethod("as_mild_df")
 }
 
-#' @describeIn as_mild_df
+
 #' @export
 as_mild_df.default <- function(x,
                                bag_label = "bag_label",

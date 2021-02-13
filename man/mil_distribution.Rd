@@ -34,7 +34,7 @@ Workhorse for the package. This implements the algorithm that iteratively
 find the representative positive instances and use smm to get the model.
 }
 \examples{
-MilData1 <- GenerateMilData(positive_dist = 'mvt',
+MilData1 <- generate_mild_df(positive_dist = 'mvt',
                             negative_dist = 'mvnormal',
                             remainder_dist = 'mvnormal',
                             nbag = 10,

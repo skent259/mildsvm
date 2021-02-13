@@ -54,7 +54,7 @@ column '.pred'.
 Predict method for 'mildsvm' object
 }
 \examples{
-mil_data <- GenerateMilData(
+mil_data <- generate_mild_df(
     positive_dist = 'mvt',
     negative_dist = 'mvnormal',
     remainder_dist = 'mvnormal',

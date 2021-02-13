@@ -2,25 +2,25 @@ context("Testing the functions in cv_misvm.R")
 
 test_that("cv_misvm() works for data-frame-like inputs", {
   set.seed(8)
-  mil_data <- mildsvm::GenerateMilData(positive_dist = 'mvt',
-                                       negative_dist = 'mvnormal',
-                                       remainder_dist = 'mvnormal',
-                                       nbag = 20,
-                                       nsample = 50,
-                                       positive_degree = 3,
-                                       positive_prob = 0.15,
-                                       positive_mean = rep(0, 5))
+  mil_data <- mildsvm::generate_mild_df(positive_dist = 'mvt',
+                                        negative_dist = 'mvnormal',
+                                        remainder_dist = 'mvnormal',
+                                        nbag = 20,
+                                        nsample = 50,
+                                        positive_degree = 3,
+                                        positive_prob = 0.15,
+                                        positive_mean = rep(0, 5))
   df1 <- mildsvm::build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
 
   set.seed(9)
-  mil_data_test <- mildsvm::GenerateMilData(positive_dist = 'mvt',
-                                            negative_dist = 'mvnormal',
-                                            remainder_dist = 'mvnormal',
-                                            nbag = 20,
-                                            nsample = 50,
-                                            positive_degree = 3,
-                                            positive_prob = 0.15,
-                                            positive_mean = rep(0, 5))
+  mil_data_test <- mildsvm::generate_mild_df(positive_dist = 'mvt',
+                                             negative_dist = 'mvnormal',
+                                             remainder_dist = 'mvnormal',
+                                             nbag = 20,
+                                             nsample = 50,
+                                             positive_degree = 3,
+                                             positive_prob = 0.15,
+                                             positive_mean = rep(0, 5))
   df_test <- mildsvm::build_instance_feature(mil_data_test, seq(0.05, 0.95, length.out = 10))
 
 
@@ -32,7 +32,7 @@ test_that("cv_misvm() works for data-frame-like inputs", {
                     cost_seq = 2^seq(-5, 7, length.out = 5),
                     control = list(kernel = "radial",
                                    sigma = 1 / length(4:123))
-                    )
+  )
 
   expect_equal(names(model), c("model", "cost_seq", "cost_aucs", "best_cost"))
   expect_equal(class(model), "cv_misvm")
@@ -112,14 +112,14 @@ test_that("cv_misvm() works for data-frame-like inputs", {
 
 test_that("cv_misvm() works with formula method", {
   set.seed(8)
-  mil_data <- GenerateMilData(positive_dist = 'mvt',
-                              negative_dist = 'mvnormal',
-                              remainder_dist = 'mvnormal',
-                              nbag = 20,
-                              nsample = 20,
-                              positive_degree = 3,
-                              positive_prob = 0.15,
-                              positive_mean = rep(0, 5))
+  mil_data <- generate_mild_df(positive_dist = 'mvt',
+                               negative_dist = 'mvnormal',
+                               remainder_dist = 'mvnormal',
+                               nbag = 20,
+                               nsample = 20,
+                               positive_degree = 3,
+                               positive_prob = 0.15,
+                               positive_mean = rep(0, 5))
 
   df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
 
@@ -184,23 +184,23 @@ test_that("predict.cv_misvm returns labels that match the input labels", {
                                        n_fold = 3,
                                        cost_seq = 2^seq(-5, 7, length.out = 5)),
                   "formula" = cv_misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean,
-                                    data = df2,
-                                    method = method,
-                                    n_fold = 3,
-                                    cost_seq = 2^seq(-5, 7, length.out = 5)))
+                                       data = df2,
+                                       method = method,
+                                       n_fold = 3,
+                                       cost_seq = 2^seq(-5, 7, length.out = 5)))
     preds <- predict(mdl, df, type = "class")
     expect_setequal(levels(preds$.pred_class), levels(df$bag_label))
   }
 
   set.seed(8)
-  mil_data <- GenerateMilData(positive_dist = 'mvt',
-                              negative_dist = 'mvnormal',
-                              remainder_dist = 'mvnormal',
-                              nbag = 7,
-                              nsample = 20,
-                              positive_degree = 3,
-                              positive_prob = 0.15,
-                              positive_mean = rep(0, 5))
+  mil_data <- generate_mild_df(positive_dist = 'mvt',
+                               negative_dist = 'mvnormal',
+                               remainder_dist = 'mvnormal',
+                               nbag = 7,
+                               nsample = 20,
+                               positive_degree = 3,
+                               positive_prob = 0.15,
+                               positive_mean = rep(0, 5))
 
   df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
 
@@ -241,14 +241,14 @@ test_that("predict.cv_misvm returns labels that match the input labels", {
 
 test_that("Dots work in cv_misvm() formula", {
   set.seed(8)
-  mil_data <- GenerateMilData(positive_dist = 'mvt',
-                              negative_dist = 'mvnormal',
-                              remainder_dist = 'mvnormal',
-                              nbag = 7,
-                              nsample = 20,
-                              positive_degree = 3,
-                              positive_prob = 0.15,
-                              positive_mean = rep(0, 5))
+  mil_data <- generate_mild_df(positive_dist = 'mvt',
+                               negative_dist = 'mvnormal',
+                               remainder_dist = 'mvnormal',
+                               nbag = 7,
+                               nsample = 20,
+                               positive_degree = 3,
+                               positive_prob = 0.15,
+                               positive_mean = rep(0, 5))
 
   df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10)) %>%
     select(bag_label, bag_name, X1_mean, X2_mean, X3_mean)

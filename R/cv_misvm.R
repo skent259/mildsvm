@@ -44,7 +44,7 @@ validate_cv_misvm <- function(x) {
 #'
 #' @examples
 #' set.seed(8)
-#' mil_data <- GenerateMilData(
+#' mil_data <- generate_mild_df(
 #'   positive_dist = 'mvt',
 #'   negative_dist = 'mvnormal',
 #'   remainder_dist = 'mvnormal',
@@ -223,7 +223,7 @@ cv_misvm.default <- function(x, y, bags, cost_seq, n_fold, fold_id,
 #'   a column '.pred'.
 #'
 #' @examples
-#' mil_data <- GenerateMilData(
+#' mil_data <- generate_mild_df(
 #'   positive_dist = 'mvt',
 #'   negative_dist = 'mvnormal',
 #'   remainder_dist = 'mvnormal',

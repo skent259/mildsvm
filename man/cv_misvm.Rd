@@ -126,7 +126,7 @@ more details on the fitting function.
 
 \examples{
 set.seed(8)
-mil_data <- GenerateMilData(
+mil_data <- generate_mild_df(
   positive_dist = 'mvt',
   negative_dist = 'mvnormal',
   remainder_dist = 'mvnormal',

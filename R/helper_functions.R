@@ -270,12 +270,12 @@ compute_kernel <- function(x, x2 = NULL, type = "linear", sigma = NULL) {
 #' @return a numeric vector of length `size` indicating which rows were sampled.
 #'
 #' @examples
-#' mil_data <- mildsvm::GenerateMilData(positive_dist = "mvnormal",
-#'                                      negative_dist = "mvnormal",
-#'                                      remainder_dist = "mvnormal",
-#'                                      nbag = 2,
-#'                                      ninst = 2,
-#'                                      nsample = 2)
+#' mil_data <- mildsvm::generate_mild_df(positive_dist = "mvnormal",
+#'                                       negative_dist = "mvnormal",
+#'                                       remainder_dist = "mvnormal",
+#'                                       nbag = 2,
+#'                                       ninst = 2,
+#'                                       nsample = 2)
 #'
 #' rows <- bag_instance_sampling(mil_data, 6)
 #' table(mil_data$bag_name[rows])

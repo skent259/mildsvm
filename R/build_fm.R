@@ -41,14 +41,14 @@ build_fm <- function(kfm_fit, new_data, ...) {
 #' @param sd Whether or not to extract median.
 #' @return A data.frame that is ready to be used in `MI_SVM()` function.
 #' @examples
-#' MilData1 <- GenerateMilData(positive_dist = 'mvt',
-#'                             negative_dist = 'mvnormal',
-#'                             remainder_dist = 'mvnormal',
-#'                             nbag = 50,
-#'                             nsample = 20,
-#'                             positive_degree = 3,
-#'                             positive_prob = 0.15,
-#'                             positive_mean = rep(0, 5))
+#' MilData1 <- generate_mild_df(positive_dist = 'mvt',
+#'                              negative_dist = 'mvnormal',
+#'                              remainder_dist = 'mvnormal',
+#'                              nbag = 50,
+#'                              nsample = 20,
+#'                              positive_degree = 3,
+#'                              positive_prob = 0.15,
+#'                              positive_mean = rep(0, 5))
 #' df1 <- build_instance_feature(MilData1, seq(0.05, 0.95, length.out = 10))
 #' @importFrom stats quantile
 #' @export

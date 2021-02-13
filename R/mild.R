@@ -21,7 +21,7 @@ validate_mild <- function(x) {
 #'   this
 #' @examples
 #'
-#' mild_data <- GenerateMilData(
+#' mild_data <- generate_mild_df(
 #'   positive_dist = 'mvt',
 #'   negative_dist = 'mvnormal',
 #'   remainder_dist = 'mvnormal',
