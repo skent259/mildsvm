@@ -4,7 +4,7 @@
 \alias{misvm}
 \alias{misvm.formula}
 \alias{misvm.default}
-\alias{misvm.MilData}
+\alias{misvm.mild_df}
 \title{Fit MI-SVM model to the data}
 \usage{
 \method{misvm}{formula}(
@@ -30,7 +30,7 @@
     TRUE, verbose = FALSE, time_limit = 60, start = FALSE)
 )
 
-\method{misvm}{MilData}(data, .fns = list(mean = mean, sd = sd), cor = FALSE, ...)
+\method{misvm}{mild_df}(data, .fns = list(mean = mean, sd = sd), cor = FALSE, ...)
 }
 \arguments{
 \item{formula}{a formula with specification \code{mi(y, bags) ~ x} which uses the
@@ -87,10 +87,10 @@ otherwise, a positive class is chosen and a message will be supplied.}
 \item{bags}{a vector specifying which instance belongs to each bag.  Can be
 a string, numeric, of factor.}
 
-\item{.fns}{(argument for \code{misvm.MilData()} method) list of functions to
+\item{.fns}{(argument for \code{misvm.mild_df()} method) list of functions to
 summarize instances over.}
 
-\item{cor}{(argument for \code{misvm.MilData()} method) logical, whether to
+\item{cor}{(argument for \code{misvm.mild_df()} method) logical, whether to
 include correlations between all features in the summarization.}
 }
 \value{
@@ -126,7 +126,7 @@ the \code{gurobi} optimization back-end.
 
 \item \code{default}: Method for data.frame-like objects
 
-\item \code{MilData}: Method for 'MilData' objects. Summarize samples to the
+\item \code{mild_df}: Method for 'mild_df' objects. Summarize samples to the
 instance level based on specified functions, then perform misvm on instance
 level data.
 }}

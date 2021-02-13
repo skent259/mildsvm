@@ -4,7 +4,7 @@
 \alias{mildsvm}
 \alias{mildsvm.formula}
 \alias{mildsvm.default}
-\alias{mildsvm.MilData}
+\alias{mildsvm.mild_df}
 \title{Fit MILD-SVM model to the data}
 \usage{
 \method{mildsvm}{formula}(
@@ -31,7 +31,7 @@
     time_limit = 60, start = FALSE)
 )
 
-\method{mildsvm}{MilData}(
+\method{mildsvm}{mild_df}(
   data,
   cost = 1,
   method = c("heuristic", "mip"),
@@ -48,8 +48,8 @@ argument is an alternative to the \verb{x, y, bags, instances } arguments, but
 requires the \code{data} argument. See examples.}
 
 \item{data}{If \code{formula} is provided, a data.frame or similar from which
-formula elements will be extracted.  Otherwise, a 'MilData' object from
-which \verb{x, y, bags, instances} are automatically extracted. If a 'MilData'
+formula elements will be extracted.  Otherwise, a 'mild_df' object from
+which \verb{x, y, bags, instances} are automatically extracted. If a 'mild_df'
 object is used, all columns will be used as predictors.}
 
 \item{cost}{The cost parameter in SVM. If \code{method} = 'heuristic', this will
@@ -119,12 +119,12 @@ get used when computing the kernel matrix for prediction.
 in the heuristic fitting.
 \item \code{features}: the features used for prediction.
 \item \code{call_type}: the call type, which specifies whether \code{mildsvm()}
-was called via the formula, data.frame, of MilData method.
+was called via the formula, data.frame, of mild_df method.
 \item \code{levels}: levels of \code{y} that are recorded for future prediction.
 \item \code{bag_name}: the name of the column used for bags, if the formula or
-MilData method is applied.
+mild_df method is applied.
 \item \code{instance_name}: the name of the column used for instances, if the
-formula or MilData method is applied.
+formula or mild_df method is applied.
 \item \code{kfm_fit}: the fit from building nystrom features, if method = 'mip' and
 kernel = 'radial'.  This is used for prediction.
 \item \code{center}: values used to center x, if \code{scale} = TRUE.
@@ -148,7 +148,7 @@ programming (MIP) problem using the \code{gurobi} optimization back-end.
 
 \item \code{default}: Method for data.frame-like objects
 
-\item \code{MilData}: Method for MilData objects
+\item \code{mild_df}: Method for mild_df objects
 }}
 
 \examples{
@@ -162,7 +162,7 @@ mil_data <- generate_mild_df(positive_dist = 'mvt',
 )
 # Heuristic method
 mdl1 <- mildsvm(mil_data)
-mdl2 <- mildsvm(mild(bag_label, bag_name, instance_name) ~ X1 + X2 + X3., data = MilData)
+mdl2 <- mildsvm(mild(bag_label, bag_name, instance_name) ~ X1 + X2 + X3., data = mil_data)
 
 if (require(gurobi)) {
   foo <- mildsvm(mil_data, method = "mip", control = list(nystrom_args = list(m = 10, r = 10)))

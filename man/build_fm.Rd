@@ -20,7 +20,7 @@ build_fm(kfm_fit, new_data, ...)
 }
 \value{
 a matrix of covariates in the feature space, with the same number of
-rows as \code{new_data}.  If \code{new_data} is an 'MilData' object, \code{build_fm()}
+rows as \code{new_data}.  If \code{new_data} is an 'mild_df' object, \code{build_fm()}
 will also return the columns containing 'bag_label', 'bag_name',
 'instance_name'.
 }

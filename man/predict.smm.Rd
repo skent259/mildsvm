@@ -26,7 +26,7 @@ columns as the X that trained the 'smm' object}
 
 \item{layer}{If 'instance', return predictions at the instance level. Option
 'bag' returns predictions at the bag level, but only if the model was fit
-with \code{smm.MilData()},}
+with \code{smm.mild_df()},}
 
 \item{new_instances}{character or character vector.  Can specify a singular
 character that provides the column name for the instance names in
@@ -36,7 +36,7 @@ fitted with \code{smm.formula()}, this parameter is not necessary as the bag
 name can be pulled directly from new_data, if available.}
 
 \item{new_bags}{character or character vector.  Only relevant when fit with
-\code{smm.MilData()}, which contains bag level information.  Can specify a
+\code{smm.mild_df()}, which contains bag level information.  Can specify a
 singular character that provides the column name for the bag names in
 \code{new_data}, default = "bag_name".  Can also specify a vector of length
 \code{nrow(new_data)} that has bag name for each instance.}

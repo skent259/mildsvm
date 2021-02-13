@@ -129,7 +129,7 @@ test_that("mildsvm() works with formula method", {
 
 })
 
-test_that("mildsvm() works with MilData method", {
+test_that("mildsvm() works with mild_df method", {
   set.seed(8)
   df1 <- generate_mild_df(positive_dist = 'mvt',
                           negative_dist = 'mvnormal',
@@ -148,7 +148,7 @@ test_that("mildsvm() works with MilData method", {
 
   expect_equal(mdl1$model, mdl2$model)
   expect_equal(mdl1$total_step, mdl2$total_step)
-  expect_equal(mdl1$call_type, "mildsvm.MilData")
+  expect_equal(mdl1$call_type, "mildsvm.mild_df")
   expect_equal(mdl1$features, paste0("X", 1:10))
   expect_equal(mdl1$bag_name, "bag_name")
   expect_equal(mdl1$instance_name, "instance_name")
@@ -326,7 +326,7 @@ test_that("misvm() has correct argument handling", {
   expect_equal(dim(mdl$kfm_fit$df_sub), c(100, ncol(df1) - 3))
 
   ## minimal arguments
-  mildsvm.MilData(df1)
+  mildsvm.mild_df(df1)
   mildsvm.formula(mild(bag_label, bag_name, instance_name) ~ ., data = df1)
   mildsvm.default(df1[, 4:13], df1$bag_label, df1$bag_name, df1$instance_name)
 

@@ -337,10 +337,10 @@ test_that("misvm mip works with radial kernel", {
 
 })
 
-test_that("misvm() works on 'MilData' objects", {
+test_that("misvm() works on 'mild_df' objects", {
   # minimal arguments
   mdl <- misvm(mil_data)
-  expect_equal(mdl$call_type, "misvm.MilData")
+  expect_equal(mdl$call_type, "misvm.mild_df")
   expect_equal(mdl$summary_fns, list(mean = mean, sd = sd))
   expect_equal(mdl$features, paste0(colnames(mil_data)[4:13], rep(c("_mean", "_sd"), each = 10)))
 
@@ -374,7 +374,7 @@ test_that("misvm() works on 'MilData' objects", {
 
   # cor = TRUE
   mdl <- misvm(mil_data, cor = TRUE)
-  expect_equal(mdl$call_type, "misvm.MilData")
+  expect_equal(mdl$call_type, "misvm.mild_df")
   expect_equal(mdl$summary_fns, list(mean = mean, sd = sd))
   expect_equal(mdl$summary_cor, TRUE)
   expect_equal(length(mdl$features), 2*10 + choose(10, 2))
@@ -393,7 +393,7 @@ test_that("misvm() works on 'MilData' objects", {
   # different summary functions
   mdl <- misvm(mil_data, .fns = list(mean = mean, med = median, qtl25 = ~quantile(.x, 0.25)))
   expect_equal(length(mdl$features), 3*10)
-  expect_equal(mdl$call_type, "misvm.MilData")
+  expect_equal(mdl$call_type, "misvm.mild_df")
   expect_equal(mdl$summary_fns, list(mean = mean, med = median, qtl25 = ~quantile(.x, 0.25)))
   pred <- predict(mdl, new_data = mil_data_test, type = "raw")
 })

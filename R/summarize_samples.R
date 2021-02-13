@@ -1,10 +1,10 @@
 #' Summarize data across functions
 #'
 #' Summarize a numeric data frame based on specified grouping columns and a list
-#' of functions.  This is useful in summarizing a 'MilData' object from the
+#' of functions.  This is useful in summarizing a 'mild_df' object from the
 #' sample level to the instance level.
 #'
-#' @param data a data.frame, 'MilData' object, or similar of data to summarize
+#' @param data a data.frame, 'mild_df' object, or similar of data to summarize
 #' @param group_cols character vector of column(s) that describe groups to
 #'   summarize across
 #' @param .fns list of functions (default list(mean = mean)).
@@ -46,9 +46,9 @@ summarize_samples.default <- function(data, group_cols, .fns = list(mean = mean)
   return(df)
 }
 
-#' @describeIn summarize_samples Method for 'MilData' objects.
+#' @describeIn summarize_samples Method for 'mild_df' objects.
 #' @export
-summarize_samples.MilData <- function(data, ...)
+summarize_samples.mild_df <- function(data, ...)
 {
   group_cols <- c("bag_label", "bag_name", "instance_name")
   return(summarize_samples.default(data, group_cols, ...))

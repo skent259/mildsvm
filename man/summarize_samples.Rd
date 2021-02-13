@@ -3,15 +3,15 @@
 \name{summarize_samples}
 \alias{summarize_samples}
 \alias{summarize_samples.default}
-\alias{summarize_samples.MilData}
+\alias{summarize_samples.mild_df}
 \title{Summarize data across functions}
 \usage{
 \method{summarize_samples}{default}(data, group_cols, .fns = list(mean = mean), cor = FALSE, ...)
 
-\method{summarize_samples}{MilData}(data, ...)
+\method{summarize_samples}{mild_df}(data, ...)
 }
 \arguments{
-\item{data}{a data.frame, 'MilData' object, or similar of data to summarize}
+\item{data}{a data.frame, 'mild_df' object, or similar of data to summarize}
 
 \item{group_cols}{character vector of column(s) that describe groups to
 summarize across}
@@ -29,14 +29,14 @@ features in \code{data} plus correlation columns if specified.
 }
 \description{
 Summarize a numeric data frame based on specified grouping columns and a list
-of functions.  This is useful in summarizing a 'MilData' object from the
+of functions.  This is useful in summarizing a 'mild_df' object from the
 sample level to the instance level.
 }
 \section{Methods (by class)}{
 \itemize{
 \item \code{default}: Method for data.frame-like objects.
 
-\item \code{MilData}: Method for 'MilData' objects.
+\item \code{mild_df}: Method for 'mild_df' objects.
 }}
 
 \examples{

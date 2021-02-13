@@ -30,6 +30,7 @@ test_that("GenerateData.R functions have identical output", {
                                      remainder_dist = "mvnormal",
                                      positive_degree = 3)
 
+  class(MilDistribution_data) <- c("mild_df", "data.frame")
   expect_equal(mildsvm_data, MilDistribution_data)
 })
 
@@ -41,13 +42,15 @@ test_that("kme.R functions have identical output", {
                                         nbag = 7,
                                         nsample = 7,
                                         positive_degree = 3,
-                                        positive_prob = 0.15,
+                                        positive_prob = 0.3,
                                         positive_mean = rep(0, 5))
 
   # remove one instance, and one observation to ensure unequal lengths
   ind1 <- which(mil_data$instance_name == unique(mil_data$instance_name)[1])
   ind2 <- which(mil_data$instance_name == unique(mil_data$instance_name)[2])[1]
   mil_data <- mil_data[-c(ind1, ind2), ]
+  mil_data2 <- mil_data
+  class(mil_data2) <- c("MilData", "data.frame")
 
   x = data.frame("instance_name" = c("inst_1", "inst_2", "inst_1"),
                  "X1" = c(-0.4, 0.5, 2))
@@ -55,13 +58,12 @@ test_that("kme.R functions have identical output", {
                   "X1" = c(-1, -2, 3))
 
   split_ind <- mil_data$bag_name %in% unique(mil_data$bag_name)[1:2]
-  sub1 <- mil_data[split_ind, ]
-  sub2 <- mil_data[!split_ind, ]
 
-  expect_equal(mildsvm::kme(mil_data), MilDistribution::kme(mil_data))
+  expect_equal(mildsvm::kme(mil_data), MilDistribution::kme(mil_data2))
   expect_equal(mildsvm::kme(x), MilDistribution::kme(x))
   expect_equal(mildsvm::kme(x, x2), MilDistribution::kme(x, x2))
-  expect_equal(mildsvm::kme(sub1, sub2), MilDistribution::kme(sub1, sub2))
+  expect_equal(mildsvm::kme(mil_data[split_ind, ], mil_data[!split_ind, ]),
+               MilDistribution::kme(mil_data2[split_ind, ], mil_data2[!split_ind, ]))
 })
 
 test_that("mildsvm.R functions have identical output", {
@@ -79,38 +81,41 @@ test_that("mildsvm.R functions have identical output", {
   # remove one instance, and one observation to create unequal lengths
   ind1 <- which(mil_data$instance_name == unique(mil_data$instance_name)[1])
   ind2 <- which(mil_data$instance_name == unique(mil_data$instance_name)[2])[1]
-  mil_data_ <- mil_data[-c(ind1, ind2), ]
+  mil_data <- mil_data[-c(ind1, ind2), ]
 
-  mil_data_ <- mil_data_ %>%
+  mil_data <- mil_data %>%
     arrange(bag_label, bag_name, instance_name, X1)
+  mil_data2 <- mil_data
+  class(mil_data2) <- c("MilData", "data.frame")
+
 
   set.seed(8)
-  mdl1 <- mildsvm::mildsvm(mil_data_, cost = 1,
+  mdl1 <- mildsvm::mildsvm(mil_data, cost = 1,
                            weights = c("0" = 0.375, "1" = 1),
                            control = list(scale = FALSE,
                                           sigma = 0.05))
-  mdl2 <- MilDistribution::mil_distribution(mil_data_, cost = 1)
+  mdl2 <- MilDistribution::mil_distribution(mil_data2, cost = 1)
 
   # models are equal on key components, just differ some naming
   expect_equal(mdl1$model$model@alpha, mdl2$model$ksvm_res@alpha)
   expect_equal(mdl1$model$model@b, mdl2$model$ksvm_res@b)
   expect_equal(mdl1$total_step, mdl2$total_step)
   expect_equal(mdl1$representative_inst, mdl2$representative_inst)
-  expect_equal(mdl1$traindata, mdl2$traindata)
+  expect_equivalent(mdl1$traindata, mdl2$traindata)
   expect_equivalent(mdl1$useful_inst_idx, mdl2$useful_inst_idx)
 
   # predictions should match
   expect_equivalent(
-    predict(mdl1, new_data = mil_data_, type = "raw", layer = "instance")$.pred %>% setNames(NULL),
+    predict(mdl1, new_data = mil_data, type = "raw", layer = "instance")$.pred %>% setNames(NULL),
     # factor(predict(mdl2, newdata = mil_data_)$final_pred$bag_label)
-    predict(mdl2, newdata = mil_data_)$final_pred$instance_score
+    predict(mdl2, newdata = mil_data2)$final_pred$instance_score
   )
 
   expect_equivalent(
-    mil_data_ %>%
-      bind_cols(predict(mdl1, new_data = mil_data_, type = "raw", layer = "bag")) %>%
+    mil_data %>%
+      bind_cols(predict(mdl1, new_data = mil_data, type = "raw", layer = "bag")) %>%
       distinct(bag_name, .pred),
-    predict(mdl2, newdata = mil_data_)$final_pred %>%
+    predict(mdl2, newdata = mil_data2)$final_pred %>%
       distinct(bag_name, bag_score)
   )
 

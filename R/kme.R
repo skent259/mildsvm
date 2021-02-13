@@ -95,23 +95,23 @@ kme.default <- function(df, df2 = NULL, sigma = 0.05) {
     return(K)
 }
 
-##' MilData method for kme function
+##' mild_df method for kme function
 ##'
-##' MilData method for kme function
-##' @param df A MilData object.
+##' mild_df method for kme function
+##' @param df A mild_df object.
 ##' @param df2 Data.frame
 ##' @param sigma Parameter for 'rbf'
 ##' @return A matrix.
 ##' @examples
-##' MilData1 <- generate_mild_df(positive_dist = 'mvt',
+##' mild_df1 <- generate_mild_df(positive_dist = 'mvt',
 ##'                              negative_dist = 'mvnormal',
 ##'                              remainder_dist = 'mvnormal',
 ##'                              nbag = 10,
 ##'                              positive_degree = 3)
-##' K <- kme(MilData1) ## About 10 seconds.
+##' K <- kme(mild_df1) ## About 10 seconds.
 ##' @export
 ##' @author Yifei Liu
-kme.MilData <- function(df, df2 = NULL, sigma = 0.05) {
+kme.mild_df <- function(df, df2 = NULL, sigma = 0.05) {
     df$bag_label <- df$bag_name <- NULL
     if (!is.null(df2))
         df2$bag_label <- df2$bag_name <- NULL
@@ -123,17 +123,17 @@ kme.MilData <- function(df, df2 = NULL, sigma = 0.05) {
 ##' Function to calculate the kernel mean embedding for to distributional data sets. It uses the empirical approximation for the integral
 ##' \deqn{\int_{\mathcal X} \int_{\mathcal Y} K(x, y) d P_X d Q_Y },
 ##' for a given kernel \eqn{K(\cdot, \cdot)}. Currently only supports radial basis function kernel for fast computation.
-##' @param df A data.frame with first column being `instance_name` and the rest being features. Or a MilData object.
-##' @param df2 If `df2` is null, the inner embedding of `df` and itself will be calculated. Otherwise `df2` is a data.frame with first column being `instance_name` and the rest being features. Or a MilData object.
+##' @param df A data.frame with first column being `instance_name` and the rest being features. Or a mild_df object.
+##' @param df2 If `df2` is null, the inner embedding of `df` and itself will be calculated. Otherwise `df2` is a data.frame with first column being `instance_name` and the rest being features. Or a mild_df object.
 ##' @param sigma The parameter for rbf kernel.
 ##' @return A matrix K of number of unique instance labels in df by that in df2.
 ##' @examples
-##' MilData1 <- generate_mild_df(positive_dist = 'mvt',
+##' mild_df1 <- generate_mild_df(positive_dist = 'mvt',
 ##'                              negative_dist = 'mvnormal',
 ##'                              remainder_dist = 'mvnormal',
 ##'                              nbag = 10,
 ##'                              positive_degree = 3)
-##' K <- kme(MilData1)
+##' K <- kme(mild_df1)
 ##' @export
 ##' @author Yifei Liu, Sean Kent
 kme <- function(df, df2 = NULL, sigma = 0.05) {

@@ -2,12 +2,12 @@
 % Please edit documentation in R/helper_functions.R
 \name{bag_instance_sampling}
 \alias{bag_instance_sampling}
-\title{Sample MilData object by bags and instances}
+\title{Sample mild_df object by bags and instances}
 \usage{
 bag_instance_sampling(data, size)
 }
 \arguments{
-\item{data}{a 'MilData' object containing the data}
+\item{data}{a 'mild_df' object containing the data}
 
 \item{size}{a non-negative integer giving the number of rows to choose from
 \code{data}.}
@@ -16,7 +16,7 @@ bag_instance_sampling(data, size)
 a numeric vector of length \code{size} indicating which rows were sampled.
 }
 \description{
-From a 'MilData' object, return a sample that evenly pulls from the unique
+From a 'mild_df' object, return a sample that evenly pulls from the unique
 bags and unique instances from each bag as much as possible.  This is a form
 of stratified sampling to avoid randomly sampling many rows from a few bags.
 }

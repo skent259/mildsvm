@@ -4,7 +4,7 @@
 \alias{smm}
 \alias{smm.default}
 \alias{smm.formula}
-\alias{smm.MilData}
+\alias{smm.mild_df}
 \title{Fit SMM model to the data}
 \usage{
 \method{smm}{default}(
@@ -19,7 +19,7 @@
 
 \method{smm}{formula}(formula, data, instances = "instance_name", ...)
 
-\method{smm}{MilData}(data, ...)
+\method{smm}{mild_df}(data, ...)
 }
 \arguments{
 \item{x}{a data.frame, matrix, or similar object of covariates, where each
@@ -55,8 +55,8 @@ This argument is an alternative to the \verb{x, y, bags, instances } arguments,
 but requires the \code{data} argument. See examples.}
 
 \item{data}{If \code{formula} is provided, a data.frame or similar from which
-formula elements will be extracted.  Otherwise, a 'MilData' object from
-which \verb{x, y, instances} are automatically extracted. If a 'MilData'
+formula elements will be extracted.  Otherwise, a 'mild_df' object from
+which \verb{x, y, instances} are automatically extracted. If a 'mild_df'
 object is used, all columns will be used as predictors.}
 }
 \value{
@@ -65,7 +65,7 @@ components, if applicable:
 \itemize{
 \item \code{model}: an SVM model fit with \code{kernlab::ksvm}.
 \item \code{call_type}: the call type, which specifies whether \code{smm()}
-was called via the formula, data.frame, of MilData method.
+was called via the formula, data.frame, of mild_df method.
 \item \code{sigma}: argument used for radial basis kernel.
 \item \code{traindata}: training data from the underlying fitting.  This data will
 get used when computing the kernel matrix for prediction.
@@ -73,7 +73,7 @@ get used when computing the kernel matrix for prediction.
 \item \code{levels}: levels of \code{y} that are recorded for future prediction.
 \item \code{features}: the features used for prediction.
 \item \code{instance_name}: the name of the column used for instances, if the
-formula or MilData method is applied.
+formula or mild_df method is applied.
 \item \code{center}: values used to center x, if \code{scale} = TRUE.
 \item \code{scale}: values used to scale x, if \code{scale} = TRUE.
 }
@@ -92,7 +92,7 @@ train the appropriate SVM model.
 
 \item \code{formula}: Method for passing formula
 
-\item \code{MilData}: Method for MilData objects
+\item \code{mild_df}: Method for mild_df objects
 }}
 
 \examples{

@@ -3,7 +3,7 @@
 \name{kfm_nystrom}
 \alias{kfm_nystrom}
 \alias{kfm_nystrom.default}
-\alias{kfm_nystrom.MilData}
+\alias{kfm_nystrom.mild_df}
 \title{Fit a Nystrom method kernel approximation}
 \usage{
 kfm_nystrom(df, m, r, kernel, ...)
@@ -17,7 +17,7 @@ kfm_nystrom(df, m, r, kernel, ...)
   ...
 )
 
-\method{kfm_nystrom}{MilData}(
+\method{kfm_nystrom}{mild_df}(
   df,
   m = nrow(df),
   r = m,
@@ -41,7 +41,7 @@ to \code{m}, the default.}
 \item{...}{additional parameters needed for the kernels.  See details.}
 
 \item{sampling}{determines how to sample instances.  Default it 'random'. For
-kfm_nystrom.MilData, can specify \code{sampling} = 'stratified' to ensure that
+kfm_nystrom.mild_df, can specify \code{sampling} = 'stratified' to ensure that
 samples are chosen evenly from bags and instances.  \code{sampling} can also be
 a numeric vector of length \code{m} of pre-determined samples.}
 }
@@ -71,7 +71,7 @@ bandwidth.
 \itemize{
 \item \code{default}: For use on objects of class \code{data.frame} or \code{matrix}.
 
-\item \code{MilData}: Ignore the information columns with 'bag_label',
+\item \code{mild_df}: Ignore the information columns with 'bag_label',
 'bag_name', and 'instance_name' when calculating kernel approximation.
 }}
 

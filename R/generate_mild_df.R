@@ -1,142 +1,6 @@
-if (getRversion() >= "2.15.1") utils::globalVariables(c("bag_name", "bag_label",
-                                                        "instance_label", "instance_name", "label", "bag_score_pred", "instance_label_pred",
-                                                        "instance_score_pred"), add = FALSE)
-
-##' Constructor function for MilData object
-##'
-##' Constructor function for MilData object which gives a more convenient way of handling multiple instance data. If x contains a column for 'instance_label', then this function will add `instance_label` in the object attributes but will remove it from the data.frame.
-##' @param x A data.frame which contains 'bag_label', 'bag_name', 'instance_name' as the first three columns and the rest as features.
-##' @return A MilData object (S3) which is built on data.frame
-##' @examples
-##' new_MilData(x = data.frame('bag_label' = c(1, 1),
-##'                            'bag_name' = rep('bag_1', 2),
-##'                            'instance_name' = c('bag_1_inst_1', 'bag_1_inst_2'),
-##'                            'X1' = c(-0.4, 0.5))
-##'                            )
-##' new_MilData(x = data.frame('bag_label' = c(1, 1),
-##'                            'bag_name' = rep('bag_1', 2),
-##'                            'instance_name' = c('bag_1_inst_1', 'bag_1_inst_2'),
-##'                            'X1' = c(-0.4, 0.5),
-##'                            'instance_label' = c(0, 1))
-##'                            )
-##' @export
-##'
-##' @author Yifei Liu
-new_MilData <- function(x = data.frame()) {
-    stopifnot(is.data.frame(x))
-
-    if (is.null(x$instance_label)) {
-        x_instance_label <- NULL
-    } else {
-        x_instance_label = x$instance_label
-        x$instance_label = NULL
-    }
-    structure(x, class = c("MilData", "data.frame"), instance_label = x_instance_label)
-}
-
-##' Validation function for MilData object
-##'
-##' x should have the first three column names representing 'bag_label', 'bag_name' and 'instance_name'. The rest should all be features. Therefore, the bag_label of the same bag_name should be the same.
-##'
-##' @param x A data.frame. x should have the first three column names representing 'bag_label', 'bag_name' and 'instance_name'. The rest should all be features. Therefore, the bag_label of the same bag_name should be the same.
-##' @return A MilData object if it checks out, or an error message
-##' @examples
-##' x = data.frame('bag_label' = c(1, 1, 0),
-##'               'bag_name' = c(rep('bag_1', 2), 'bag_2'),
-##'               'instance_name' = c('bag_1_inst_1', 'bag_1_inst_2', 'bag_2_inst_1'),
-##'               'X1' = c(-0.4, 0.5, 2),
-##'               'instance_label' = c(0, 1, 0))
-##' validate_MilData(x)
-##' @import dplyr
-##' @export
-##' @author Yifei Liu
-validate_MilData <- function(x) {
-    value = x
-
-    colnames <- colnames(value)
-    if (is.null(colnames)) {
-        stop("Colnames should be given to x")
-        call. = FALSE
-    }
-    if (any(colnames[1:3] != c("bag_label", "bag_name", "instance_name"))) {
-        stop("The first three column names should be 'bag_label', 'bag_name', 'instance_name'")
-        call. = FALSE
-    }
-
-    ## bag_label should be of numeric 0, 1 or T, F
-    # if (!all(as.numeric(unique(value$bag_label)) %in% c(0, 1))) {
-    #     stop("Bag_label should be one of 0 (negative) or 1 (positive)")
-    #     call. = FALSE
-    # }
-
-    ## verify that the same bag names correspond to the same bag label.
-    consist <- unclass(value %>% dplyr::group_by(bag_name) %>% dplyr::summarise(consist = length(unique(bag_label)) ==
-                                                                                    1))$consist
-    if (any(consist != TRUE)) {
-        stop(paste("There is inconsistency bag labeling at bag ", unique(value$bag_name)[which(consist !=
-                                                                                                   TRUE)]))
-        call. = FALSE
-    }
-
-    ## verify that the bag_label is determined by whether there is at
-    ## least a positive label in instances of a bag.
-
-    x_instance_label <- attr(x, "instance_label")
-    if (!is.null(x_instance_label)) {
-        value$instance_label = x_instance_label
-        consist_inst <- unclass(value %>% dplyr::group_by(bag_name) %>%
-                                    dplyr::summarise(consist_inst = any(as.logical(instance_label)) ==
-                                                         unique(bag_label)))$consist_inst
-        if (any(consist_inst != TRUE)) {
-            stop(paste("There is inconsistency in instance-bag labelling in bag ",
-                       unique(value$bag_name)[which(consist_inst != TRUE)]))
-            call. = FALSE
-        }
-    }
-    x
-}
-
-##' Helper function to generate MilData object
-##'
-##' Helper function to generate MilData object. Changes the first three columns
-##'  to the required column names ('bag_label', 'bag_name', 'instance_name').
-##'  If the original `bag_label` is a factor, will use the first level as
-##'  negative label and code it as numeric '0' and use the second level as
-##'  positive label and code it as numeric '1'. Levels >= 3 not supported and
-##'  will raise an error.
-##'
-##' The column name for instance label should always be `instance_label` otherwise will be taken as features of x.
-##' @param x A data.frame that to be used to create MilData object.
-##' @return A MilData object.
-##' @examples
-##' x = data.frame('bag_LABEL' = factor(c(1, 1, 0)),
-##'               'bag_name' = c(rep('bag_1', 2), 'bag_2'),
-##'               'instance_name' = c('bag_1_inst_1', 'bag_1_inst_2', 'bag_2_inst_1'),
-##'               'X1' = c(-0.4, 0.5, 2),
-##'               'instance_label' = c(0, 1, 0))
-##' MilData(x)
-##' @export
-##' @author Yifei Liu
-MilData <- function(x = data.frame()) {
-    if (any(colnames(x)[1:3] != c("bag_label", "bag_name", "instance_name"))) {
-        colnames(x)[1:3] <- c("bag_label", "bag_name", "instance_name")
-        message("Changed the first three columns to 'bag_label', 'bag_name', 'instance_name'")
-    }
-    if (is.factor(x$bag_label)) {
-        levels = levels(x$bag_label)
-        if (length(levels) == 1)
-            stop("There is only one level for the bag label!")
-        x$bag_label = unclass(x$bag_label) - 1
-        message(paste("Using the first level of bag label, ", levels[1],
-                      ", as negative label and the second level, ", levels[2],
-                      ", as positive label"))
-    }
-    validate_MilData(new_MilData(x))
-}
-
-#' Function to generate MilData using multivariate t and normal distributions.
+#' Function to generate mild_df using multivariate t and normal distributions.
 #'
-#' This function generates multiple instance data (a MilData object) where each
+#' This function generates multiple instance data (a mild_df object) where each
 #' instance corresponds to `nsample` i.i.d. observations. To use the function,
 #' one needs to provide the total number of covariates `ncov`, to generate, and
 #' the index of the important covariates for positive and negative instances,
@@ -183,9 +47,9 @@ MilData <- function(x = data.frame()) {
 #'   probability of a bag being a positive bag, and 'n_noise_inst' is the number
 #'   of negative instances in a positive bag, should be strictly less than
 #'   'ninst'.
-#' @return A MilData object.
+#' @return A mild_df object.
 #' @examples
-#' MilData1 <- generate_mild_df(positive_dist = 'mvt',
+#' mild_df1 <- generate_mild_df(positive_dist = 'mvt',
 #'                              negative_dist = 'mvnormal',
 #'                              remainder_dist = 'mvnormal',
 #'                              positive_degree = 3)
@@ -342,5 +206,5 @@ generate_mild_df <- function(positive_dist = c("mvt", "mvnormal"),
     data$bag_name <- as.character(data$bag_name)
     data$instance_name <- as.character(data$instance_name)
 
-    return(MilData(data))
+    return(as_mild_df(data))
 }

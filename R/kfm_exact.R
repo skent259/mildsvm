@@ -61,7 +61,7 @@ kfm_exact <- function(kernel = "polynomial", degree = 2, const = 1) {
 #' @describeIn build_fm Method for 'kfm_exact' class.
 #' @export
 build_fm.kfm_exact <- function(kfm_fit, new_data, ...) {
-  if (inherits(new_data, "MilData")) {
+  if (inherits(new_data, "mild_df")) {
     info <- subset(new_data, select = c(bag_label, bag_name, instance_name))
     new_data <- subset(new_data, select = -c(bag_label, bag_name, instance_name))
   } else {

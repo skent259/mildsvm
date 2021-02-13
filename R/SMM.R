@@ -22,8 +22,8 @@ validate_smm <- function(x) {
 #'   This argument is an alternative to the `x, y, bags, instances ` arguments,
 #'   but requires the `data` argument. See examples.
 #' @param data If `formula` is provided, a data.frame or similar from which
-#'   formula elements will be extracted.  Otherwise, a 'MilData' object from
-#'   which `x, y, instances` are automatically extracted. If a 'MilData'
+#'   formula elements will be extracted.  Otherwise, a 'mild_df' object from
+#'   which `x, y, instances` are automatically extracted. If a 'mild_df'
 #'   object is used, all columns will be used as predictors.
 #' @param cost The cost parameter in SVM, fed to the `C` argument in
 #'   `kernlab::ksvm`
@@ -42,7 +42,7 @@ validate_smm <- function(x) {
 #'   components, if applicable:
 #'   - `model`: an SVM model fit with `kernlab::ksvm`.
 #'   - `call_type`: the call type, which specifies whether `smm()`
-#'   was called via the formula, data.frame, of MilData method.
+#'   was called via the formula, data.frame, of mild_df method.
 #'   - `sigma`: argument used for radial basis kernel.
 #'   - `traindata`: training data from the underlying fitting.  This data will
 #'   get used when computing the kernel matrix for prediction.
@@ -50,7 +50,7 @@ validate_smm <- function(x) {
 #'   - `levels`: levels of `y` that are recorded for future prediction.
 #'   - `features`: the features used for prediction.
 #'   - `instance_name`: the name of the column used for instances, if the
-#'   formula or MilData method is applied.
+#'   formula or mild_df method is applied.
 #'   - `center`: values used to center x, if `scale` = TRUE.
 #'   - `scale`: values used to scale x, if `scale` = TRUE.
 #'
@@ -192,16 +192,16 @@ smm.formula <- function(formula, data, instances = "instance_name", ...)
     return(res)
 }
 
-#' @describeIn smm Method for MilData objects
+#' @describeIn smm Method for mild_df objects
 #' @export
-smm.MilData <- function(data, ...)
+smm.mild_df <- function(data, ...)
 {
     x <- as.data.frame(subset(data, select = -c(bag_label, bag_name, instance_name)))
     y <- data$bag_label
     instances <- data$instance_name
 
     res <- smm.default(x, y, instances, ...)
-    res$call_type <- "smm.MilData"
+    res$call_type <- "smm.mild_df"
     res$bag_name <- "bag_name"
 
     res$instance_name <- "instance_name"
@@ -217,7 +217,7 @@ smm.MilData <- function(data, ...)
 #'   columns as the X that trained the 'smm' object
 #' @param layer If 'instance', return predictions at the instance level. Option
 #'   'bag' returns predictions at the bag level, but only if the model was fit
-#'   with `smm.MilData()`,
+#'   with `smm.mild_df()`,
 #' @param new_instances character or character vector.  Can specify a singular
 #'   character that provides the column name for the instance names in
 #'   `new_data`, default = "instance_name".  Can also specify a vector of length
@@ -225,7 +225,7 @@ smm.MilData <- function(data, ...)
 #'   fitted with `smm.formula()`, this parameter is not necessary as the bag
 #'   name can be pulled directly from new_data, if available.
 #' @param new_bags character or character vector.  Only relevant when fit with
-#'   `smm.MilData()`, which contains bag level information.  Can specify a
+#'   `smm.mild_df()`, which contains bag level information.  Can specify a
 #'   singular character that provides the column name for the bag names in
 #'   `new_data`, default = "bag_name".  Can also specify a vector of length
 #'   `nrow(new_data)` that has bag name for each instance.
@@ -281,8 +281,8 @@ predict.smm <- function(object,
     type <- match.arg(type)
     layer <- match.arg(layer, c("instance", "bag"))
 
-    if (layer == "bag" && object$call_type != "smm.MilData") {
-        message("`layer` = 'bag' is not permitted unless model was fit with `smm.MilData()`.")
+    if (layer == "bag" && object$call_type != "smm.mild_df") {
+        message("`layer` = 'bag' is not permitted unless model was fit with `smm.mild_df()`.")
         message("Changing `layer` to 'instance'.")
         layer <- "instance"
     }
@@ -304,7 +304,7 @@ predict.smm <- function(object,
         instances <- new_instances
     }
 
-    # bag information (for `smm.MilData()`)
+    # bag information (for `smm.mild_df()`)
     if (layer == "bag") {
         if (is.null(new_bags)) {
             bags <- new_data[[object$bag_name]]

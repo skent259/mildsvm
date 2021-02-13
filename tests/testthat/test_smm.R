@@ -16,7 +16,7 @@ new_x <- data.frame(x1 = rnorm(length(new_inst), mean = 1*(new_inst=="11")),
                     x2 = rnorm(length(new_inst), mean = 2*(new_inst=="11")),
                     x3 = rnorm(length(new_inst), mean = 3*(new_inst=="11")))
 
-## MilData set to work with
+## mild_df set to work with
 mil_df <- generate_mild_df(positive_dist = 'mvnormal',
                            negative_dist = 'mvnormal',
                            remainder_dist = 'mvnormal',
@@ -94,11 +94,11 @@ test_that("smm() works with formula method", {
 
 })
 
-test_that("smm() works with MilData method", {
+test_that("smm() works with mild_df method", {
 
   mdl <- smm(mil_df)
   expect_s3_class(mdl, "smm")
-  expect_equal(mdl$call_type, "smm.MilData")
+  expect_equal(mdl$call_type, "smm.mild_df")
   expect_s4_class(mdl$model, "ksvm")
 
   pred <- predict(mdl, mil_df, type = "raw")
@@ -290,7 +290,7 @@ test_that("predict.smm has correct argument handling", {
 
 })
 
-test_that("predict.smm() works when fit with smm.MilData()", {
+test_that("predict.smm() works when fit with smm.mild_df()", {
   mdl <- smm(mil_df)
 
   expect_equal(

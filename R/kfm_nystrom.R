@@ -20,7 +20,7 @@ validate_kfm_nystrom <- function(x) {
 #' @param kernel a character determining the kernel to use.  Currently, only
 #'   'radial' is implemented.
 #' @param sampling determines how to sample instances.  Default it 'random'. For
-#'   kfm_nystrom.MilData, can specify `sampling` = 'stratified' to ensure that
+#'   kfm_nystrom.mild_df, can specify `sampling` = 'stratified' to ensure that
 #'   samples are chosen evenly from bags and instances.  `sampling` can also be
 #'   a numeric vector of length `m` of pre-determined samples.
 #' @param ... additional parameters needed for the kernels.  See details.
@@ -99,7 +99,7 @@ kfm_nystrom.default <- function(df, m = nrow(df), r = m, kernel = "radial", samp
 #' @describeIn kfm_nystrom Ignore the information columns with 'bag_label',
 #'   'bag_name', and 'instance_name' when calculating kernel approximation.
 #' @export
-kfm_nystrom.MilData <- function(df, m = nrow(df), r = m, kernel = "radial", sampling = "random", ...) {
+kfm_nystrom.mild_df <- function(df, m = nrow(df), r = m, kernel = "radial", sampling = "random", ...) {
   if (sampling == 'stratified' && TRUE) {
     sampling <- bag_instance_sampling(df, m)
   }
@@ -111,7 +111,7 @@ kfm_nystrom.MilData <- function(df, m = nrow(df), r = m, kernel = "radial", samp
 #' @describeIn build_fm Method for 'kfm_nystrom' class.
 #' @export
 build_fm.kfm_nystrom <- function(kfm_fit, new_data, ...) {
-  if (inherits(new_data, "MilData")) {
+  if (inherits(new_data, "mild_df")) {
     info <- subset(new_data, select = c(bag_label, bag_name, instance_name))
     new_data <- subset(new_data, select = -c(bag_label, bag_name, instance_name))
   } else {

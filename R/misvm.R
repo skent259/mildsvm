@@ -67,9 +67,9 @@ validate_misvm <- function(x) {
 #'   - `start` argument used when `method` = 'mip'.  If TRUE, the mip program
 #'   will be warm_started with the solution from `method` = 'qp-heuristic' to
 #'   improve speed.
-#' @param .fns (argument for `misvm.MilData()` method) list of functions to
+#' @param .fns (argument for `misvm.mild_df()` method) list of functions to
 #'   summarize instances over.
-#' @param cor (argument for `misvm.MilData()` method) logical, whether to
+#' @param cor (argument for `misvm.mild_df()` method) logical, whether to
 #'   include correlations between all features in the summarization.
 #'
 #' @return an object of class 'misvm'.  The object contains the following
@@ -277,11 +277,11 @@ misvm.default <- function(x, y, bags, cost = 1, method = c("heuristic", "mip", "
   # return(res)
 }
 
-#' @describeIn misvm Method for 'MilData' objects. Summarize samples to the
+#' @describeIn misvm Method for 'mild_df' objects. Summarize samples to the
 #'   instance level based on specified functions, then perform misvm on instance
 #'   level data.
 #' @export
-misvm.MilData <- function(data, .fns = list(mean = mean, sd = sd), cor = FALSE, ...)
+misvm.mild_df <- function(data, .fns = list(mean = mean, sd = sd), cor = FALSE, ...)
 {
   instance_data <- summarize_samples(data, .fns, cor)
   res <- misvm.default(
@@ -291,7 +291,7 @@ misvm.MilData <- function(data, .fns = list(mean = mean, sd = sd), cor = FALSE, 
     ...
   )
 
-  res$call_type <- "misvm.MilData"
+  res$call_type <- "misvm.mild_df"
   res$instance_name <- "instance_name"
   res$summary_fns <- .fns
   res$summary_cor <- cor
@@ -352,7 +352,7 @@ predict.misvm <- function(object, new_data,
   layer <- match.arg(layer)
   method <- attr(object, "method")
 
-  if (object$call_type == "misvm.MilData") {
+  if (object$call_type == "misvm.mild_df") {
     mil_cols <- c("bag_label", "bag_name", "instance_name")
     mil_info <- new_data[, mil_cols]
     new_data <- summarize_samples(new_data,
@@ -416,7 +416,7 @@ predict.misvm <- function(object, new_data,
                 "raw" = tibble::tibble(.pred = as.numeric(scores)),
                 "class" = tibble::tibble(.pred_class = pos))
 
-  if (object$call_type == "misvm.MilData") {
+  if (object$call_type == "misvm.mild_df") {
     # bring back the predictions from instance level to the sample level
     ind <- match(mil_info$instance_name, new_data$instance_name)
     res <- res[ind, ]
@@ -618,7 +618,7 @@ misvm_mip_model <- function(y, bags, X, c, weights = NULL, warm_start = NULL) {
 #' @param type type that to be used for `e1071::svm`.
 #' @return An object of class 'MI_SVM'
 #' @examples
-#' MilData1 <- generate_mild_df(positive_dist = 'mvt',
+#' mild_df1 <- generate_mild_df(positive_dist = 'mvt',
 #'                              negative_dist = 'mvnormal',
 #'                              remainder_dist = 'mvnormal',
 #'                              nbag = 50,
@@ -626,7 +626,7 @@ misvm_mip_model <- function(y, bags, X, c, weights = NULL, warm_start = NULL) {
 #'                              positive_degree = 3,
 #'                              positive_prob = 0.15,
 #'                              positive_mean = rep(0, 5))
-#' df1 <- build_instance_feature(MilData1, seq(0.05, 0.95, length.out = 10))
+#' df1 <- build_instance_feature(mild_df1, seq(0.05, 0.95, length.out = 10))
 #' mdl <- MI_SVM(data = df1, cost = 1, kernel = 'radial')
 #' @importFrom e1071 svm
 #' @author Yifei Liu, Sean Kent
