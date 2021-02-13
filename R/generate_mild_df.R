@@ -79,7 +79,7 @@ generate_mild_df <- function(positive_dist = c("mvt", "mvnormal"),
     ## if any of these distributions is specified as 'mvt' sanity check
 
     positive_dist <- match.arg(positive_dist)
-    positive_dist <- match.arg(positive_dist)
+    negative_dist <- match.arg(negative_dist)
     remainder_dist <- match.arg(remainder_dist)
     dots = list(...)
 
