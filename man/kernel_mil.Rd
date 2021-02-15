@@ -41,3 +41,4 @@ Internal function to perform SMM iteration using full Gram matrix.
 \author{
 Yifei Liu
 }
+\keyword{internal}

@@ -2,9 +2,9 @@
 % Please edit documentation in R/misvm.R
 \name{misvm_mip_model}
 \alias{misvm_mip_model}
-\title{Create optimization model for MI-SVM problem}
+\title{INTERNAL Create optimization model for MI-SVM problem}
 \usage{
-misvm_mip_model(y, bags, X, c, weights = NULL)
+misvm_mip_model(y, bags, X, c, weights = NULL, warm_start = NULL)
 }
 \arguments{
 \item{y}{a nx1 numeric vector of bag labels with length equal to the number
@@ -21,6 +21,10 @@ objective function}
 
 \item{weights}{named vector to control the weight of the cost parameter
 for each possible y value.  Weights multiply against the cost vector.}
+
+\item{warm_start}{NULL, or a list with components 'opt' and 'selected' which
+provide the warm start values to use for the (w, b, xi) and (z)
+constraints, respectively.}
 }
 \value{
 a model that can be passed to \code{gurobi::gurobi} that contains the MIQP
@@ -33,3 +37,4 @@ Internal function to build an optimization model (that can be passed to
 \author{
 Sean Kent
 }
+\keyword{internal}

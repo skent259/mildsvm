@@ -2,56 +2,184 @@
 % Please edit documentation in R/mildsvm.R
 \name{mildsvm}
 \alias{mildsvm}
-\title{Function to perform cross validation for the cost used in mil_distribution() function.}
+\alias{mildsvm.formula}
+\alias{mildsvm.default}
+\alias{mildsvm.mild_df}
+\title{Fit MILD-SVM model to the data}
 \usage{
-mildsvm(
+\method{mildsvm}{formula}(
+  formula,
   data,
   cost = 1,
-  method = "mip",
+  method = c("heuristic", "mip"),
   weights = TRUE,
-  time_limit = 150,
-  kfm_fun = "kfm_nystrom",
-  ...
+  control = list(kernel = "radial", sigma = 1, nystrom_args = list(m = nrow(x), r =
+    nrow(x), sampling = "random"), max_step = 500, scale = TRUE, verbose = FALSE,
+    time_limit = 60, start = FALSE)
+)
+
+\method{mildsvm}{default}(
+  x,
+  y,
+  bags,
+  instances,
+  cost = 1,
+  method = c("heuristic", "mip"),
+  weights = TRUE,
+  control = list(kernel = "radial", sigma = 1, nystrom_args = list(m = nrow(x), r =
+    nrow(x), sampling = "random"), max_step = 500, scale = TRUE, verbose = FALSE,
+    time_limit = 60, start = FALSE)
+)
+
+\method{mildsvm}{mild_df}(
+  data,
+  cost = 1,
+  method = c("heuristic", "mip"),
+  weights = TRUE,
+  control = list(kernel = "radial", sigma = 1, nystrom_args = list(m = nrow(x), r =
+    nrow(x), sampling = "random"), max_step = 500, scale = TRUE, verbose = FALSE,
+    time_limit = 60, start = FALSE)
 )
 }
 \arguments{
-\item{data}{The dataset as a MilData object.}
+\item{formula}{a formula with specification \code{mild(y, bags, instances) ~ x}
+which uses the \code{mild} function to create the bag-instance structure. This
+argument is an alternative to the \verb{x, y, bags, instances } arguments, but
+requires the \code{data} argument. See examples.}
 
-\item{cost}{the cost parameter in the model; default = 1. TODO: make this better}
+\item{data}{If \code{formula} is provided, a data.frame or similar from which
+formula elements will be extracted.  Otherwise, a 'mild_df' object from
+which \verb{x, y, bags, instances} are automatically extracted. If a 'mild_df'
+object is used, all columns will be used as predictors.}
 
-\item{method}{the method to use in fitting. If "mip", uses the full mildsvm
-mixed integer program.}
+\item{cost}{The cost parameter in SVM. If \code{method} = 'heuristic', this will
+be fed to \code{kernlab::ksvm}, otherwise it is similarly in internal functions.}
 
-\item{weights}{if TRUE, will adjust the SVM cost to account for class imbalance
-if FALSE or NULL, no adjustment is made. Optionally, one can pass pre-specified
-weights like \code{c("0" = 2, "1" = 1)} that get used.  Default is \code{weights = TRUE}.}
+\item{method}{MILD-SVM algorithm to use in fitting; default is 'heuristic',
+which employs an algorithm similar to Andrews et al. (2003). When \code{method}
+= 'mip', the novel MIP method will be used.  See details.}
 
-\item{time_limit}{the time limit for each iteration of cross validation.}
+\item{weights}{named vector, or TRUE, to control the weight of the cost
+parameter for each possible y value.  Weights multiply against the cost
+vector. If TRUE, weights are calculated based on inverse counts of
+instances with given label, where we only count one positive instance per
+bag. Otherwise, names must match the levels of \code{y}.}
 
-\item{kfm_fun}{a kernel feature map fitting function required when method = "mip"}
+\item{control}{list of additional parameters passed to the method that
+control computation with the following components:
+\itemize{
+\item \code{kernel} either a character the describes the kernel ('linear' or
+'radial') or a kernel matrix at the instance level.
+\item \code{sigma} argument needed for radial basis kernel.
+\item \code{nystrom_args} a list of parameters to pass to \code{kfm_nystrom} function,
+used when \code{method} = 'mip' and \code{kernel} = 'radial' to generate a nystrom
+approximation of the kernel features.
+\item \code{max_step} argument used when \code{method} = 'heuristic'. Maximum steps of
+iteration for the heuristic algorithm.
+\item \code{scale} argument used for all methods. Logical; whether to rescale the
+input before fitting.
+\item \code{verbose} argument used when \code{method} = 'mip'. Whether to message output
+to the console.
+\item \code{time_limit} argument used when \code{method} = 'mip'. FALSE, or a time limit
+(in seconds) passed to \code{gurobi} parameters.  If FALSE, no time limit is
+given.
+\item \code{start} argument used when \code{method} = 'mip'.  If TRUE, the mip program
+will be warm_started with the solution from \code{method} = 'qp-heuristic' to
+potentially improve speed.
+}}
 
-\item{...}{additional arguments passed to the \code{kfm_fun}}
+\item{x}{a data.frame, matrix, or similar object of covariates, where each
+row represents a sample.}
+
+\item{y}{a numeric, character, or factor vector of bag labels for each
+instance.  Must satisfy \code{length(y) == nrow(x)}. Suggest that one of the
+levels is 1, '1', or TRUE, which becomes the positive class;
+otherwise, a positive class is chosen and a message will be supplied.}
+
+\item{bags}{a vector specifying which instance belongs to each bag.  Can be a
+string, numeric, of factor.}
+
+\item{instances}{a vector specifying which samples belong to each instance.
+Can be a string, numeric, of factor.}
 }
 \value{
-An object of class \code{mildsvm} fit to the data.
+an object of class 'mildsvm'.  The object contains the following
+components, if applicable:
+\itemize{
+\item \code{model}: a model that will depend on the method used to fit.
+It holds the main model components used for prediction.  If the model is
+fit with method = 'heuristic', this object is of class 'smm'.
+\item \code{total_step}: the number of steps used in the heuristic algorithm, if
+applicable.
+\item \code{representative_inst}: instances from positive bags that
+are selected to be most representative of the positive instance.
+\item \code{traindata}: training data from the underlying fitting.  This data will
+get used when computing the kernel matrix for prediction.
+\item \code{useful_inst_idx}: The instances that were selected to represent the bags
+in the heuristic fitting.
+\item \code{features}: the features used for prediction.
+\item \code{call_type}: the call type, which specifies whether \code{mildsvm()}
+was called via the formula, data.frame, of mild_df method.
+\item \code{levels}: levels of \code{y} that are recorded for future prediction.
+\item \code{bag_name}: the name of the column used for bags, if the formula or
+mild_df method is applied.
+\item \code{instance_name}: the name of the column used for instances, if the
+formula or mild_df method is applied.
+\item \code{kfm_fit}: the fit from building nystrom features, if method = 'mip' and
+kernel = 'radial'.  This is used for prediction.
+\item \code{center}: values used to center x, if \code{scale} = TRUE.
+\item \code{scale}: values used to scale x, if \code{scale} = TRUE.
+}
 }
 \description{
-Function to perform cross validation for the cost used in the
-mil_distribution() function. The calculation can be accelerated if
-the full gram matrix is provided.
-TODO: update parameters, return, etc.
+This function fits the MILD-SVM model, which takes a multiple-instance
+learning with distributions (MILD) dataset and fits a modified SVM to it.  A
+core feature of MILD data is that we have multiple levels: bags which contain
+instances, instances which we think of as distributions with samples, and
+finally samples that comprise the rows of the data. The MILD-SVM methodology
+is based on research in progress. Several choices of fitting algorithm are
+available, including a version of the heuristic algorithm proposed by Andrews
+et al. (2003) and a novel algorithm that explicitly solves the mixed-integer
+programming (MIP) problem using the \code{gurobi} optimization back-end.
 }
+\section{Methods (by class)}{
+\itemize{
+\item \code{formula}: Method for passing formula
+
+\item \code{default}: Method for data.frame-like objects
+
+\item \code{mild_df}: Method for mild_df objects
+}}
+
 \examples{
-MilData1 <- GenerateMilData(positive_dist = 'mvt',
-                            negative_dist = 'mvnormal',
-                            remainder_dist = 'mvnormal',
-                            nbag = 15,
-                            positive_degree = 3,
-                            nsample = 20
+set.seed(8)
+mil_data <- generate_mild_df(positive_dist = 'mvt',
+                             negative_dist = 'mvnormal',
+                             remainder_dist = 'mvnormal',
+                             nbag = 15,
+                             positive_degree = 3,
+                             nsample = 20
 )
-foo <- mildsvm(MilData1, method = "mip", m = 10)
+# Heuristic method
+mdl1 <- mildsvm(mil_data)
+mdl2 <- mildsvm(mild(bag_label, bag_name, instance_name) ~ X1 + X2 + X3., data = mil_data)
+
+if (require(gurobi)) {
+  foo <- mildsvm(mil_data, method = "mip", control = list(nystrom_args = list(m = 10, r = 10)))
+  predict(foo, mil_data)
+}
+
+predict(mdl1, new_data = mil_data, type = "raw", layer = "bag")
+
+# summarize predictions at the bag layer
+library(dplyr)
+mil_data \%>\%
+  bind_cols(predict(mdl2, mil_data, type = "class")) \%>\%
+  bind_cols(predict(mdl2, mil_data, type = "raw")) \%>\%
+  distinct(bag_name, bag_label, .pred_class, .pred)
+
 
 }
 \author{
-Sean Kent
+Sean Kent, Yifei Liu
 }

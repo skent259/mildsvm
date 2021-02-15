@@ -4,24 +4,64 @@
 \alias{predict.misvm}
 \title{Predict method for 'misvm' object}
 \usage{
-\method{predict}{misvm}(object, newX, type = c("prediction", "score"))
+\method{predict}{misvm}(
+  object,
+  new_data,
+  type = c("class", "raw"),
+  layer = c("bag", "instance"),
+  new_bags = "bag_name"
+)
 }
 \arguments{
 \item{object}{an object of class misvm}
 
-\item{newX}{matrix to predict from.  Needs to have the same number of
+\item{new_data}{matrix to predict from.  Needs to have the same number of
 columns as the X that trained the misvm object}
 
-\item{type}{if 'prediction', return predicted values with threshold of 0 as
--1 or +1.  If 'score', return the raw predicted scores.}
+\item{type}{if 'class', return predicted values with threshold of 0 as
+-1 or +1.  If 'raw', return the raw predicted scores.}
+
+\item{layer}{if 'bag', return predictions at the bag level.  If 'instance',
+return predictions at the instance level.}
+
+\item{new_bags}{character or character vector.  Can specify a singular
+character that provides the column name for the bag names in \code{new_data},
+default = "bag_name".  Can also specify a vector of length \code{nrow(new_data)}
+that has bag name for each instance.  When \code{object} was fitted with
+\code{misvm.formula}, this parameter is not necessary as the bag name can be
+pulled directly from new_data, if available.}
 }
 \value{
-vector of length \code{nrow(newX)}.  If 'prediction', return predicted
-values with threshold of 0 as -1 or +1.  If 'scores', return the raw
-predicted scores.
+tibble with \code{nrow(new_data)} rows.  If type = 'class', the tibble
+will have a column '.pred_class'.  If type = 'raw', the tibble will have
+a column '.pred'.
 }
 \description{
 Predict method for 'misvm' object
+}
+\examples{
+mil_data <- generate_mild_df(
+  positive_dist = 'mvt',
+  negative_dist = 'mvnormal',
+  remainder_dist = 'mvnormal',
+  nbag = 20,
+  nsample = 20,
+  positive_degree = 3,
+  positive_prob = 0.15,
+  positive_mean = rep(0, 5)
+)
+df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
+mdl1 <- misvm.default(df1, cost = 1, kernel = "radial", method = "mip")
+
+predict(mdl1, new_data = df1, type = "raw", layer = "bag")
+
+# summarize predictions at the bag layer
+library(dplyr)
+df1 \%>\%
+  bind_cols(predict(mdl2, df1, type = "class")) \%>\%
+  bind_cols(predict(mdl2, df1, type = "raw")) \%>\%
+  distinct(bag_name, bag_label, .pred_class, .pred)
+
 }
 \author{
 Sean Kent

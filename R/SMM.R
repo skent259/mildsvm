@@ -1,159 +1,357 @@
-
-
-##' Create a new smm object
-##'
-##' Create a new smm object
-##' @param x A list
-##' @return An smm object
-##' @examples
-##'
-##' new_smm(list())
-##' @export
-##' @author Yifei Liu
 new_smm <- function(x = list()) {
     stopifnot(is.list(x))
     structure(x, class = c("smm"))
 }
 
+validate_smm <- function(x) {
+    message("No validations currently in place for object of class 'smm'.")
+    x
+}
 
-##' default method for SMM function.
-##'
-##' default method for SMM function.
-##' @param df A data.frame where the first two columns being `instance_label` and `instance_name`, or a MilData object. `df` can be NULL if kernel_mild is a matrix and y is not NULL.
-##' @param kernel_mild The kernel to be used, current only supports 'rbf'; or a kernal matrix.
-##' @param cost The cost for SMM, larger cost gives larger tolerance to errors.
-##' @param class.weights A named vector where the names should be the same as the unique values of the label. For the use of imbalance data. Will be passed to the `ksvm` function in `kernlab` package. Notice that a class weight 2:1 will gives different results from 1:0.5 because they will be directly multiplied to the cost.
-##' @param sigma The parameter for the rbf kernel.
-##' @param y The instance label. If omitted, will use that from df.
-##' @return An `smm` object.
-##' @examples
-##' x = data.frame('instance_label' = factor(c(1, 1, 0)),
-##'                 'instance_name' = c('bag_1_inst_1', 'bag_1_inst_2', 'bag_2_inst_1'),
-##'                'X1' = c(-0.4, 0.5, 2))
-##' mdl <- SMM(df = x, cost = 10)
-##' @importFrom kernlab ksvm
-##' @export
-##' @author Yifei Liu
-SMM.default <- function(df, kernel_mild = "rbf", cost = 1, class.weights = NULL,
-    sigma = 0.05, y = NULL) {
-    ## the data structure for the input data.frame df is instance_label |
-    ## instance_name | feature_1 | ...
+#' Fit SMM model to the data
+#'
+#' Function to carry out support measure machines algorithm which is appropriate
+#' for multiple instance learning. The algorithm calculates the kernel matrix of
+#' different empirical measures using kernel mean embedding. The data set should
+#' be passed in with rows corresponding to samples from a set of instances.  SMM
+#' will compute a kernel on the instances and pass that to `kernlab::ksvm` to
+#' train the appropriate SVM model.
+#'
+#' @inheritParams mildsvm
+#' @param formula a formula that defines the outcome `y` and covariates `x`.
+#'   This argument is an alternative to the `x, y, bags, instances ` arguments,
+#'   but requires the `data` argument. See examples.
+#' @param data If `formula` is provided, a data.frame or similar from which
+#'   formula elements will be extracted.  Otherwise, a 'mild_df' object from
+#'   which `x, y, instances` are automatically extracted. If a 'mild_df'
+#'   object is used, all columns will be used as predictors.
+#' @param cost The cost parameter in SVM, fed to the `C` argument in
+#'   `kernlab::ksvm`
+#' @param weights named vector, or TRUE, to control the weight of the cost
+#'   parameter for each possible y value.  Weights multiply against the cost
+#'   vector. If TRUE, weights are calculated based on inverse counts of
+#'   instances with given label. Otherwise, names must match the levels of `y`.
+#' @param control list of additional parameters passed to the method that
+#'   control computation with the following components:
+#'   - `kernel` either a character the describes the kernel ('radial') or a
+#'   kernel matrix at the instance level.
+#'   - `sigma` argument needed for radial basis kernel.
+#'   - `scale` Logical; whether to rescale the input before fitting.
+#'
+#' @return an object of class 'smm'.  The object contains the following
+#'   components, if applicable:
+#'   - `model`: an SVM model fit with `kernlab::ksvm`.
+#'   - `call_type`: the call type, which specifies whether `smm()`
+#'   was called via the formula, data.frame, of mild_df method.
+#'   - `sigma`: argument used for radial basis kernel.
+#'   - `traindata`: training data from the underlying fitting.  This data will
+#'   get used when computing the kernel matrix for prediction.
+#'   - `cost`: argument used for SVM cost parameter.
+#'   - `levels`: levels of `y` that are recorded for future prediction.
+#'   - `features`: the features used for prediction.
+#'   - `instance_name`: the name of the column used for instances, if the
+#'   formula or mild_df method is applied.
+#'   - `center`: values used to center x, if `scale` = TRUE.
+#'   - `scale`: values used to scale x, if `scale` = TRUE.
+#'
+#' @examples
+#' set.seed(8)
+#' n_instances <- 10
+#' n_samples <- 20
+#' y <- rep(c(1, -1), each = n_samples * n_instances / 2)
+#' instances <- as.character(rep(1:n_instances, each = n_samples))
+#' x <- data.frame(x1 = rnorm(length(y), mean = 1*(y==1)),
+#'                 x2 = rnorm(length(y), mean = 2*(y==1)),
+#'                 x3 = rnorm(length(y), mean = 3*(y==1)))
+#'
+#' df <- data.frame(instance_name = instances, y = y, x)
+#'
+#' mdl <- smm(x, y, instances)
+#' mdl2 <- smm(y ~ ., data = df)
+#'
+#' # instance level predictions
+#' df %>%
+#'   bind_cols(predict(mdl, type = "raw", new_data = x, new_instances = instances)) %>%
+#'   bind_cols(predict(mdl, type = "class", new_data = x, new_instances = instances)) %>%
+#'   distinct(instance_name, y, .pred, .pred_class)
+#'
+#' @author Sean Kent, Yifei Liu
+#' @name smm
+NULL
 
-    if (is.null(y))
-        y <- unlist(df %>%
-                        dplyr::group_by(instance_name) %>%
-                        dplyr::summarise(label = instance_label[1]) %>%
-                        dplyr::select(label))
+#' @export
+smm <- function(x, y, instances, ...) {
+    UseMethod("smm")
+}
 
-    if (is.matrix(kernel_mild)) {
-        K_matrix <- kernel_mild
-    } else {
-        K_matrix <- kme(df = df %>% dplyr::select(-instance_label), sigma = sigma)
+#' @describeIn smm Method for data.frame-like objects
+#' @export
+smm.default <- function(x,
+                        y,
+                        instances,
+                        cost = 1,
+                        weights = TRUE,
+                        control = list(kernel = "radial",
+                                       sigma = if (is.vector(x)) 1 else 1 / ncol(x),
+                                       scale = TRUE))
+{
+    if ("kernel" %ni% names(control)) control$kernel <- "radial"
+    if ("sigma" %ni% names(control)) control$sigma <- if (is.vector(x)) 1 else 1 / ncol(x)
+    if ("scale" %ni% names(control) && is.matrix(control$kernel)) {
+        message("Since `kernel` was passed as a matrix, defaulting to `scale` = FALSE.")
+        control$scale <- FALSE
+    } else if ("scale" %ni% names(control)) {
+        control$scale <- TRUE
     }
-    res <- kernlab::ksvm(x = K_matrix, y = y, kernel = "matrix", C = cost,
-        class.weights = class.weights)
-    return(new_smm(list(ksvm_res = res, sigma = sigma, traindata = df,
-        cost = cost)))
-}
 
-##' MilData method for SMM function
-##'
-##' MilData method for SMM function
-##' @param df A data.frame where the first two columns being `instance_label` and `instance_name`, or a MilData object. `df` can be NULL if kernel_mild is a matrix and y is not NULL.
-##' @param kernel_mild The kernel to be used, current only supports 'rbf'; or a kernal matrix.
-##' @param cost The cost for SMM, larger cost gives larger tolerance to errors.
-##' @param class.weights A named vector where the names should be the same as the unique values of the label. For the use of imbalance data. Will be passed to the `ksvm` function in `kernlab` package. Notice that a class weight 2:1 will gives different results from 1:0.5 because they will be directly multiplied to the cost.
-##' @param sigma The parameter for the rbf kernel.
-##' @param y The instance label. If omitted, will use that from df.
-##' @return An `smm` object.
-##' @examples
-##'
-##' x = data.frame('bag_LABEL' = factor(c(1, 1, 0)),
-##'                'bag_name' = c(rep('bag_1', 2), 'bag_2'),
-##'                'instance_name' = c('bag_1_inst_1', 'bag_1_inst_2', 'bag_2_inst_1'),
-##'                'X1' = c(-0.4, 0.5, 2),
-##'                'instance_label' = c(0, 1, 0)
-##' )
-##' mdl <- SMM(df = MilData(x), cost = 10)
-##' @export
-##' @author Yifei Liu
-SMM.MilData <- function(df, kernel_mild = "rbf", cost = 1, class.weights = NULL,
-    sigma = 0.05, y = NULL) {
-    colnames(df)[which(colnames(df) == "bag_label")] <- "instance_label"
-    df$bag_name <- NULL
-    SMM.default(df, kernel_mild, cost, class.weights, sigma, y)
-}
-##' Function to carry out support measure machines (SMM) algorithm.
-##'
-##' Function to carry out support measure machines algorithm which is appropriate for multiple instance learning. The algorithm basically calculates the kernal matrix of differernt empirical measures using kernel mean embedding.
-##' @param df A data.frame where the first two columns being `instance_label` and `instance_name`, or a MilData object. `df` can be NULL if kernel_mild is a matrix and y is not NULL.
-##' @param kernel_mild The kernel to be used, current only supports 'rbf'; or a kernal matrix.
-##' @param cost The cost for SMM, larger cost gives larger tolerance to errors.
-##' @param class.weights A named vector where the names should be the same as the unique values of the label. For the use of imbalance data. Will be passed to the `ksvm` function in `kernlab` package. Notice that a class weight 2:1 will gives different results from 1:0.5 because they will be directly multiplied to the cost.
-##' @param sigma The parameter for the rbf kernel.
-##' @param y The instance label. If omitted, will use that from df.
-##' @return An `smm` object.
-##' @examples
-##'
-##' x = data.frame('bag_LABEL' = factor(c(1, 1, 0)),
-##'                'bag_name' = c(rep('bag_1', 2), 'bag_2'),
-##'                'instance_name' = c('bag_1_inst_1', 'bag_1_inst_2', 'bag_2_inst_1'),
-##'                'X1' = c(-0.4, 0.5, 2),
-##'                'instance_label' = c(0, 1, 0)
-##' )
-##' mdl <- SMM(df = MilData(x), cost = 10)
-##' @export
-##' @author Yifei Liu
-SMM <- function(df, kernel_mild = "rbf", cost = 1, class.weights = NULL,
-    sigma = 0.05, y = NULL) {
-    UseMethod("SMM")
-}
-
-##' Prediction function for smm objects (the return from SMM())
-##'
-##' This function gives the prediction of an smm object in the scale of score. A higher score indicates the observation is more likely to be of class `1`.
-##' @param object An smm object.
-##' @param ... `newdata`, new data whose first column should be `instance_name`. `traindata`, training data used to train res. The first column should be `instance_name`. `kernel_mild`, currently only support 'rbf'
-##' @return A vector of length of the instances in newdata.
-##' @examples
-##' x = data.frame('bag_LABEL' = factor(c(1, 1, 0)),
-##'                'bag_name' = c(rep('bag_1', 2), 'bag_2'),
-##'                'instance_name' = c('bag_1_inst_1', 'bag_1_inst_2', 'bag_2_inst_1'),
-##'                'X1' = c(-0.4, 0.5, 2),
-##'                'instance_label' = c(0, 1, 0)
-##' )
-##' mdl <- SMM(df = MilData(x), cost = 10, sigma = 0.05)
-##' x_inst <- data.frame('instance_name' = c('bag_1_inst_1', 'bag_1_inst_2', 'bag_2_inst_1'),
-##'                'X1' = c(-0.4, 0.5, 2)
-##'                )
-##' predictions <- predict(object = mdl, kernel_mild = 'rbf', newdata = x_inst, traindata = x_inst)
-##' @export
-##' @importFrom stats predict
-##' @author Yifei Liu
-predict.smm <- function(object, ...) {
-    ## kernel_mild, newdata, traindata){ the data structure for the input
-    ## data.frames are instance_name | feature_1 | ...
-
-    ## sigma can be read from object
-    args = list(...)
-    kernel_mild = args$kernel_mild
-    newdata = args$newdata
-    traindata = args$traindata
-
-    sigma = object$sigma
-    ksvm_res = object$ksvm_res
-
-    beta_0 <- -ksvm_res@b
-    if (is.matrix(kernel_mild)) {
-        kernel_matrix <- kernel_mild[ksvm_res@alphaindex[[1]], ]
-        return((t(ksvm_res@coef[[1]]) %*% kernel_matrix + beta_0)[1, ])
-    } else {
-        if (is.null(kernel_mild))
-            kernel_mild <- "rbf"
-        unique_instance_name_train <- unique(traindata$instance_name)[ksvm_res@alphaindex[[1]]]
-        kernel_matrix <- kme(df = traindata[traindata$instance_name %in% unique_instance_name_train, ],
-                             df2 = newdata,
-                             sigma = sigma)
-        return((t(ksvm_res@coef[[1]]) %*% kernel_matrix + beta_0)[1, ])
+    col_x <- colnames(x)
+    if (control$scale) {
+        x <- scale(x)
+        center <- attr(x, "scaled:center")
+        scale <- attr(x, "scaled:scale")
+        x <- as.data.frame(x)
     }
+    x <- data.frame(instance_name = instances, x)
+
+    # store the levels of y and convert to 0,1 numeric format.
+    y_info <- convert_y(y)
+    y <- 2*classify_bags(y_info$y, instances) - 1
+    y <- factor(y)
+    lev <- y_info$lev
+
+    ## weights
+    if (is.numeric(weights)) {
+        stopifnot(names(weights) == lev | names(weights) == rev(lev))
+        weights <- weights[lev]
+        names(weights) <- c("-1", "1")
+    } else if (isTRUE(weights)) {
+        weights <- c("-1" = sum(y == 1) / sum(y == 0), "1" = 1)
+    } else {
+        weights <- NULL
+    }
+
+    ## kernel
+    is_matrix_kernel <- inherits(control$kernel, "matrix")
+    n_instances <- length(unique(instances))
+    if (control$kernel != "radial" && !is_matrix_kernel) {
+        warning("control$kernel must either be 'radial' or a square matrix.  Defaulting to 'radial'.")
+        control$kernel <- "radial"
+    } else if (is_matrix_kernel) {
+        if (all(dim(control$kernel) != c(n_instances, n_instances))) {
+            warning("Matrix passed to control$kernel is not of correct size. Defaulting to 'radial'.")
+            control$kernel <- "radial"
+        }
+    }
+    if (all(control$kernel == "radial")) {
+        control$kernel <- kme(x, sigma = control$sigma)
+    }
+
+    fit <- kernlab::ksvm(x = control$kernel,
+                         y = y,
+                         kernel = "matrix",
+                         C = cost,
+                         class.weights = weights)
+
+    res <- list(
+        model = fit,
+        call_type = "smm.default",
+        sigma = control$sigma,
+        traindata = x,
+        cost = cost,
+        levels = lev,
+        features = col_x,
+        instance_name = NULL
+    )
+    if (control$scale) {
+        res$center <- center
+        res$scale <- scale
+    }
+    return(new_smm(res))
+}
+
+#' @describeIn smm Method for passing formula
+#' @export
+smm.formula <- function(formula, data, instances = "instance_name", ...)
+{
+    # instance information
+    if (length(instances) == 1 && is.character(instances)) {
+        instance_name <- instances
+        instances <- data[[instance_name]]
+    } else {
+        instance_name <- NULL
+    }
+
+    x <- x_from_formula(formula, data, skip = instance_name)
+    response <- stats::get_all_vars(formula, data = data)
+    y <- response[, 1]
+
+    res <- smm.default(x, y, instances, ...)
+    res$call_type <- "smm.formula"
+    res$formula <- formula
+    res$instance_name <- instance_name
+    return(res)
+}
+
+#' @describeIn smm Method for mild_df objects
+#' @export
+smm.mild_df <- function(data, ...)
+{
+    x <- as.data.frame(subset(data, select = -c(bag_label, bag_name, instance_name)))
+    y <- data$bag_label
+    instances <- data$instance_name
+
+    res <- smm.default(x, y, instances, ...)
+    res$call_type <- "smm.mild_df"
+    res$bag_name <- "bag_name"
+
+    res$instance_name <- "instance_name"
+    return(res)
+}
+
+
+#' Predict method for 'smm' object
+#'
+#' @inheritParams predict.mildsvm
+#' @param object an object of class smm
+#' @param new_data matrix to predict from.  Needs to have the same number of
+#'   columns as the X that trained the 'smm' object
+#' @param layer If 'instance', return predictions at the instance level. Option
+#'   'bag' returns predictions at the bag level, but only if the model was fit
+#'   with `smm.mild_df()`,
+#' @param new_instances character or character vector.  Can specify a singular
+#'   character that provides the column name for the instance names in
+#'   `new_data`, default = "instance_name".  Can also specify a vector of length
+#'   `nrow(new_data)` that has instance name for each row.  When `object` was
+#'   fitted with `smm.formula()`, this parameter is not necessary as the bag
+#'   name can be pulled directly from new_data, if available.
+#' @param new_bags character or character vector.  Only relevant when fit with
+#'   `smm.mild_df()`, which contains bag level information.  Can specify a
+#'   singular character that provides the column name for the bag names in
+#'   `new_data`, default = "bag_name".  Can also specify a vector of length
+#'   `nrow(new_data)` that has bag name for each instance.
+#'
+#' @return tibble with `nrow(new_data)` rows.  If type = 'class', the tibble
+#'   will have a column named '.pred_class'.  If type = 'raw', the tibble will
+#'   have a column name '.pred'.
+#'
+#' @examples
+#' # Some fake data
+#' set.seed(8)
+#' n_instances <- 10
+#' n_samples <- 20
+#' y <- rep(c(1, -1), each = n_samples * n_instances / 2)
+#' instances <- as.character(rep(1:n_instances, each = n_samples))
+#' x <- data.frame(x1 = rnorm(length(y), mean = 1*(y==1)),
+#'                 x2 = rnorm(length(y), mean = 2*(y==1)),
+#'                 x3 = rnorm(length(y), mean = 3*(y==1)))
+#'
+#' mdl <- smm(x, y, instances, control = list(sigma = 1/3))
+#'
+#' # instance level predictions (training data)
+#' data.frame(instance_name = instances, y = y, x) %>%
+#'   bind_cols(predict(mdl, type = "raw", new_data = x, new_instances = instances)) %>%
+#'   bind_cols(predict(mdl, type = "class", new_data = x, new_instances = instances)) %>%
+#'   distinct(instance_name, y, .pred, .pred_class)
+#'
+#' # test data
+#' new_inst <- rep(c("11", "12"), each = 30)
+#' new_y <- rep(c(1, -1), each = 30)
+#' new_x <- data.frame(x1 = rnorm(length(new_inst), mean = 1*(new_inst=="11")),
+#'                     x2 = rnorm(length(new_inst), mean = 2*(new_inst=="11")),
+#'                     x3 = rnorm(length(new_inst), mean = 3*(new_inst=="11")))
+#'
+#' # instance level predictions (test data)
+#' data.frame(instance_name = new_inst, y = new_y, new_x) %>%
+#'   bind_cols(predict(mdl, type = "raw", new_data = new_x, new_instances = new_inst)) %>%
+#'   bind_cols(predict(mdl, type = "class", new_data = new_x, new_instances = new_inst)) %>%
+#'     distinct(instance_name, y, .pred, .pred_class)
+#'
+#' @export
+#' @importFrom stats predict
+#' @author Sean Kent
+predict.smm <- function(object,
+                        new_data,
+                        type = c("class", "raw"),
+                        layer = "instance",
+                        new_instances = "instance_name",
+                        new_bags = NULL,
+                        kernel = NULL,
+                        ...)
+{
+    type <- match.arg(type)
+    layer <- match.arg(layer, c("instance", "bag"))
+
+    if (layer == "bag" && object$call_type != "smm.mild_df") {
+        message("`layer` = 'bag' is not permitted unless model was fit with `smm.mild_df()`.")
+        message("Changing `layer` to 'instance'.")
+        layer <- "instance"
+    }
+
+    if (is.matrix(kernel) && !is.null(object$center)) {
+        message("Model was fit using scaling, make sure that kernel matrix was similarly scaled.")
+    }
+
+    traindata <- object$traindata
+    model <- object$model
+
+    # instance information
+    if (object$call_type == "smm.formula" & new_instances[1] == "instance_name" & length(new_instances) == 1) {
+        new_instances <- object$instance_name
+    }
+    if (length(new_instances) == 1 & new_instances[1] %in% colnames(new_data)) {
+        instances <- new_data[[new_instances]]
+    } else {
+        instances <- new_instances
+    }
+
+    # bag information (for `smm.mild_df()`)
+    if (layer == "bag") {
+        if (is.null(new_bags)) {
+            bags <- new_data[[object$bag_name]]
+        } else if (length(new_bags) == 1 & new_bags[1] %in% colnames(new_data)) {
+            bags <- new_data[[new_bags]]
+        } else {
+            bags <- new_bags
+        }
+    }
+
+    # new_x
+    if (object$call_type == "smm.formula") {
+        new_x <- x_from_formula(object$formula, new_data, skip = object$instance_name)
+    } else {
+        new_x <- new_data[, object$features, drop = FALSE]
+    }
+    if (!is.null(new_x) && "center" %in% names(object)) {
+        new_x <- as.data.frame(scale(new_x, center = object$center, scale = object$scale))
+    }
+
+    # kernel_m
+    sv_ind <- kernlab::SVindex(model)
+    if (is.matrix(kernel)) {
+        kernel_m <- kernel[, sv_ind] # future note, I don't think this actually filters anything out...
+    } else {
+        used_instance_names <- unique(traindata$instance_name)[sv_ind]
+        used_instances <- which(traindata$instance_name %in% used_instance_names)
+        kernel_m <- kme(df = data.frame(instance_name = instances, new_x),
+                        df2 = traindata[used_instances, ],
+                        sigma = object$sigma)
+    }
+    kernel_m <- kernlab::as.kernelMatrix(kernel_m)
+
+    raw <- kernlab::predict(model, kernel_m, type = "decision")
+    raw <- as.numeric(raw)
+    names(raw) <- unique(instances)
+
+    pos <- 2*(raw > 0) - 1
+    pos <- factor(pos, levels = c(-1, 1), labels = object$levels)
+
+    res <- switch(
+        type,
+        "raw" = tibble::tibble(.pred = raw[instances]),
+        "class" = tibble::tibble(.pred_class = pos[instances])
+    )
+    if (layer == "bag") {
+        res[[1]] <- classify_bags(res[[1]], bags, condense = FALSE)
+    }
+    return(res)
 }
