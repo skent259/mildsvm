@@ -32,11 +32,10 @@
 #' @author Sean Kent
 classify_bags <- function(y, bags, condense = TRUE) {
   # works whether y is {-1, 1} or {0, 1} as long as 1 reflects a positive instance
-  if (condense) {
-    res <- sapply(unique(bags), function(b) max(y[b == bags]))
-    names(res) <- unique(bags)
-  } else {
-    res <- sapply(bags, function(b) max(y[b == bags]))
+  res <- sapply(unique(bags), function(b) max(y[b == bags]))
+  names(res) <- unique(bags)
+  if (!condense) {
+    res <- res[bags]
   }
   return(res)
 }

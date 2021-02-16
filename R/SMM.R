@@ -321,7 +321,7 @@ predict.smm <- function(object,
     } else {
         new_x <- new_data[, object$features, drop = FALSE]
     }
-    if (!is.null(new_x) && "center" %in% names(object)) {
+    if (!is.null(new_x) && "center" %in% names(object) && is.null(kernel)) {
         new_x <- as.data.frame(scale(new_x, center = object$center, scale = object$scale))
     }
 

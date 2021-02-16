@@ -220,7 +220,8 @@ mildsvm.default <- function(x, y, bags, instances, cost = 1,
         names(weights) <- c("-1", "1")
     } else if (weights) {
         bag_labels <- sapply(split(y, factor(bags)), unique)
-        weights <- c("-1" = sum(bag_labels == 1) / sum(y == 0), "1" = 1)
+        inst_labels <- sapply(split(y, factor(instances)), unique)
+        weights <- c("-1" = sum(bag_labels == 1) / sum(inst_labels == 0), "1" = 1)
     } else {
         weights <- NULL
     }
@@ -432,14 +433,14 @@ predict.mildsvm <- function(object, new_data,
         new_x <- build_fm(object$kfm_fit, as.matrix(new_x))
         new_x <- average_over_instances(new_x, instances)
     }
-    if (method == "heuristic" & "center" %in% names(object)) {
+    if (method == "heuristic" & "center" %in% names(object) & is.null(kernel)) {
         new_x <- as.data.frame(scale(new_x, center = object$center, scale = object$scale))
     }
 
     if (method == "heuristic") {
         new_x <- as.data.frame(new_x) # in case someone passes mild_df to this...
         new_x$instance_name <- instances
-        # these scores are at the instance level
+        # scores at the instance level
         if (!is.null(kernel)) {
             kernel <- kernel[, object$model$inst_order]
             # TODO: would be good to check that matrix is of the right size here
