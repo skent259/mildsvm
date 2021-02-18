@@ -189,10 +189,9 @@ cv_misvm.default <- function(x, y, bags, cost_seq, n_fold, fold_id,
       if (length(unique(y[val])) != 2) {
         aucs[i, fold] <- NA
       } else {
-        suppressMessages({
-          aucs[i, fold] <- pROC::auc(response = classify_bags(y[val], bags[val]),
-                                     predictor = classify_bags(pred_i_fold$.pred, bags[val]))
-        })
+        aucs[i, fold] <- pROC::auc(response = classify_bags(y[val], bags[val]),
+                                   predictor = classify_bags(pred_i_fold$.pred, bags[val]),
+                                   levels = c(0,1), direction = "<")
       }
     }
   }
