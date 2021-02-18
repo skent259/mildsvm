@@ -328,12 +328,12 @@ predict.smm <- function(object,
     # kernel_m
     sv_ind <- kernlab::SVindex(model)
     if (is.matrix(kernel)) {
-        kernel_m <- kernel[, sv_ind] # future note, I don't think this actually filters anything out...
+        kernel_m <- kernel[, sv_ind, drop = FALSE] # future note, I don't think this actually filters anything out...
     } else {
         used_instance_names <- unique(traindata$instance_name)[sv_ind]
         used_instances <- which(traindata$instance_name %in% used_instance_names)
         kernel_m <- kme(df = data.frame(instance_name = instances, new_x),
-                        df2 = traindata[used_instances, ],
+                        df2 = traindata[used_instances, , drop = FALSE],
                         sigma = object$sigma)
     }
     kernel_m <- kernlab::as.kernelMatrix(kernel_m)

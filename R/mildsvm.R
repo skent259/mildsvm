@@ -273,7 +273,7 @@ mildsvm.default <- function(x, y, bags, instances, cost = 1,
 
         inst_order <- match(unique(instances[r$order]), unique(instances))
         if (is.matrix(control$kernel)) {
-            control$kernel <- control$kernel[inst_order, inst_order]
+            control$kernel <- control$kernel[inst_order, inst_order, drop = FALSE]
         }
 
         res <- mil_distribution(data,
@@ -442,11 +442,11 @@ predict.mildsvm <- function(object, new_data,
         new_x$instance_name <- instances
         # scores at the instance level
         if (!is.null(kernel)) {
-            kernel <- kernel[, object$model$inst_order]
+            kernel <- kernel[, object$model$inst_order, drop = FALSE]
             # TODO: would be good to check that matrix is of the right size here
             scores <- predict(object$model, new_data = new_x,
                               type = "raw",
-                              kernel = kernel[, object$useful_inst_idx])
+                              kernel = kernel[, object$useful_inst_idx, drop = FALSE])
             scores <- scores$.pred
         } else {
             scores <- predict(object$model, new_data = new_x, type = "raw")
@@ -530,7 +530,7 @@ kernel_mil <- function(kernel_full, data_info, max.step, cost, weights,
                          instances = 1:length(yy_inst),
                          cost = cost,
                          weights = weights,
-                         control = list(kernel = kernel_full[useful_inst_idx, useful_inst_idx],
+                         control = list(kernel = kernel_full[useful_inst_idx, useful_inst_idx, drop = FALSE],
                                         sigma = sigma,
                                         scale = FALSE))
 
@@ -538,7 +538,7 @@ kernel_mil <- function(kernel_full, data_info, max.step, cost, weights,
                                   type = "raw",
                                   new_data = NULL,
                                   new_instances = 1:nrow(kernel_full),
-                                  kernel = kernel_full[, useful_inst_idx])
+                                  kernel = kernel_full[, useful_inst_idx, drop = FALSE])
         pred_all_score <- pred_all_score$.pred
 
         ## update sample
@@ -547,7 +547,7 @@ kernel_mil <- function(kernel_full, data_info, max.step, cost, weights,
         useful_inst_idx <- NULL  ## the same as the previous useful_inst_idx
 
         for (i in 1:n_bag) {
-            data_i <- data_info[bag_name == unique_bag_name[i], ]
+            data_i <- data_info[bag_name == unique_bag_name[i], , drop = FALSE]
             n_inst_i <- nrow(data_i)  ## total number of instances
 
             if (data_i$bag_label[1] == -1) {
@@ -665,12 +665,12 @@ mil_distribution <- function(data, cost, weights, max.step = 500, sigma = 0.05, 
     # past_selection[, 1] <- selection
     # ## step <- 1
 
-    data_info <- unique(data[, c("bag_label", "bag_name", "instance_name")])
+    data_info <- unique(data[, c("bag_label", "bag_name", "instance_name"), drop = FALSE])
     temp_res <- kernel_mil(kernel, data_info, max.step, cost, weights,
         sigma, yy, useful_inst_idx)
 
     sample_df <- data[data$instance_name %in% instance_name[temp_res$useful_inst_idx],
-        -c(1, 2)]
+        -c(1, 2), drop = FALSE]
 
     res <- list(
         model = temp_res$svm_model,

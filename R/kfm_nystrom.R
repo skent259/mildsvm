@@ -73,7 +73,7 @@ kfm_nystrom.default <- function(df, m = nrow(df), r = m, kernel = "radial", samp
   } else {
     stop("parameter 'sampling' must be a numeric vector or the character 'random'. ")
   }
-  df_sub <- df[sampling, ]
+  df_sub <- df[sampling, , drop = FALSE]
 
   k_hat <- compute_kernel(df_sub, type = kernel, sigma = kernel_params$sigma)
 
@@ -85,7 +85,7 @@ kfm_nystrom.default <- function(df, m = nrow(df), r = m, kernel = "radial", samp
     warning(paste0("Data chosen in subsample appears to be duplicated, reducing number of features to ", r))
   }
   D <- diag(1 / sqrt(e$values[1:r]))
-  V <- t(e$vectors[, 1:r])
+  V <- t(e$vectors[, 1:r, drop = FALSE])
 
   return(new_kfm_nystrom(list(
     df_sub = df_sub,

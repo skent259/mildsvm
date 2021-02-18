@@ -195,7 +195,7 @@ as_mild_df.default <- function(x,
     if (instance_label %in% cols) {
       inst_label_col <- which(cols == instance_label)
       instance_label <- x[[inst_label_col]]
-      x <- x[, -inst_label_col]
+      x <- x[, -inst_label_col, drop = FALSE]
       cols <- colnames(x)
     } else {
       rlang::inform(c(
@@ -212,7 +212,7 @@ as_mild_df.default <- function(x,
   bag_name <- which(cols == bag_name)
   instance_name <- which(cols == instance_name)
 
-  x <- x[, c(bag_label, bag_name, instance_name, rest)]
+  x <- x[, c(bag_label, bag_name, instance_name, rest), drop = FALSE]
   colnames(x)[1:3] <- c("bag_label", "bag_name", "instance_name")
 
   return(validate_mild_df(new_mild_df(x, instance_label = instance_label)))

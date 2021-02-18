@@ -354,7 +354,7 @@ predict.misvm <- function(object, new_data,
 
   if (object$call_type == "misvm.mild_df") {
     mil_cols <- c("bag_label", "bag_name", "instance_name")
-    mil_info <- new_data[, mil_cols]
+    mil_info <- new_data[, mil_cols, drop = FALSE]
     new_data <- summarize_samples(new_data,
                                   group_cols = mil_cols,
                                   .fns = object$summary_fns,
@@ -419,7 +419,7 @@ predict.misvm <- function(object, new_data,
   if (object$call_type == "misvm.mild_df") {
     # bring back the predictions from instance level to the sample level
     ind <- match(mil_info$instance_name, new_data$instance_name)
-    res <- res[ind, ]
+    res <- res[ind, , drop = FALSE]
   }
   # TODO: consider returning the AUC here as an attribute.  Can only do if we have the true bag labels
   # attr(res, "AUC") <- calculated_auc

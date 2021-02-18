@@ -13,7 +13,7 @@
 
   list(y = y[data_order],
        b = b[data_order],
-       X = as.matrix(X[data_order, ]),
+       X = as.matrix(X[data_order, , drop = FALSE]),
        inst = i,
        order = data_order)
 }
@@ -107,7 +107,7 @@ select_cv_folds <- function(data, n_fold, fold_id) {
   # ind <- bags %in% unique(bags)[bags_for_train]
   # # The last line goes from the bag index to the instance index, avoiding right joins
 
-  bag_info <- unique(data[, c("bag_label", "bag_name")])
+  bag_info <- unique(data[, c("bag_label", "bag_name"), drop = FALSE])
   if (missing(fold_id)) {
     if (missing(n_fold))
       n_fold <- 5
@@ -175,7 +175,7 @@ x_from_formula <- function(formula, data, skip = NULL) {
   skip <- c(skip, response)
   predictors <- setdiff(colnames(data), skip)
 
-  x <- model.matrix(formula[-2], data = data[, predictors])
+  x <- model.matrix(formula[-2], data = data[, predictors, drop = FALSE])
   if (attr(stats::terms(formula, data = data), "intercept") == 1) x <- x[, -1, drop = FALSE]
   x <- as.data.frame(x)
 }
@@ -186,7 +186,7 @@ x_from_mi_formula <- function(formula, data) {
   bag_name <- mi_names[[3]]
   predictors <- setdiff(colnames(data), c(bag_label, bag_name))
 
-  x <- model.matrix(formula[-2], data = data[, predictors])
+  x <- model.matrix(formula[-2], data = data[, predictors, drop = FALSE])
   if (attr(stats::terms(formula, data = data), "intercept") == 1) x <- x[, -1, drop = FALSE]
   x <- as.data.frame(x)
 }
@@ -198,7 +198,7 @@ x_from_mild_formula <- function(formula, data) {
   instance_name <- mild_names[[4]]
   predictors <- setdiff(colnames(data), c(bag_label, bag_name, instance_name))
 
-  x <- model.matrix(formula[-2], data = data[, predictors])
+  x <- model.matrix(formula[-2], data = data[, predictors, drop = FALSE])
   if (attr(stats::terms(formula, data = data), "intercept") == 1) x <- x[, -1, drop = FALSE]
   x <- as.data.frame(x)
 }
