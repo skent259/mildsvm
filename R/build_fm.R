@@ -4,14 +4,19 @@
 #' `build_fm()` function creates these covariates based on an object that
 #' specifies the feature map and a provided dataset.
 #'
-#' @param kfm_fit object from a function in the `kfm_*` family, such as
-#'   `kfm_nystrom()`.
-#' @param new_data data to generate features from.
+#' @param kfm_fit An object from a function in the `kfm_*` family, such as
+#'   [kfm_nystrom()].
+#' @param new_data The data to generate features from.
+#' @param ... Additional arguments for methods.
 #'
-#' @return a matrix of covariates in the feature space, with the same number of
-#'   rows as `new_data`.  If `new_data` is an 'mild_df' object, `build_fm()`
+#' @return A matrix of covariates in the feature space, with the same number of
+#'   rows as `new_data`.  If `new_data` is a `mild_df` object, `build_fm()`
 #'   will also return the columns containing 'bag_label', 'bag_name',
 #'   'instance_name'.
+#'
+#' @seealso
+#' * [kfm_nystrom()] fit a Nystrom kernel feature map approximation.
+#' * [kfm_exact()] create an exact kernel feature map.
 #'
 #' @examples
 #' df <- data.frame(
@@ -32,38 +37,31 @@ build_fm <- function(kfm_fit, new_data, ...) {
   UseMethod("build_fm")
 }
 
-#' This flatten the mild_df type of data to regular multiple instance data where each instance is a vector
+#' Flatten `mild_df` data to the instance level
 #'
-#' This flatten the mild_df type of data to regular multiple instance data where each instance is a vector by extracting distribution sample quantiles, mean and sd.
-#' @param data A mild_df object.
-#' @param qtls Quantiles to be extracted from each instance empirical distribution.
-#' @param mean Whether or not to extract mean.
-#' @param sd Whether or not to extract median.
-#' @return A data.frame that is ready to be used in `MI_SVM()` function.
+#' Flatten `mild_df` type of data to regular multiple instance data where
+#' each instance is a vector by extracting distribution sample quantiles, mean
+#' and sd.
+#'
+#' @param data A `mild_df` object.
+#' @param qtls Quantiles to be extracted from each instance empirical
+#'   distribution.
+#' @param mean A logical for whether or not to extract mean.
+#' @param sd A logical for whether or not to extract standard deviation.
+#'
+#' @return A summarized data.frame at the instance level.
+#'
+#' @seealso [summarize_samples()] for a more general way to make a similar data
+#'   frame.
+#'
 #' @examples
-#' mild_df1 <- generate_mild_df(positive_dist = 'mvt',
-#'                              negative_dist = 'mvnormal',
-#'                              remainder_dist = 'mvnormal',
-#'                              nbag = 50,
-#'                              nsample = 20,
-#'                              positive_degree = 3,
-#'                              positive_prob = 0.15,
-#'                              positive_mean = rep(0, 5))
+#' mild_df1 <- generate_mild_df(positive_degree = 3, nbag = 3)
 #' df1 <- build_instance_feature(mild_df1, seq(0.05, 0.95, length.out = 10))
-#' @importFrom stats quantile
+#'
 #' @export
 #' @author Yifei Liu
 build_instance_feature <- function(data, qtls = seq(0.05, 0.95, length.out = 10),
                                    mean = TRUE, sd = TRUE) {
-  ## Let's assume here that `data` is a mild_df object which looks
-  ## something like bag_label | bag_name | instance_name | feature_1 |
-  ## ...  bag_label should be one of 0 and 1, where 0 is negative bags
-  ## and 1 is positive bags we need to prepare the data into the
-  ## following format so that the MI_SVM function can be called.
-  ## bag_label | bag_name | instance_name | feature_1 | ...
-
-  ## first we need to convert the distributional features into quantiles
-  ## find the quantiles for each instance
 
   instance_name <- unique(data$instance_name)
   df <- NULL

@@ -11,32 +11,34 @@
 \method{summarize_samples}{mild_df}(data, ...)
 }
 \arguments{
-\item{data}{a data.frame, 'mild_df' object, or similar of data to summarize}
+\item{data}{A data.frame, 'mild_df' object, or similar of data to summarize.}
 
-\item{group_cols}{character vector of column(s) that describe groups to
-summarize across}
+\item{group_cols}{A character vector of column(s) that describe groups to
+summarize across.}
 
-\item{.fns}{list of functions (default list(mean = mean)).}
+\item{.fns}{A list of functions (default \code{list(mean = mean)}).}
 
-\item{cor}{logical (default FALSE), whether to include correlations between
-all features in the summarization}
+\item{cor}{A logical (default \code{FALSE}) for whether to include correlations
+between all features in the summarization.}
+
+\item{...}{Arguments passed to or from other methods.}
 }
 \value{
-a 'tibble' with summarized data.  There will be one row for each set
+A tibble with summarized data.  There will be one row for each set
 of distinct groups specified by \code{group_cols}. There will be one column for
-each of the \code{group_cols} plus \code{length(.fns)} columns for each of the
-features in \code{data} plus correlation columns if specified.
+each of the \code{group_cols}, plus \code{length(.fns)} columns for each of the
+features in \code{data}, plus correlation columns if specified.
 }
 \description{
 Summarize a numeric data frame based on specified grouping columns and a list
-of functions.  This is useful in summarizing a 'mild_df' object from the
+of functions.  This is useful in summarizing a \code{mild_df} object from the
 sample level to the instance level.
 }
 \section{Methods (by class)}{
 \itemize{
 \item \code{default}: Method for data.frame-like objects.
 
-\item \code{mild_df}: Method for 'mild_df' objects.
+\item \code{mild_df}: Method for \code{mild_df} objects.
 }}
 
 \examples{

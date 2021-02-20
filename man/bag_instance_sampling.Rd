@@ -2,31 +2,29 @@
 % Please edit documentation in R/helper_functions.R
 \name{bag_instance_sampling}
 \alias{bag_instance_sampling}
-\title{Sample mild_df object by bags and instances}
+\title{Sample \code{mild_df} object by bags and instances}
 \usage{
 bag_instance_sampling(data, size)
 }
 \arguments{
-\item{data}{a 'mild_df' object containing the data}
+\item{data}{A \code{mild_df} object containing the data.}
 
-\item{size}{a non-negative integer giving the number of rows to choose from
+\item{size}{A non-negative integer giving the number of rows to choose from
 \code{data}.}
 }
 \value{
-a numeric vector of length \code{size} indicating which rows were sampled.
+A numeric vector of length \code{size} indicating which rows were sampled.
 }
 \description{
-From a 'mild_df' object, return a sample that evenly pulls from the unique
+From a \code{mild_df} object, return a sample that evenly pulls from the unique
 bags and unique instances from each bag as much as possible.  This is a form
 of stratified sampling to avoid randomly sampling many rows from a few bags.
 }
 \examples{
-mil_data <- mildsvm::generate_mild_df(positive_dist = "mvnormal",
-                                      negative_dist = "mvnormal",
-                                      remainder_dist = "mvnormal",
-                                      nbag = 2,
-                                      ninst = 2,
-                                      nsample = 2)
+mil_data <- generate_mild_df(positive_dist = "mvnormal",
+                             nbag = 2,
+                             ninst = 2,
+                             nsample = 2)
 
 rows <- bag_instance_sampling(mil_data, 6)
 table(mil_data$bag_name[rows])

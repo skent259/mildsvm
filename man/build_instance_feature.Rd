@@ -2,7 +2,7 @@
 % Please edit documentation in R/build_fm.R
 \name{build_instance_feature}
 \alias{build_instance_feature}
-\title{This flatten the mild_df type of data to regular multiple instance data where each instance is a vector}
+\title{Flatten \code{mild_df} data to the instance level}
 \usage{
 build_instance_feature(
   data,
@@ -12,30 +12,31 @@ build_instance_feature(
 )
 }
 \arguments{
-\item{data}{A mild_df object.}
+\item{data}{A \code{mild_df} object.}
 
-\item{qtls}{Quantiles to be extracted from each instance empirical distribution.}
+\item{qtls}{Quantiles to be extracted from each instance empirical
+distribution.}
 
-\item{mean}{Whether or not to extract mean.}
+\item{mean}{A logical for whether or not to extract mean.}
 
-\item{sd}{Whether or not to extract median.}
+\item{sd}{A logical for whether or not to extract standard deviation.}
 }
 \value{
-A data.frame that is ready to be used in \code{MI_SVM()} function.
+A summarized data.frame at the instance level.
 }
 \description{
-This flatten the mild_df type of data to regular multiple instance data where each instance is a vector by extracting distribution sample quantiles, mean and sd.
+Flatten \code{mild_df} type of data to regular multiple instance data where
+each instance is a vector by extracting distribution sample quantiles, mean
+and sd.
 }
 \examples{
-mild_df1 <- generate_mild_df(positive_dist = 'mvt',
-                             negative_dist = 'mvnormal',
-                             remainder_dist = 'mvnormal',
-                             nbag = 50,
-                             nsample = 20,
-                             positive_degree = 3,
-                             positive_prob = 0.15,
-                             positive_mean = rep(0, 5))
+mild_df1 <- generate_mild_df(positive_degree = 3, nbag = 3)
 df1 <- build_instance_feature(mild_df1, seq(0.05, 0.95, length.out = 10))
+
+}
+\seealso{
+\code{\link[=summarize_samples]{summarize_samples()}} for a more general way to make a similar data
+frame.
 }
 \author{
 Yifei Liu

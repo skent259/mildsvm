@@ -14,19 +14,20 @@ validate_kfm_exact <- function(x) {
 #' data. This function stores the information needed to build those exact
 #' features.
 #'
-#' @inheritParams kfm_nystrom
-#' @param degree numeric (default 2), provides the degree for `kernel` =
-#'   'polynomial'
-#' @param const numeric (default 1), constant term for `kernel` = 'polynomial'
+#' Currently, the following kernels are supported:
+#' * `'polynomial'`, with `degree` = d and `const` = c
 #'
-#' @return an object of class 'kfm_exact' with the following components,
+#' @inheritParams kfm_nystrom
+#' @param degree A numeric value (default 2) that provides the degree for
+#'   `kernel` = 'polynomial'
+#' @param const A numeric value (default 1) for the constant term when `kernel
+#'   = 'polynomial'`.
+#'
+#' @return An object of class `kfm_exact` with the following components,
 #'   returned from the inputs:
 #'   * `kernel`
 #'   * `degree`
 #'   * `const`
-#'
-#' @details Currently, the following kernels are supported:
-#'   - 'polynomial', with `degree` = d and `const` = c
 #'
 #' @examples
 #' df <- data.frame(
@@ -38,6 +39,7 @@ validate_kfm_exact <- function(x) {
 #' fit <- kfm_exact(kernel = "polynomial", degree = 2, const = 1)
 #' fm <- build_fm(fit, df)
 #'
+#' @family kernel feature map functions
 #' @export
 #' @author Sean Kent
 kfm_exact <- function(kernel = "polynomial", degree = 2, const = 1) {
@@ -58,12 +60,12 @@ kfm_exact <- function(kernel = "polynomial", degree = 2, const = 1) {
   )))
 }
 
-#' @describeIn build_fm Method for 'kfm_exact' class.
+#' @describeIn build_fm Method for `kfm_exact` class.
 #' @export
 build_fm.kfm_exact <- function(kfm_fit, new_data, ...) {
   if (inherits(new_data, "mild_df")) {
-    info <- subset(new_data, select = c(bag_label, bag_name, instance_name))
-    new_data <- subset(new_data, select = -c(bag_label, bag_name, instance_name))
+    info <- new_data[ , c("bag_label", "bag_name", "instance_name"), drop = FALSE]
+    new_data$bag_label <- new_data$bag_name <- new_data$instance_name <- NULL
   } else {
     info <- NULL
   }

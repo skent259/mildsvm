@@ -14,7 +14,8 @@
   cost = 1,
   weights = TRUE,
   control = list(kernel = "radial", sigma = if (is.vector(x)) 1 else 1/ncol(x), scale =
-    TRUE)
+    TRUE),
+  ...
 )
 
 \method{smm}{formula}(formula, data, instances = "instance_name", ...)
@@ -22,60 +23,64 @@
 \method{smm}{mild_df}(data, ...)
 }
 \arguments{
-\item{x}{a data.frame, matrix, or similar object of covariates, where each
+\item{x}{A data.frame, matrix, or similar object of covariates, where each
 row represents a sample.}
 
-\item{y}{a numeric, character, or factor vector of bag labels for each
+\item{y}{A numeric, character, or factor vector of bag labels for each
 instance.  Must satisfy \code{length(y) == nrow(x)}. Suggest that one of the
-levels is 1, '1', or TRUE, which becomes the positive class;
-otherwise, a positive class is chosen and a message will be supplied.}
+levels is 1, '1', or TRUE, which becomes the positive class; otherwise, a
+positive class is chosen and a message will be supplied.}
 
-\item{instances}{a vector specifying which samples belong to each instance.
+\item{instances}{A vector specifying which samples belong to each instance.
 Can be a string, numeric, of factor.}
 
 \item{cost}{The cost parameter in SVM, fed to the \code{C} argument in
-\code{kernlab::ksvm}}
+\code{kernlab::ksvm()}.}
 
-\item{weights}{named vector, or TRUE, to control the weight of the cost
+\item{weights}{named vector, or \code{TRUE}, to control the weight of the cost
 parameter for each possible y value.  Weights multiply against the cost
-vector. If TRUE, weights are calculated based on inverse counts of
-instances with given label. Otherwise, names must match the levels of \code{y}.}
+vector. If \code{TRUE}, weights are calculated based on inverse counts of
+instances with given label, where we only count one positive instance per
+bag. Otherwise, names must match the levels of \code{y}.}
 
-\item{control}{list of additional parameters passed to the method that
+\item{control}{A list of additional parameters passed to the method that
 control computation with the following components:
 \itemize{
-\item \code{kernel} either a character the describes the kernel ('radial') or a
-kernel matrix at the instance level.
+\item \code{kernel} either a character the describes the kernel ('linear' or
+'radial') or a kernel matrix at the instance level.
 \item \code{sigma} argument needed for radial basis kernel.
-\item \code{scale} Logical; whether to rescale the input before fitting.
+\item \code{scale} argument used for all methods. A logical for whether to rescale
+the input before fitting.
 }}
 
-\item{formula}{a formula that defines the outcome \code{y} and covariates \code{x}.
+\item{...}{Arguments passed to or from other methods.}
+
+\item{formula}{A formula that defines the outcome \code{y} and covariates \code{x}.
 This argument is an alternative to the \verb{x, y, bags, instances } arguments,
 but requires the \code{data} argument. See examples.}
 
 \item{data}{If \code{formula} is provided, a data.frame or similar from which
-formula elements will be extracted.  Otherwise, a 'mild_df' object from
-which \verb{x, y, instances} are automatically extracted. If a 'mild_df'
+formula elements will be extracted.  Otherwise, a \code{mild_df} object from
+which \verb{x, y, bags, instances} are automatically extracted. If a \code{mild_df}
 object is used, all columns will be used as predictors.}
 }
 \value{
-an object of class 'smm'.  The object contains the following
+an object of class \code{smm}.  The object contains the following
 components, if applicable:
 \itemize{
-\item \code{model}: an SVM model fit with \code{kernlab::ksvm}.
-\item \code{call_type}: the call type, which specifies whether \code{smm()}
-was called via the formula, data.frame, of mild_df method.
-\item \code{sigma}: argument used for radial basis kernel.
-\item \code{traindata}: training data from the underlying fitting.  This data will
-get used when computing the kernel matrix for prediction.
-\item \code{cost}: argument used for SVM cost parameter.
-\item \code{levels}: levels of \code{y} that are recorded for future prediction.
-\item \code{features}: the features used for prediction.
-\item \code{instance_name}: the name of the column used for instances, if the
-formula or mild_df method is applied.
-\item \code{center}: values used to center x, if \code{scale} = TRUE.
-\item \code{scale}: values used to scale x, if \code{scale} = TRUE.
+\item \code{model}: An SVM model fit with \code{kernlab::ksvm()}.
+\item \code{call_type}: The call type, which specifies whether \code{smm()}
+was called via the \code{formula}, \code{data.frame}, of \code{mild_df} method.
+\item \code{sigma}: The argument used for radial basis kernel.
+\item \code{traindata}: The training data from the underlying fitting.  This data
+will get used when computing the kernel matrix for prediction.
+\item \code{cost}: The argument used for SVM cost parameter.
+\item \code{levels}: The levels of \code{y} that are recorded for future prediction.
+\item \code{features}: The features used for prediction.
+\item \code{instance_name}: The name of the column used for instances, if the
+\code{formula} or \code{mild_df} method is applied.
+\item \code{center}: The values used to center x, if \code{scale} = TRUE.
+\item \code{scale}: The values used to scale x, if \code{scale} = TRUE.
 }
 }
 \description{
@@ -83,7 +88,7 @@ Function to carry out support measure machines algorithm which is appropriate
 for multiple instance learning. The algorithm calculates the kernel matrix of
 different empirical measures using kernel mean embedding. The data set should
 be passed in with rows corresponding to samples from a set of instances.  SMM
-will compute a kernel on the instances and pass that to \code{kernlab::ksvm} to
+will compute a kernel on the instances and pass that to \code{kernlab::ksvm()} to
 train the appropriate SVM model.
 }
 \section{Methods (by class)}{
@@ -92,7 +97,7 @@ train the appropriate SVM model.
 
 \item \code{formula}: Method for passing formula
 
-\item \code{mild_df}: Method for mild_df objects
+\item \code{mild_df}: Method for \code{mild_df} objects
 }}
 
 \examples{
@@ -111,11 +116,15 @@ mdl <- smm(x, y, instances)
 mdl2 <- smm(y ~ ., data = df)
 
 # instance level predictions
+suppressWarnings(library(dplyr))
 df \%>\%
-  bind_cols(predict(mdl, type = "raw", new_data = x, new_instances = instances)) \%>\%
-  bind_cols(predict(mdl, type = "class", new_data = x, new_instances = instances)) \%>\%
-  distinct(instance_name, y, .pred, .pred_class)
+  dplyr::bind_cols(predict(mdl, type = "raw", new_data = x, new_instances = instances)) \%>\%
+  dplyr::bind_cols(predict(mdl, type = "class", new_data = x, new_instances = instances)) \%>\%
+  dplyr::distinct(instance_name, y, .pred, .pred_class)
 
+}
+\seealso{
+\code{\link[=predict.smm]{predict.smm()}} for prediction on new data.
 }
 \author{
 Sean Kent, Yifei Liu

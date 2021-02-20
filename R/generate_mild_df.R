@@ -1,35 +1,42 @@
 #' Function to generate mild_df using multivariate t and normal distributions.
 #'
-#' This function generates multiple instance data (a mild_df object) where each
-#' instance corresponds to `nsample` i.i.d. observations. To use the function,
-#' one needs to provide the total number of covariates `ncov`, to generate, and
-#' the index of the important covariates for positive and negative instances,
-#' `nimp_pos` and `nimp_neg`, respectively. The distribution of these important
-#' covariates will be a multivariate t or multivariate normal distribution,
-#' specified by `positive_dist`, `negative_dist`. The `remainder_dist` specifies
-#' the distribution of the unimportant covariates where their distributions do
-#' not differ in positive or negative instances. The `ninst` covariates
-#' specifies the number of instances in each bag and `nbag` gives how many bags
-#' in total will be generated. Hence in total the number of observations is
-#' `nsample` * `nbag` * `ninst`.
+#' This function generates multiple instance data (a `mild_df` object) where
+#' each row corresponds to a sample from a given instance distribution.
+#' Instances are grouped into bags and the bag labels follow the standard MI
+#' assumption.
+#'
+#' To use the function, one needs to provide the total number of covariates
+#' `ncov`, to generate, and the index of the important covariates for positive
+#' and negative instances, `nimp_pos` and `nimp_neg`, respectively. The
+#' distribution of these important covariates will be a multivariate t or
+#' multivariate normal distribution, specified by `positive_dist`,
+#' `negative_dist`. The `remainder_dist` specifies the distribution of the
+#' unimportant covariates where their distributions do not differ in positive or
+#' negative instances. `nsample` i.i.d draws will be taken from the respective
+#' distributions for each instance. The `ninst` parameter specifies the number
+#' of instances in each bag and `nbag` gives how many bags in total will be
+#' generated. Hence in total the number of observations is `nsample` * `nbag` *
+#' `ninst`.
 #'
 #' The default parameters for the remainder distribution is zero mean and
 #' identity covariance matrix.
 #'
 #' @param positive_dist The distribution to be generated for important
-#'   covariates of positive instances, one of 'mvt' and 'mvnormal'
+#'   covariates of positive instances (default 'mvt').
 #' @param negative_dist The distribution to be generated for important
-#'   covariates of negative instances, one of 'mvt' and 'mvnormal'
+#'   covariates of negative instances (default 'mvnormal').
 #' @param remainder_dist The distribution to be generated for unimportant
-#'   covariates, one of 'mvt' and 'mvnormal'.
-#' @param ncov Number of total covariates.
-#' @param nimp_pos Index of important covariates for positve covariates.
-#' @param nimp_neg Index of important covariates for negative covariates.
-#' @param nsample Number of observations for each instance.
-#' @param ninst Number of instances for each bag.
-#' @param nbag Number of bags.
+#'   covariates (default 'mvnormal').
+#' @param ncov The number of total covariates (default 10).
+#' @param nimp_pos An index of important covariates for positve covariates
+#'   (default `1:5`).
+#' @param nimp_neg An index of important covariates for negative covariates
+#'   (default `1:5`).
+#' @param nsample The number of observations for each instance (default 50).
+#' @param ninst The number of instances for each bag (default 4).
+#' @param nbag The number of bags (default 50).
 #' @param positive_mean The mean vector of important covariates for positive
-#'   instances, should be of same length as `nimp_pos`
+#'   instances. This should be of same length as `nimp_pos`
 #' @param positive_cov The covariance matrix of important covariates for
 #'   positive instances.
 #' @param negative_mean The mean vector of important covariates for negative
@@ -39,23 +46,24 @@
 #' @param positive_prob A numberic number between 0 and 1 indicating the
 #'   probability of an instance being positive.
 #' @param ... Other covariates when using t distribution or using a different
-#'   bag labeling scheme. If using t distribution, should pass
-#'   'positive_degree', 'negative_degree' or 'remainder_degree' in '...' if any
-#'   of these distributions is specified as 'mvt'. If want to generate the label
-#'   of each bag first, one needs to specify 'positive_bag_prob' and
-#'   'n_noise_inst' in '...'. 'positive_bag_prob' is the Bernoulli success
-#'   probability of a bag being a positive bag, and 'n_noise_inst' is the number
-#'   of negative instances in a positive bag, should be strictly less than
-#'   'ninst'.
+#'   bag labeling scheme, such as:
+#'   * `positive_degree` The distribution degree, if `positive_dist = 'mvt'`.
+#'   * `negative_degree` The distribution degree, if `negative_dist = 'mvt'`.
+#'   * `remainder_degree` The distribution degree, if `remainder_dist = 'mvt'`.
+#'   * `positive_bag_prob` The Bernoulli success probability of a bag being a
+#'   positive bag. Specify this argument jointly with `n_noise_inst` to generate
+#'   the label of each bag first.
+#'   * `n_noise_inst` The number of negative instances in a positive bag.  This
+#'   should be strictly less that `ninst`.
+#'
 #' @return A mild_df object.
+#'
 #' @examples
 #' mild_df1 <- generate_mild_df(positive_dist = 'mvt',
 #'                              negative_dist = 'mvnormal',
 #'                              remainder_dist = 'mvnormal',
 #'                              positive_degree = 3)
 #' @export
-#' @import mvtnorm dplyr
-#' @importFrom stats rbinom
 #' @author Yifei Liu
 generate_mild_df <- function(positive_dist = c("mvt", "mvnormal"),
                              negative_dist = c("mvnormal", "mvt"),
@@ -70,13 +78,14 @@ generate_mild_df <- function(positive_dist = c("mvt", "mvnormal"),
                              positive_cov = diag(1, nrow = length(nimp_pos)),
                              negative_mean = rep(0, length(nimp_neg)),
                              negative_cov = diag(1, nrow = length(nimp_neg)),
-                             positive_prob = 0.2, ...) {
-    ## remainder follows a distr with mean 0 and scale matrix identity.
-    ## (Hence different cov matrix for t and normal) the positive_cov and
-    ## negative_cov's are exactly the cov for the positive or negative
-    ## distributions, whether or not they are t or normal.  should pass
-    ## 'positive_degree', 'negative_degree' or 'remainder_degree' in '...'
-    ## if any of these distributions is specified as 'mvt' sanity check
+                             positive_prob = 0.2, ...)
+{
+    # remainder follows a distr with mean 0 and scale matrix identity. (Hence
+    # different cov matrix for t and normal) the positive_cov and negative_cov's
+    # are exactly the cov for the positive or negative distributions, whether or
+    # not they are t or normal.  should pass 'positive_degree',
+    # 'negative_degree' or 'remainder_degree' in '...' if any of these
+    # distributions is specified as 'mvt' sanity check
 
     positive_dist <- match.arg(positive_dist)
     negative_dist <- match.arg(negative_dist)

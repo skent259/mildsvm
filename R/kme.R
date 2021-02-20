@@ -1,62 +1,52 @@
-#' Compute the Radial Basis Kernel from two matrices
+#' Calculate the kernel mean embedding matrix
 #'
-#' @description Compute the Radial Basis Kernel from two matrices.  Follows
-#' very closesly to kernlab::kernelMatrix.rbfkernel but omits unnecessary
-#' checks that slow down the computation.
-#' @param sigma Parameter for the radial basis function that controls the width
-#' @param x matrix
-#' @param y matrix, must have same number of columns as `x`
+#' Function to calculate the kernel mean embedding for to distributional data
+#' sets. It uses the empirical approximation for the integral
+#' \deqn{\int_{\mathcal X} \int_{\mathcal Y} K(x, y) d P_X d Q_Y } for a given
+#' kernel \eqn{K(\cdot, \cdot)}. Currently only supports radial basis function
+#' kernel for fast computation.
+#'
+#' If `df2 = NULL`, calculate the kernel mean embedding matrix of (`df`, `df`)
+#' otherwise calculate (`df`, `df2`)
+#'
+#' @param df A data.frame of `mild_df` object, must have column
+#'   `'instance_name'` which defines the instances.
+#' @param df2 A data.frame, `mild_df` object, or `NULL` (default `NULL`).
+#' @param sigma The parameter for `'radial'` kernel (default `0.05`).
+#' @param ... Additional arguments passed to methods.
+#'
+#' @return A matrix of kernel mean embedding at the instance level.
+#'
+#' @examples
+#' x = data.frame('instance_name' = c('inst_1', 'inst_2', 'inst_1'),
+#'                'X1' = c(-0.4, 0.5, 2))
+#' kme(x)
+#'
+#' mild_df1 <- generate_mild_df(nbag = 10, positive_degree = 3)
+#' kme(mild_df1)
+#'
 #' @export
-#' @author Sean Kent
-rbf_kernel_matrix <- function(sigma, x, y) {
-    n <- dim(x)[1]
-    m <- dim(y)[1]
-    dota <- rowSums(x*x)/2
-    dotb <- rowSums(y*y)/2
-    res <- x%*%t(y)
-    for( i in 1:m ) {
-        res[,i]<- exp(2*sigma*(res[,i] - dota - rep(dotb[i],n)))
-    }
-    return(res)
+#' @author Yifei Liu, Sean Kent
+#' @name kme
+NULL
+
+#' @export
+kme <- function(df, df2 = NULL, sigma = 0.05, ...) {
+    UseMethod("kme", df)
 }
 
-#' Compute the Linear Kernel from two matrices
-#'
-#' @description Compute the Linear Kernel from two matrices.  Follows
-#' very closesly to kernlab::kernelMatrix.vanilla but omits unnecessary
-#' checks that slow down the computation.
-#' @param x matrix
-#' @param y matrix, must have same number of columns as `x`
+#' @describeIn kme Default S3 method
 #' @export
-#' @author Sean Kent
-linear_kernel_matrix <- function(x, y) {
-    crossprod(t(x), t(y))
-}
-
-##' Default method for kme function
-##'
-##' Default method for kme function.  This function calculates the kernel mean embedding for a given
-##' kernel and a dataset if df2 is NULL, then calculate the kernel mean
-##' embedding matrix of (df, df) otherwise calculate (df, df2)
-##' @param df Data.frame, must have column 'instance_name' which defines the instances.
-##' @param df2 Data.frame
-##' @param sigma Parameter for 'rbf'
-##' @return A matrix.
-##' @examples
-##' x = data.frame('instance_name' = c('inst_1', 'inst_2', 'inst_1'),
-##'                'X1' = c(-0.4, 0.5, 2))
-##' K <- kme(x)
-##' @export
-##' @author Yifei Liu, Sean Kent
-kme.default <- function(df, df2 = NULL, sigma = 0.05) {
+kme.default <- function(df, df2 = NULL, sigma = 0.05, ...) {
 
     if (is.null(df2)) {
         if (is.null(df$instance_name)) {
             stop("There should be a column of 'df' called 'instance_name'!")
         } else {
-            inst_name_set <- unique(df$instance_name)
-            df_features <- subset(df, select = -c(instance_name))
-            s <- split(df_features, factor(df$instance_name, levels = inst_name_set))
+            instances <- df$instance_name
+            inst_name_set <- unique(instances)
+            df$instance_name <- NULL
+            s <- split(df, factor(instances, levels = inst_name_set))
             s <- lapply(s, as.matrix)
             r <- lapply(s, nrow)
             n <- length(inst_name_set)
@@ -72,18 +62,17 @@ kme.default <- function(df, df2 = NULL, sigma = 0.05) {
         if (is.null(df$instance_name) | is.null(df2$instance_name)) {
             stop("There should be a column of 'df' and 'df2' called 'instance_name'!")
         } else {
-            inst_name_set <- unique(df$instance_name)
-            inst_name_set2 <- unique(df2$instance_name)
-            df_features <- subset(df, select = -c(instance_name))
-            df_features2 <- subset(df2, select = -c(instance_name))
-            s <- split(df_features, factor(df$instance_name, levels = inst_name_set))
+            instances <- df$instance_name
+            instances2 <- df2$instance_name
+            df$instance_name <- df2$instance_name <- NULL
+            s <- split(df, factor(instances, levels = unique(instances)))
             s <- lapply(s, as.matrix)
-            s2 <- split(df_features2, factor(df2$instance_name, levels = inst_name_set2))
+            s2 <- split(df2, factor(instances2, levels = unique(instances2)))
             s2 <- lapply(s2, as.matrix)
             r <- lapply(s, nrow)
             r2 <- lapply(s2, nrow)
-            n <- length(inst_name_set)
-            n2 <- length(inst_name_set2)
+            n <- length(unique(instances))
+            n2 <- length(unique(instances2))
             K <- matrix(NA, n, n2)
             for (i in 1:n) {
                 for (j in 1:n2) {
@@ -95,47 +84,46 @@ kme.default <- function(df, df2 = NULL, sigma = 0.05) {
     return(K)
 }
 
-##' mild_df method for kme function
-##'
-##' mild_df method for kme function
-##' @param df A mild_df object.
-##' @param df2 Data.frame
-##' @param sigma Parameter for 'rbf'
-##' @return A matrix.
-##' @examples
-##' mild_df1 <- generate_mild_df(positive_dist = 'mvt',
-##'                              negative_dist = 'mvnormal',
-##'                              remainder_dist = 'mvnormal',
-##'                              nbag = 10,
-##'                              positive_degree = 3)
-##' K <- kme(mild_df1) ## About 10 seconds.
-##' @export
-##' @author Yifei Liu
-kme.mild_df <- function(df, df2 = NULL, sigma = 0.05) {
+#' @describeIn kme S3 method for class `mild_df`
+#' @export
+kme.mild_df <- function(df, df2 = NULL, sigma = 0.05, ...) {
     df$bag_label <- df$bag_name <- NULL
     if (!is.null(df2))
         df2$bag_label <- df2$bag_name <- NULL
     kme.default(df, df2, sigma)
 }
 
-##' Function to calculate the kernel mean embedding matrix for two distributional data with a given kernel
-##'
-##' Function to calculate the kernel mean embedding for to distributional data sets. It uses the empirical approximation for the integral
-##' \deqn{\int_{\mathcal X} \int_{\mathcal Y} K(x, y) d P_X d Q_Y },
-##' for a given kernel \eqn{K(\cdot, \cdot)}. Currently only supports radial basis function kernel for fast computation.
-##' @param df A data.frame with first column being `instance_name` and the rest being features. Or a mild_df object.
-##' @param df2 If `df2` is null, the inner embedding of `df` and itself will be calculated. Otherwise `df2` is a data.frame with first column being `instance_name` and the rest being features. Or a mild_df object.
-##' @param sigma The parameter for rbf kernel.
-##' @return A matrix K of number of unique instance labels in df by that in df2.
-##' @examples
-##' mild_df1 <- generate_mild_df(positive_dist = 'mvt',
-##'                              negative_dist = 'mvnormal',
-##'                              remainder_dist = 'mvnormal',
-##'                              nbag = 10,
-##'                              positive_degree = 3)
-##' K <- kme(mild_df1)
-##' @export
-##' @author Yifei Liu, Sean Kent
-kme <- function(df, df2 = NULL, sigma = 0.05) {
-    UseMethod("kme", df)
+
+#' Compute the Radial Basis Kernel from two matrices
+#'
+#' Compute the Radial Basis Kernel from two matrices.  Follows very closely to
+#' kernlab::kernelMatrix.rbfkernel but omits unnecessary checks that slow down
+#' the computation.
+#'
+#' @param sigma Parameter for the radial basis function that controls the width
+#' @param x A matrix.
+#' @param y A matrix that must have same number of columns as `x`.
+#' @noRd
+rbf_kernel_matrix <- function(sigma, x, y) {
+    n <- dim(x)[1]
+    m <- dim(y)[1]
+    dota <- rowSums(x*x)/2
+    dotb <- rowSums(y*y)/2
+    res <- x%*%t(y)
+    for( i in 1:m ) {
+        res[,i]<- exp(2*sigma*(res[,i] - dota - rep(dotb[i],n)))
+    }
+    return(res)
+}
+
+#' Compute the Linear Kernel from two matrices
+#'
+#' Compute the Linear Kernel from two matrices.  Follows very closely to
+#' kernlab::kernelMatrix.vanilla but omits unnecessary checks that slow down the
+#' computation.
+#'
+#' @inheritParams rbf_kernel_matrix
+#' @noRd
+linear_kernel_matrix <- function(x, y) {
+    crossprod(t(x), t(y))
 }

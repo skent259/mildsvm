@@ -8,35 +8,35 @@ validate_kfm_nystrom <- function(x) {
   x
 }
 
-#' Fit a Nystrom method kernel approximation
+#' Fit a Nystrom kernel feature map approximation
 #'
 #' Use the Nystrom method to fit a feature map that approximates a given kernel.
 #'
+#' For the `...` argument, the additional parameters depend on which kernel is
+#' used:
+#' * For `kernel = 'radial'`, specify `sigma` to define kernel bandwidth.
+#'
 #' @param df An object containing covariates for training.  Usually a data.frame
 #'   or matrix.
-#' @param m the number of examples from \code{df} to sample in fitting.
-#' @param r the rank of matrix approximation to use. Must be less than or equal
-#'   to \code{m}, the default.
-#' @param kernel a character determining the kernel to use.  Currently, only
-#'   'radial' is implemented.
-#' @param sampling determines how to sample instances.  Default it 'random'. For
-#'   kfm_nystrom.mild_df, can specify `sampling` = 'stratified' to ensure that
-#'   samples are chosen evenly from bags and instances.  `sampling` can also be
-#'   a numeric vector of length `m` of pre-determined samples.
+#' @param m The number of examples from `df` to sample in fitting.
+#' @param r The rank of matrix approximation to use. Must be less than or equal
+#'   to `m`, the default.
+#' @param kernel A character determining the kernel to use.  Currently, only
+#'   `'radial'` is implemented.
+#' @param sampling A character determining how to sample instances.  Default is
+#'   `'random'`. For `kfm_nystrom.mild_df()`, one can specify `sampling =
+#'   'stratified'` to ensure that samples are chosen evenly from bags and
+#'   instances. `sampling` can also be a numeric vector of length `m` of
+#'   pre-determined samples.
 #' @param ... additional parameters needed for the kernels.  See details.
 #'
-#' @return an object of class 'kfm_nystrom' with the following components:
+#' @return an object of class `kfm_nystrom` with the following components:
 #'   * `df_sub` the sub-sampled version of `df`
 #'   * `dv` pre-multiplication matrix which contains information on the
 #'   eigenvalues and eigenvectors of `df_sub`
-#'   * `method` 'nystrom'
+#'   * `method` `'nystrom'`
 #'   * `kernel` the input parameter `kernel`
 #'   * `kernel_params` parameters passed to `...`
-#'
-#' @details For the `...` argument, the additional parameters depend on which
-#'   kernel is used:
-#'   - For `kernel` = 'radial', specify `sigma` to define kernel
-#'   bandwidth.
 #'
 #' @examples
 #' df <- data.frame(
@@ -48,15 +48,16 @@ validate_kfm_nystrom <- function(x) {
 #' fit <- kfm_nystrom(df, m = 7, r = 6, kernel = "radial", sigma = 0.05)
 #' fm <- build_fm(fit, df)
 #'
+#' @family kernel feature map functions
 #' @export
 #' @author Sean Kent
-kfm_nystrom <- function(df, m, r, kernel, ...) {
+kfm_nystrom <- function(df, m, r, kernel, sampling, ...) {
   UseMethod("kfm_nystrom", df)
 }
 
 #' @describeIn kfm_nystrom For use on objects of class `data.frame` or `matrix`.
 #' @export
-kfm_nystrom.default <- function(df, m = nrow(df), r = m, kernel = "radial", sampling = 'random', ...) {
+kfm_nystrom.default <- function(df, m = nrow(df), r = m, kernel = "radial", sampling = "random", ...) {
   # TODO: check all columns are numeric
   `%ni%` <- Negate(`%in%`)
   kernel_params <- list(...)
@@ -96,24 +97,26 @@ kfm_nystrom.default <- function(df, m = nrow(df), r = m, kernel = "radial", samp
   )))
 }
 
-#' @describeIn kfm_nystrom Ignore the information columns with 'bag_label',
-#'   'bag_name', and 'instance_name' when calculating kernel approximation.
+#' @describeIn kfm_nystrom Ignore the information columns `'bag_label'`,
+#'   `'bag_name'`, and `'instance_name'` when calculating kernel approximation.
 #' @export
 kfm_nystrom.mild_df <- function(df, m = nrow(df), r = m, kernel = "radial", sampling = "random", ...) {
-  if (sampling == 'stratified' && TRUE) {
+
+  if (all(sampling == 'stratified')) {
     sampling <- bag_instance_sampling(df, m)
   }
-  df <- subset(df, select = -c(bag_label, bag_name, instance_name))
+  df$bag_label <- df$bag_name <- df$instance_name <- NULL
+
   return(kfm_nystrom.default(df, m, r, kernel, sampling, ...))
 }
 
 
-#' @describeIn build_fm Method for 'kfm_nystrom' class.
+#' @describeIn build_fm Method for `kfm_nystrom` class.
 #' @export
 build_fm.kfm_nystrom <- function(kfm_fit, new_data, ...) {
   if (inherits(new_data, "mild_df")) {
-    info <- subset(new_data, select = c(bag_label, bag_name, instance_name))
-    new_data <- subset(new_data, select = -c(bag_label, bag_name, instance_name))
+    info <- new_data[ , c("bag_label", "bag_name", "instance_name"), drop = FALSE]
+    new_data$bag_label <- new_data$bag_name <- new_data$instance_name <- NULL
   } else {
     info <- NULL
   }

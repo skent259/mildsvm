@@ -14,46 +14,41 @@ validate_smm <- function(x) {
 #' for multiple instance learning. The algorithm calculates the kernel matrix of
 #' different empirical measures using kernel mean embedding. The data set should
 #' be passed in with rows corresponding to samples from a set of instances.  SMM
-#' will compute a kernel on the instances and pass that to `kernlab::ksvm` to
+#' will compute a kernel on the instances and pass that to `kernlab::ksvm()` to
 #' train the appropriate SVM model.
 #'
 #' @inheritParams mildsvm
-#' @param formula a formula that defines the outcome `y` and covariates `x`.
+#' @param formula A formula that defines the outcome `y` and covariates `x`.
 #'   This argument is an alternative to the `x, y, bags, instances ` arguments,
 #'   but requires the `data` argument. See examples.
-#' @param data If `formula` is provided, a data.frame or similar from which
-#'   formula elements will be extracted.  Otherwise, a 'mild_df' object from
-#'   which `x, y, instances` are automatically extracted. If a 'mild_df'
-#'   object is used, all columns will be used as predictors.
 #' @param cost The cost parameter in SVM, fed to the `C` argument in
-#'   `kernlab::ksvm`
-#' @param weights named vector, or TRUE, to control the weight of the cost
-#'   parameter for each possible y value.  Weights multiply against the cost
-#'   vector. If TRUE, weights are calculated based on inverse counts of
-#'   instances with given label. Otherwise, names must match the levels of `y`.
-#' @param control list of additional parameters passed to the method that
+#'   `kernlab::ksvm()`.
+#' @param control A list of additional parameters passed to the method that
 #'   control computation with the following components:
-#'   - `kernel` either a character the describes the kernel ('radial') or a
-#'   kernel matrix at the instance level.
-#'   - `sigma` argument needed for radial basis kernel.
-#'   - `scale` Logical; whether to rescale the input before fitting.
+#'   * `kernel` either a character the describes the kernel ('linear' or
+#'   'radial') or a kernel matrix at the instance level.
+#'   * `sigma` argument needed for radial basis kernel.
+#'   * `scale` argument used for all methods. A logical for whether to rescale
+#'   the input before fitting.
 #'
-#' @return an object of class 'smm'.  The object contains the following
+#' @return an object of class `smm`.  The object contains the following
 #'   components, if applicable:
-#'   - `model`: an SVM model fit with `kernlab::ksvm`.
-#'   - `call_type`: the call type, which specifies whether `smm()`
-#'   was called via the formula, data.frame, of mild_df method.
-#'   - `sigma`: argument used for radial basis kernel.
-#'   - `traindata`: training data from the underlying fitting.  This data will
-#'   get used when computing the kernel matrix for prediction.
-#'   - `cost`: argument used for SVM cost parameter.
-#'   - `levels`: levels of `y` that are recorded for future prediction.
-#'   - `features`: the features used for prediction.
-#'   - `instance_name`: the name of the column used for instances, if the
-#'   formula or mild_df method is applied.
-#'   - `center`: values used to center x, if `scale` = TRUE.
-#'   - `scale`: values used to scale x, if `scale` = TRUE.
+#'   * `model`: An SVM model fit with `kernlab::ksvm()`.
+#'   * `call_type`: The call type, which specifies whether `smm()`
+#'   was called via the `formula`, `data.frame`, of `mild_df` method.
+#'   * `sigma`: The argument used for radial basis kernel.
+#'   * `traindata`: The training data from the underlying fitting.  This data
+#'   will get used when computing the kernel matrix for prediction.
+#'   * `cost`: The argument used for SVM cost parameter.
+#'   * `levels`: The levels of `y` that are recorded for future prediction.
+#'   * `features`: The features used for prediction.
+#'   * `instance_name`: The name of the column used for instances, if the
+#'   `formula` or `mild_df` method is applied.
+#'   * `center`: The values used to center x, if `scale` = TRUE.
+#'   * `scale`: The values used to scale x, if `scale` = TRUE.
 #'
+#' @seealso [predict.smm()] for prediction on new data.
+#
 #' @examples
 #' set.seed(8)
 #' n_instances <- 10
@@ -70,30 +65,30 @@ validate_smm <- function(x) {
 #' mdl2 <- smm(y ~ ., data = df)
 #'
 #' # instance level predictions
+#' suppressWarnings(library(dplyr))
 #' df %>%
-#'   bind_cols(predict(mdl, type = "raw", new_data = x, new_instances = instances)) %>%
-#'   bind_cols(predict(mdl, type = "class", new_data = x, new_instances = instances)) %>%
-#'   distinct(instance_name, y, .pred, .pred_class)
+#'   dplyr::bind_cols(predict(mdl, type = "raw", new_data = x, new_instances = instances)) %>%
+#'   dplyr::bind_cols(predict(mdl, type = "class", new_data = x, new_instances = instances)) %>%
+#'   dplyr::distinct(instance_name, y, .pred, .pred_class)
 #'
 #' @author Sean Kent, Yifei Liu
 #' @name smm
 NULL
 
 #' @export
-smm <- function(x, y, instances, ...) {
+smm <- function(x, ...) {
     UseMethod("smm")
 }
 
 #' @describeIn smm Method for data.frame-like objects
 #' @export
-smm.default <- function(x,
-                        y,
-                        instances,
+smm.default <- function(x, y, instances,
                         cost = 1,
                         weights = TRUE,
                         control = list(kernel = "radial",
                                        sigma = if (is.vector(x)) 1 else 1 / ncol(x),
-                                       scale = TRUE))
+                                       scale = TRUE),
+                        ...)
 {
     if ("kernel" %ni% names(control)) control$kernel <- "radial"
     if ("sigma" %ni% names(control)) control$sigma <- if (is.vector(x)) 1 else 1 / ncol(x)
@@ -119,7 +114,7 @@ smm.default <- function(x,
     y <- factor(y)
     lev <- y_info$lev
 
-    ## weights
+    # weights
     if (is.numeric(weights)) {
         stopifnot(names(weights) == lev | names(weights) == rev(lev))
         weights <- weights[lev]
@@ -130,10 +125,10 @@ smm.default <- function(x,
         weights <- NULL
     }
 
-    ## kernel
+    # kernel
     is_matrix_kernel <- inherits(control$kernel, "matrix")
     n_instances <- length(unique(instances))
-    if (control$kernel != "radial" && !is_matrix_kernel) {
+    if (all(control$kernel != "radial") && !is_matrix_kernel) {
         warning("control$kernel must either be 'radial' or a square matrix.  Defaulting to 'radial'.")
         control$kernel <- "radial"
     } else if (is_matrix_kernel) {
@@ -192,11 +187,13 @@ smm.formula <- function(formula, data, instances = "instance_name", ...)
     return(res)
 }
 
-#' @describeIn smm Method for mild_df objects
+#' @describeIn smm Method for `mild_df` objects
 #' @export
 smm.mild_df <- function(data, ...)
 {
-    x <- as.data.frame(subset(data, select = -c(bag_label, bag_name, instance_name)))
+    x <- data
+    x$bag_label <- x$bag_name <- x$instance_name <- NULL
+    # x <- as.data.frame(subset(data, select = -c(bag_label, bag_name, instance_name)))
     y <- data$bag_label
     instances <- data$instance_name
 
@@ -209,33 +206,31 @@ smm.mild_df <- function(data, ...)
 }
 
 
-#' Predict method for 'smm' object
+#' Predict method for `smm` object
+#'
+#' @details
+#' When the object was fitted using the `formula` method, then the parameters
+#' `new_bags` and `new_instances` are not necessary, as long as the names match
+#' the original function call.
 #'
 #' @inheritParams predict.mildsvm
-#' @param object an object of class smm
-#' @param new_data matrix to predict from.  Needs to have the same number of
-#'   columns as the X that trained the 'smm' object
-#' @param layer If 'instance', return predictions at the instance level. Option
-#'   'bag' returns predictions at the bag level, but only if the model was fit
-#'   with `smm.mild_df()`,
-#' @param new_instances character or character vector.  Can specify a singular
-#'   character that provides the column name for the instance names in
-#'   `new_data`, default = "instance_name".  Can also specify a vector of length
-#'   `nrow(new_data)` that has instance name for each row.  When `object` was
-#'   fitted with `smm.formula()`, this parameter is not necessary as the bag
-#'   name can be pulled directly from new_data, if available.
-#' @param new_bags character or character vector.  Only relevant when fit with
+#' @param object an object of class `smm`
+#' @param layer If `'instance'`, return predictions at the instance level.
+#'   Option `'bag'` returns predictions at the bag level, but only if the model
+#'   was fit with `smm.mild_df()`,
+#' @param new_bags A character or character vector.  Only relevant when fit with
 #'   `smm.mild_df()`, which contains bag level information.  Can specify a
 #'   singular character that provides the column name for the bag names in
 #'   `new_data`, default = "bag_name".  Can also specify a vector of length
 #'   `nrow(new_data)` that has bag name for each instance.
 #'
-#' @return tibble with `nrow(new_data)` rows.  If type = 'class', the tibble
-#'   will have a column named '.pred_class'.  If type = 'raw', the tibble will
-#'   have a column name '.pred'.
+#' @return tibble with `nrow(new_data)` rows.  If `type = 'class'`, the tibble
+#'   will have a column named `.pred_class`.  If `type = 'raw'`, the tibble will
+#'   have a column name `.pred`.
+#'
+#' @seealso [smm()] for fitting the `smm` object.
 #'
 #' @examples
-#' # Some fake data
 #' set.seed(8)
 #' n_instances <- 10
 #' n_samples <- 20
@@ -248,6 +243,7 @@ smm.mild_df <- function(data, ...)
 #' mdl <- smm(x, y, instances, control = list(sigma = 1/3))
 #'
 #' # instance level predictions (training data)
+#' suppressWarnings(library(dplyr))
 #' data.frame(instance_name = instances, y = y, x) %>%
 #'   bind_cols(predict(mdl, type = "raw", new_data = x, new_instances = instances)) %>%
 #'   bind_cols(predict(mdl, type = "class", new_data = x, new_instances = instances)) %>%
@@ -264,7 +260,7 @@ smm.mild_df <- function(data, ...)
 #' data.frame(instance_name = new_inst, y = new_y, new_x) %>%
 #'   bind_cols(predict(mdl, type = "raw", new_data = new_x, new_instances = new_inst)) %>%
 #'   bind_cols(predict(mdl, type = "class", new_data = new_x, new_instances = new_inst)) %>%
-#'     distinct(instance_name, y, .pred, .pred_class)
+#'   distinct(instance_name, y, .pred, .pred_class)
 #'
 #' @export
 #' @importFrom stats predict

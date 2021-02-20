@@ -2,66 +2,75 @@
 % Please edit documentation in R/misvm.R
 \name{predict.misvm}
 \alias{predict.misvm}
-\title{Predict method for 'misvm' object}
+\title{Predict method for \code{misvm} object}
 \usage{
 \method{predict}{misvm}(
   object,
   new_data,
   type = c("class", "raw"),
   layer = c("bag", "instance"),
-  new_bags = "bag_name"
+  new_bags = "bag_name",
+  ...
 )
 }
 \arguments{
-\item{object}{an object of class misvm}
+\item{object}{An object of class \code{misvm}.}
 
-\item{new_data}{matrix to predict from.  Needs to have the same number of
-columns as the X that trained the misvm object}
+\item{new_data}{A data frame to predict from. This needs to have all of the
+features that the data was originally fitted with.}
 
-\item{type}{if 'class', return predicted values with threshold of 0 as
--1 or +1.  If 'raw', return the raw predicted scores.}
+\item{type}{If \code{'class'}, return predicted values with threshold of 0 as
+-1 or +1.  If \code{'raw'}, return the raw predicted scores.}
 
-\item{layer}{if 'bag', return predictions at the bag level.  If 'instance',
-return predictions at the instance level.}
+\item{layer}{If \code{'bag'}, return predictions at the bag level.  If
+\code{'instance'}, return predictions at the instance level.}
 
-\item{new_bags}{character or character vector.  Can specify a singular
-character that provides the column name for the bag names in \code{new_data},
-default = "bag_name".  Can also specify a vector of length \code{nrow(new_data)}
-that has bag name for each instance.  When \code{object} was fitted with
-\code{misvm.formula}, this parameter is not necessary as the bag name can be
-pulled directly from new_data, if available.}
+\item{new_bags}{A character or character vector.  Can specify a singular
+character that provides the column name for the bag names in \code{new_data}
+(default \code{'bag_name'}).  Can also specify a vector of length
+\code{nrow(new_data)} that has bag name for each row.}
+
+\item{...}{Arguments passed to or from other methods.}
 }
 \value{
-tibble with \code{nrow(new_data)} rows.  If type = 'class', the tibble
-will have a column '.pred_class'.  If type = 'raw', the tibble will have
-a column '.pred'.
+A tibble with \code{nrow(new_data)} rows.  If \code{type = 'class'}, the tibble
+will have a column \code{.pred_class}.  If \code{type = 'raw'}, the tibble will have
+a column \code{.pred}.
 }
 \description{
-Predict method for 'misvm' object
+Predict method for \code{misvm} object
+}
+\details{
+When the object was fitted using the \code{formula} method, then the parameters
+\code{new_bags} and \code{new_instances} are not necessary, as long as the names match
+the original function call.
 }
 \examples{
 mil_data <- generate_mild_df(
-  positive_dist = 'mvt',
-  negative_dist = 'mvnormal',
-  remainder_dist = 'mvnormal',
-  nbag = 20,
-  nsample = 20,
-  positive_degree = 3,
-  positive_prob = 0.15,
-  positive_mean = rep(0, 5)
+    nbag = 20,
+    ncov = 5,
+    positive_degree = 3,
+    positive_mean = rep(5, 5)
 )
 df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
-mdl1 <- misvm.default(df1, cost = 1, kernel = "radial", method = "mip")
+mdl1 <- misvm(x = df1[, 4:63], y = df1$bag_label,
+              bags = df1$bag_name, method = "heuristic")
 
 predict(mdl1, new_data = df1, type = "raw", layer = "bag")
 
 # summarize predictions at the bag layer
 library(dplyr)
 df1 \%>\%
-  bind_cols(predict(mdl2, df1, type = "class")) \%>\%
-  bind_cols(predict(mdl2, df1, type = "raw")) \%>\%
+  bind_cols(predict(mdl1, df1, type = "class")) \%>\%
+  bind_cols(predict(mdl1, df1, type = "raw")) \%>\%
   distinct(bag_name, bag_label, .pred_class, .pred)
 
+}
+\seealso{
+\itemize{
+\item \code{\link[=misvm]{misvm()}} for fitting the \code{misvm} object.
+\item \code{\link[=cv_misvm]{cv_misvm()}} for fitting the \code{misvm} object with cross-validation.
+}
 }
 \author{
 Sean Kent

@@ -4,9 +4,9 @@
 \alias{kfm_nystrom}
 \alias{kfm_nystrom.default}
 \alias{kfm_nystrom.mild_df}
-\title{Fit a Nystrom method kernel approximation}
+\title{Fit a Nystrom kernel feature map approximation}
 \usage{
-kfm_nystrom(df, m, r, kernel, ...)
+kfm_nystrom(df, m, r, kernel, sampling, ...)
 
 \method{kfm_nystrom}{default}(
   df,
@@ -30,28 +30,28 @@ kfm_nystrom(df, m, r, kernel, ...)
 \item{df}{An object containing covariates for training.  Usually a data.frame
 or matrix.}
 
-\item{m}{the number of examples from \code{df} to sample in fitting.}
+\item{m}{The number of examples from \code{df} to sample in fitting.}
 
-\item{r}{the rank of matrix approximation to use. Must be less than or equal
+\item{r}{The rank of matrix approximation to use. Must be less than or equal
 to \code{m}, the default.}
 
-\item{kernel}{a character determining the kernel to use.  Currently, only
-'radial' is implemented.}
+\item{kernel}{A character determining the kernel to use.  Currently, only
+\code{'radial'} is implemented.}
+
+\item{sampling}{A character determining how to sample instances.  Default is
+\code{'random'}. For \code{kfm_nystrom.mild_df()}, one can specify \code{sampling = 'stratified'} to ensure that samples are chosen evenly from bags and
+instances. \code{sampling} can also be a numeric vector of length \code{m} of
+pre-determined samples.}
 
 \item{...}{additional parameters needed for the kernels.  See details.}
-
-\item{sampling}{determines how to sample instances.  Default it 'random'. For
-kfm_nystrom.mild_df, can specify \code{sampling} = 'stratified' to ensure that
-samples are chosen evenly from bags and instances.  \code{sampling} can also be
-a numeric vector of length \code{m} of pre-determined samples.}
 }
 \value{
-an object of class 'kfm_nystrom' with the following components:
+an object of class \code{kfm_nystrom} with the following components:
 \itemize{
 \item \code{df_sub} the sub-sampled version of \code{df}
 \item \code{dv} pre-multiplication matrix which contains information on the
 eigenvalues and eigenvectors of \code{df_sub}
-\item \code{method} 'nystrom'
+\item \code{method} \code{'nystrom'}
 \item \code{kernel} the input parameter \code{kernel}
 \item \code{kernel_params} parameters passed to \code{...}
 }
@@ -60,19 +60,18 @@ eigenvalues and eigenvectors of \code{df_sub}
 Use the Nystrom method to fit a feature map that approximates a given kernel.
 }
 \details{
-For the \code{...} argument, the additional parameters depend on which
-kernel is used:
+For the \code{...} argument, the additional parameters depend on which kernel is
+used:
 \itemize{
-\item For \code{kernel} = 'radial', specify \code{sigma} to define kernel
-bandwidth.
+\item For \code{kernel = 'radial'}, specify \code{sigma} to define kernel bandwidth.
 }
 }
 \section{Methods (by class)}{
 \itemize{
 \item \code{default}: For use on objects of class \code{data.frame} or \code{matrix}.
 
-\item \code{mild_df}: Ignore the information columns with 'bag_label',
-'bag_name', and 'instance_name' when calculating kernel approximation.
+\item \code{mild_df}: Ignore the information columns \code{'bag_label'},
+\code{'bag_name'}, and \code{'instance_name'} when calculating kernel approximation.
 }}
 
 \examples{
@@ -86,6 +85,11 @@ fit <- kfm_nystrom(df, m = 7, r = 6, kernel = "radial", sigma = 0.05)
 fm <- build_fm(fit, df)
 
 }
+\seealso{
+Other kernel feature map functions: 
+\code{\link{kfm_exact}()}
+}
 \author{
 Sean Kent
 }
+\concept{kernel feature map functions}

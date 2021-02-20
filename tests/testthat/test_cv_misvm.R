@@ -1,4 +1,5 @@
 context("Testing the functions in cv_misvm.R")
+suppressWarnings(library(dplyr))
 
 test_that("cv_misvm() works for data-frame-like inputs", {
   set.seed(8)

@@ -2,22 +2,11 @@
 % Please edit documentation in R/misvm.R
 \name{misvm}
 \alias{misvm}
-\alias{misvm.formula}
 \alias{misvm.default}
+\alias{misvm.formula}
 \alias{misvm.mild_df}
 \title{Fit MI-SVM model to the data}
 \usage{
-\method{misvm}{formula}(
-  formula,
-  data,
-  cost = 1,
-  method = c("heuristic", "mip", "qp-heuristic"),
-  weights = TRUE,
-  control = list(kernel = "linear", sigma = 1, nystrom_args = list(m = nrow(x), r =
-    nrow(x), sampling = "random"), max_step = 500, type = "C-classification", scale =
-    TRUE, verbose = FALSE, time_limit = 60, start = FALSE)
-)
-
 \method{misvm}{default}(
   x,
   y,
@@ -25,67 +14,81 @@
   cost = 1,
   method = c("heuristic", "mip", "qp-heuristic"),
   weights = TRUE,
-  control = list(kernel = "linear", sigma = 1, nystrom_args = list(m = nrow(x), r =
-    nrow(x), sampling = "random"), max_step = 500, type = "C-classification", scale =
-    TRUE, verbose = FALSE, time_limit = 60, start = FALSE)
+  control = list(kernel = "linear", sigma = if (is.vector(x)) 1 else 1/ncol(x),
+    nystrom_args = list(m = nrow(x), r = nrow(x), sampling = "random"), max_step = 500,
+    type = "C-classification", scale = TRUE, verbose = FALSE, time_limit = 60, start =
+    FALSE),
+  ...
 )
 
-\method{misvm}{mild_df}(data, .fns = list(mean = mean, sd = sd), cor = FALSE, ...)
+\method{misvm}{formula}(formula, data, ...)
+
+\method{misvm}{mild_df}(data, .fns = list(mean = mean, sd = stats::sd), cor = FALSE, ...)
 }
 \arguments{
-\item{formula}{a formula with specification \code{mi(y, bags) ~ x} which uses the
-\code{mi} function to create the bag-instance structure. This argument is an
-alternative to the \verb{x, y, bags} arguments, but requires the \code{data} argument.
-See examples.}
+\item{x}{A data.frame, matrix, or similar object of covariates, where each
+row represents a sample.}
 
-\item{data}{a data.frame or similar from which formula elements will be
-extracted.  Used only when the first argument is a formula object.}
+\item{y}{A numeric, character, or factor vector of bag labels for each
+instance.  Must satisfy \code{length(y) == nrow(x)}. Suggest that one of the
+levels is 1, '1', or TRUE, which becomes the positive class; otherwise, a
+positive class is chosen and a message will be supplied.}
 
-\item{cost}{The cost parameter in SVM. If \code{method} = 'heuristic', this will
-be fed to \code{e1071::svm}, otherwise it is similarly in internal functions.}
+\item{bags}{A vector specifying which instance belongs to each bag.  Can be a
+string, numeric, of factor.}
 
-\item{method}{MI-SVM algorithm to use in fitting; default is 'heuristic',
-which employs an algorithm similar to Andrews et al. (2003). When \code{method}
-= 'mip', the novel MIP method will be used.  See details.}
+\item{cost}{The cost parameter in SVM. If \code{method = 'heuristic'}, this will
+be fed to \code{kernlab::ksvm()}, otherwise it is similarly in internal
+functions.}
 
-\item{weights}{named vector, or TRUE, to control the weight of the cost
+\item{method}{The algorithm to use in fitting (default  \code{'heuristic'}).  When
+\code{method = 'heuristic'}, which employs an algorithm similar to Andrews et
+al. (2003). When \code{method = 'mip'}, the novel MIP method will be used.  When
+\verb{method = 'qp-heuristic}, the heuristic algorithm is computed using the
+dual SVM.  See details.}
+
+\item{weights}{named vector, or \code{TRUE}, to control the weight of the cost
 parameter for each possible y value.  Weights multiply against the cost
-vector. If TRUE, weights are calculated based on inverse counts of
+vector. If \code{TRUE}, weights are calculated based on inverse counts of
 instances with given label, where we only count one positive instance per
 bag. Otherwise, names must match the levels of \code{y}.}
 
 \item{control}{list of additional parameters passed to the method that
 control computation with the following components:
 \itemize{
-\item \code{kernel} argument used when \code{method} = 'heuristic'.  The kernel function
-to be used for \code{e1071::svm}. Currently, only 'radial' is supported.
+\item \code{kernel} either a character the describes the kernel ('linear' or
+'radial') or a kernel matrix at the instance level.
 \item \code{sigma} argument needed for radial basis kernel.
-\item \code{max_step} argument used when \code{method} = 'heuristic'. Maximum steps of
+\item \code{nystrom_args} a list of parameters to pass to \code{\link[=kfm_nystrom]{kfm_nystrom()}}. This is
+used when \code{method = 'mip'} and \code{kernel = 'radial'} to generate a Nystrom
+approximation of the kernel features.
+\item \code{max_step} argument used when \code{method = 'heuristic'}. Maximum steps of
 iteration for the heuristic algorithm.
-\item \code{type} argument used when \code{method} = 'heuristic'. The \code{type} argument is
-passed to \code{e1071::svm}.
-\item \code{scale} argument used for all methods. Logical; whether to rescale
-the input before fitting
-\item \code{verbose} argument used when \code{method} = 'mip'. Whether to message output
+\item \code{type}: argument used when \code{method = 'heuristic'}. The \code{type} argument is
+passed to \code{e1071::svm()}.
+\item \code{scale} argument used for all methods. A logical for whether to rescale
+the input before fitting.
+\item \code{verbose} argument used when \code{method = 'mip'}. Whether to message output
 to the console.
-\item \code{time_limit} argument used when \code{method} = 'mip'. FALSE, or a time limit
-(in seconds) passed to \code{gurobi} parameters.  If FALSE< no time limit is
-given.
-\item \code{start} argument used when \code{method} = 'mip'.  If TRUE, the mip program
-will be warm_started with the solution from \code{method} = 'qp-heuristic' to
-improve speed.
+\item \code{time_limit} argument used when \code{method = 'mip'}. \code{FALSE}, or a time
+limit (in seconds) passed to \code{gurobi()} parameters.  If \code{FALSE}, no time
+limit is given.
+\item \code{start} argument used when \code{method = 'mip'}.  If \code{TRUE}, the mip program
+will be warm_started with the solution from \code{method = 'qp-heuristic'} to
+potentially improve speed.
 }}
 
-\item{x}{a data.frame, matrix, or similar object of covariates, where each
-row represents an instance.}
+\item{...}{Arguments passed to or from other methods.}
 
-\item{y}{a numeric, character, or factor vector of bag labels for each
-instance.  Must satisfy \code{length(y) == nrow(x)}. Suggest that one of the
-levels is 1, '1', of TRUE, which becomes the positive class in MI-SVM;
-otherwise, a positive class is chosen and a message will be supplied.}
+\item{formula}{a formula with specification \code{mi(y, bags) ~ x} which uses the
+\code{mi} function to create the bag-instance structure. This argument is an
+alternative to the \verb{x, y, bags} arguments, but requires the \code{data}
+argument. See examples.}
 
-\item{bags}{a vector specifying which instance belongs to each bag.  Can be
-a string, numeric, of factor.}
+\item{data}{If \code{formula} is provided, a data.frame or similar from which
+formula elements will be extracted.  Otherwise, a \code{mild_df} object from
+which \verb{x, y, bags, instances} are automatically extracted. If a \code{mild_df}
+object is used, all columns will be used as predictors.}
 
 \item{.fns}{(argument for \code{misvm.mild_df()} method) list of functions to
 summarize instances over.}
@@ -94,13 +97,13 @@ summarize instances over.}
 include correlations between all features in the summarization.}
 }
 \value{
-an object of class 'misvm'.  The object contains the following
+an object of class \code{misvm.}  The object contains the following
 components:
 \itemize{
 \item \code{model}: a model that will depend on the method used to fit.  It holds
 the main model components used for prediction.  If the model is fit with
-method = 'heuristic', this object is of class 'svm' from the package
-\code{e1071}.
+\code{method = 'heuristic'}, this object is of class \code{svm} from the e1071
+package.
 \item \code{representative_inst}: Instances from positive bags that are selected to
 be most representative of the positive instance.
 \item \code{features}: the features used for prediction.  These are needed for
@@ -112,37 +115,30 @@ via the formula or data.frame method.
 }
 \description{
 This function fits the MI-SVM model, first proposed by Andrews et al. (2003).
-It is a variation on the traditional SVM framework that carefully treats
-data from the multiple instance learning paradigm, where instances are
-grouped into bags, and a label is only available for each bag. Several
-choices of fitting algorithm are available, including a version of the
-heuristic algorithm proposed by Andrews et al. (2003) and a novel algorithm
-that explicitly solves the mixed-integer programming (MIP) problem using
-the \code{gurobi} optimization back-end.
+It is a variation on the traditional SVM framework that carefully treats data
+from the multiple instance learning paradigm, where instances are grouped
+into bags, and a label is only available for each bag.
+}
+\details{
+Several choices of fitting algorithm are available, including a version of
+the heuristic algorithm proposed by Andrews et al. (2003) and a novel
+algorithm that explicitly solves the mixed-integer programming (MIP) problem
+using the gurobi package optimization back-end.
 }
 \section{Methods (by class)}{
 \itemize{
-\item \code{formula}: Method for passing formula
-
 \item \code{default}: Method for data.frame-like objects
 
-\item \code{mild_df}: Method for 'mild_df' objects. Summarize samples to the
-instance level based on specified functions, then perform misvm on instance
-level data.
+\item \code{formula}: Method for passing formula
+
+\item \code{mild_df}: Method for \code{mild_df} objects. Summarize samples to the
+instance level based on specified functions, then perform \code{misvm()} on
+instance level data.
 }}
 
 \examples{
 set.seed(8)
-mil_data <- generate_mild_df(
-  positive_dist = 'mvt',
-  negative_dist = 'mvnormal',
-  remainder_dist = 'mvnormal',
-  nbag = 20,
-  nsample = 20,
-  positive_degree = 3,
-  positive_prob = 0.15,
-  positive_mean = rep(0, 5)
-)
+mil_data <- generate_mild_df(nbag = 15, nsample = 20, positive_degree = 3)
 df <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
 
 # Heuristic method
@@ -150,8 +146,8 @@ mdl1 <- misvm(x = df[, 4:123], y = df$bag_label,
               bags = df$bag_name, method = "heuristic")
 mdl2 <- misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean + X3_mean, data = df)
 
+# MIP method
 if (require(gurobi)) {
-  # solve using the MIP method
   mdl3 <- misvm(x = df[, 4:123], y = df$bag_label,
                 bags = df$bag_name, method = "mip")
 }
@@ -166,6 +162,12 @@ df \%>\%
   distinct(bag_name, bag_label, .pred_class, .pred)
 
 
+}
+\seealso{
+\itemize{
+\item \code{\link[=predict.misvm]{predict.misvm()}} for prediction on new data.
+\item \code{\link[=cv_misvm]{cv_misvm()}} for cross-validation fitting.
+}
 }
 \author{
 Sean Kent, Yifei Liu

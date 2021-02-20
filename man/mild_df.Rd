@@ -13,31 +13,35 @@ mild_df(
 )
 }
 \arguments{
-\item{bag_label}{A character, factor, or numeric vector}
+\item{bag_label}{A \code{character}, \code{factor}, or \code{numeric} vector.}
 
-\item{bag_name}{A character or factor vector}
+\item{bag_name}{A \code{character} or \code{factor} vector.}
 
-\item{instance_name}{A character or factor vector}
+\item{instance_name}{A \code{character} or \code{factor} vector.}
 
-\item{instance_label}{A character, factor, or numeric vector, or NULL}
+\item{instance_label}{A \code{character}, \code{factor}, or \code{numeric} vector, or
+\code{NULL}.}
+
+\item{...}{A set of name-value pairs. These construct the covariates for a
+\code{mild_df}.}
 }
 \value{
 A 'mild_df' object.
 }
 \description{
 \code{mild_df()} constructs a data frame that corresponds to Multiple Instance
-Learning with Distributional Instances (MILD) data.  A 'mild_df' object must
+Learning with Distributional Instances (MILD) data.  A \code{mild_df} object must
 have three special columns:
 \itemize{
-\item 'bag_label', determines the label of each bag, typically from c(0, 1)
-\item 'bag_name', character or factor that specifies the bag that each sample
+\item \code{bag_label}, determines the label of each bag, typically from \code{c(0, 1)}
+\item \code{bag_name}, character or factor that specifies the bag that each sample
 belongs to.
-\item 'instance_name', character or factor that specifies the instance that
+\item \code{instance_name}, character or factor that specifies the instance that
 each sample belongs to.
 }
 }
 \details{
-We refer to the rows of a 'mild_df' as \emph{samples}, since they are
+We refer to the rows of a \code{mild_df} as \emph{samples}, since they are
 thought of as draws from the distribution that determines each instance.
 Each instance is contained in a bag, with a corresponding label.  Instance
 labels can be provided, but they will be pulled in as an attribute.
@@ -49,6 +53,14 @@ mild_df('bag_label' = factor(c(1, 1, 0)),
         'X1' = c(-0.4, 0.5, 2),
         'instance_label' = c(0, 1, 0))
 
+}
+\seealso{
+\itemize{
+\item \code{\link[=as_mild_df]{as_mild_df()}} to convert data.frames to \code{mild_df}s.
+\item \code{\link[=generate_mild_df]{generate_mild_df()}} for simulating a \code{mild_df} object.
+\item \code{\link[=summarize_samples]{summarize_samples()}} for summarizing the \code{mild_df} into a multiple
+instance learning data set.
+}
 }
 \author{
 Yifei Liu, Sean Kent
