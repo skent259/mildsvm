@@ -14,25 +14,27 @@ as_mild_df(
 )
 }
 \arguments{
-\item{bag_label}{A character (default 'bag_label') describing which column
+\item{x}{A data-frame or similar to convert.}
+
+\item{bag_label}{A character (default \code{'bag_label'}) describing which column
 refers to the bag label.}
 
-\item{bag_name}{A character (default 'bag_name') describing which column
-refers to the bag name}
+\item{bag_name}{A character (default \code{'bag_name'}) describing which column
+refers to the bag name.}
 
-\item{instance_name}{A character (default 'instance_name') describing which
+\item{instance_name}{A character (default \code{'instance_name'}) describing which
 column refers to the instance name.}
 
-\item{instance_label}{A character (default 'instance_label') describing which
+\item{instance_label}{A character (default \code{'instance_label'}) describing which
 column refers to the instance labels. If NULL, no instance_labels will be
 used.}
 
-\item{...}{Unused}
+\item{...}{Arguments reserved for other methods.}
 }
 \description{
 \code{as_mild_df()} turns an existing object, such as a data frame, into a MILD
 data frame, a data frame with 'mild_df'. This is in contrast with
-\code{mild_df()}, which builds a MILD data frame from individual columns.
+\code{\link[=mild_df]{mild_df()}}, which builds a MILD data frame from individual columns.
 }
 \examples{
 x = data.frame('bag_LABEL' = factor(c(1, 1, 0)),
@@ -43,6 +45,9 @@ x = data.frame('bag_LABEL' = factor(c(1, 1, 0)),
 
 df <- as_mild_df(x)
 
+}
+\seealso{
+\code{\link[=mild_df]{mild_df()}} to build a \code{mild_df} object.
 }
 \author{
 Sean Kent

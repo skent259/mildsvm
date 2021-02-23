@@ -7,21 +7,35 @@
 classify_bags(y, bags, condense = TRUE)
 }
 \arguments{
-\item{y}{a numeric vector of bag labels with length equal to the number of
-instances (not the number of bags). Must have -1 for negative bags and
-+1 for positive bags}
+\item{y}{A numeric, character, or factor vector of bag labels for each
+instance.  Must satisfy \code{length(y) == nrow(x)}. Suggest that one of the
+levels is 1, '1', or TRUE, which becomes the positive class; otherwise, a
+positive class is chosen and a message will be supplied.}
 
-\item{bags}{a vector specifying which instance belongs to each bag.  Can be
-a string, numeric, of factor}
+\item{bags}{A vector specifying which instance belongs to each bag.  Can be a
+string, numeric, of factor.}
 
-\item{condense}{whether to return classification at the level of unique bags or not}
+\item{condense}{A logical (default \code{TRUE}) for whether to return
+classification at the level of unique bags or not.}
 }
 \value{
 a named vector of length \code{length(unique(b))} which gives the
 classification for each bag.  Names come from \code{bags}.
 }
 \description{
-Classify y from bags
+Formally, this function applies \code{max()} on \code{y} for each level of \code{bags}.
+}
+\examples{
+y <- c(1, 0, 0, 1, 1, 1, 0, 0, 0)
+bags <- rep(1:3, each = 3)
+
+classify_bags(y, bags)
+classify_bags(y, bags, condense = FALSE)
+
+# works with regular vector too
+scores <- 1:9
+classify_bags(scores, bags)
+
 }
 \author{
 Sean Kent

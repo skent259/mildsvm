@@ -30,3 +30,21 @@ test_that("select_cv_folds2() is the same as select_cv_folds()", {
   # expect_equal(fold1, fold2)
 
 })
+
+
+test_that("`classify_bags()` works quickly on large input", {
+
+  nbag <- 50
+  n_inst <- 5000
+  bags <- paste0("bag", 1:nbag)
+  bag_name <- rep(bags, each = n_inst)
+  bag_name <- sample(bag_name)
+  y <- rnorm(length(bag_name))
+
+  tm <- system.time({
+    classify_bags(y, bag_name, condense = FALSE)
+  })
+
+  expect_lt(tm["elapsed"], 3)
+
+})

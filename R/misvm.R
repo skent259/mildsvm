@@ -16,88 +16,93 @@ validate_misvm <- function(x) {
 #' Fit MI-SVM model to the data
 #'
 #' This function fits the MI-SVM model, first proposed by Andrews et al. (2003).
-#'   It is a variation on the traditional SVM framework that carefully treats
-#'   data from the multiple instance learning paradigm, where instances are
-#'   grouped into bags, and a label is only available for each bag. Several
-#'   choices of fitting algorithm are available, including a version of the
-#'   heuristic algorithm proposed by Andrews et al. (2003) and a novel algorithm
-#'   that explicitly solves the mixed-integer programming (MIP) problem using
-#'   the `gurobi` optimization back-end.
+#' It is a variation on the traditional SVM framework that carefully treats data
+#' from the multiple instance learning paradigm, where instances are grouped
+#' into bags, and a label is only available for each bag.
 #'
-#' @param x a data.frame, matrix, or similar object of covariates, where each
-#'   row represents an instance.
-#' @param y a numeric, character, or factor vector of bag labels for each
+#' Several choices of fitting algorithm are available, including a version of
+#' the heuristic algorithm proposed by Andrews et al. (2003) and a novel
+#' algorithm that explicitly solves the mixed-integer programming (MIP) problem
+#' using the gurobi package optimization back-end.
+#'
+#' @param x A data.frame, matrix, or similar object of covariates, where each
+#'   row represents a sample.
+#' @param y A numeric, character, or factor vector of bag labels for each
 #'   instance.  Must satisfy `length(y) == nrow(x)`. Suggest that one of the
-#'   levels is 1, '1', of TRUE, which becomes the positive class in MI-SVM;
-#'   otherwise, a positive class is chosen and a message will be supplied.
-#' @param bags a vector specifying which instance belongs to each bag.  Can be
-#'   a string, numeric, of factor.
+#'   levels is 1, '1', or TRUE, which becomes the positive class; otherwise, a
+#'   positive class is chosen and a message will be supplied.
+#' @param bags A vector specifying which instance belongs to each bag.  Can be a
+#'   string, numeric, of factor.
 #' @param formula a formula with specification `mi(y, bags) ~ x` which uses the
 #'   `mi` function to create the bag-instance structure. This argument is an
-#'   alternative to the `x, y, bags` arguments, but requires the `data` argument.
-#'   See examples.
-#' @param data a data.frame or similar from which formula elements will be
-#'   extracted.  Used only when the first argument is a formula object.
-#' @param cost The cost parameter in SVM. If `method` = 'heuristic', this will
-#'   be fed to `e1071::svm`, otherwise it is similarly in internal functions.
-#' @param method MI-SVM algorithm to use in fitting; default is 'heuristic',
-#'   which employs an algorithm similar to Andrews et al. (2003). When `method`
-#'   = 'mip', the novel MIP method will be used.  See details.
-#' @param weights named vector, or TRUE, to control the weight of the cost
+#'   alternative to the `x, y, bags` arguments, but requires the `data`
+#'   argument. See examples.
+#' @param data If `formula` is provided, a data.frame or similar from which
+#'   formula elements will be extracted.  Otherwise, a `mild_df` object from
+#'   which `x, y, bags, instances` are automatically extracted. If a `mild_df`
+#'   object is used, all columns will be used as predictors.
+#' @param cost The cost parameter in SVM. If `method = 'heuristic'`, this will
+#'   be fed to `kernlab::ksvm()`, otherwise it is similarly in internal
+#'   functions.
+#' @param method The algorithm to use in fitting (default  `'heuristic'`).  When
+#'   `method = 'heuristic'`, which employs an algorithm similar to Andrews et
+#'   al. (2003). When `method = 'mip'`, the novel MIP method will be used.  When
+#'   `method = 'qp-heuristic`, the heuristic algorithm is computed using the
+#'   dual SVM.  See details.
+#' @param weights named vector, or `TRUE`, to control the weight of the cost
 #'   parameter for each possible y value.  Weights multiply against the cost
-#'   vector. If TRUE, weights are calculated based on inverse counts of
+#'   vector. If `TRUE`, weights are calculated based on inverse counts of
 #'   instances with given label, where we only count one positive instance per
 #'   bag. Otherwise, names must match the levels of `y`.
 #' @param control list of additional parameters passed to the method that
 #'   control computation with the following components:
-#'   - `kernel` argument used when `method` = 'heuristic'.  The kernel function
-#'   to be used for `e1071::svm`. Currently, only 'radial' is supported.
-#'   - `sigma` argument needed for radial basis kernel.
-#'   - `max_step` argument used when `method` = 'heuristic'. Maximum steps of
+#'   * `kernel` either a character the describes the kernel ('linear' or
+#'   'radial') or a kernel matrix at the instance level.
+#'   * `sigma` argument needed for radial basis kernel.
+#'   * `nystrom_args` a list of parameters to pass to [kfm_nystrom()]. This is
+#'   used when `method = 'mip'` and `kernel = 'radial'` to generate a Nystrom
+#'   approximation of the kernel features.
+#'   * `max_step` argument used when `method = 'heuristic'`. Maximum steps of
 #'   iteration for the heuristic algorithm.
-#'   - `type` argument used when `method` = 'heuristic'. The `type` argument is
-#'   passed to `e1071::svm`.
-#'   - `scale` argument used for all methods. Logical; whether to rescale
-#'   the input before fitting
-#'   - `verbose` argument used when `method` = 'mip'. Whether to message output
+#'   * `type`: argument used when `method = 'heuristic'`. The `type` argument is
+#'   passed to `e1071::svm()`.
+#'   * `scale` argument used for all methods. A logical for whether to rescale
+#'   the input before fitting.
+#'   * `verbose` argument used when `method = 'mip'`. Whether to message output
 #'   to the console.
-#'   - `time_limit` argument used when `method` = 'mip'. FALSE, or a time limit
-#'   (in seconds) passed to `gurobi` parameters.  If FALSE< no time limit is
-#'   given.
-#'   - `start` argument used when `method` = 'mip'.  If TRUE, the mip program
-#'   will be warm_started with the solution from `method` = 'qp-heuristic' to
-#'   improve speed.
+#'   * `time_limit` argument used when `method = 'mip'`. `FALSE`, or a time
+#'   limit (in seconds) passed to `gurobi()` parameters.  If `FALSE`, no time
+#'   limit is given.
+#'   * `start` argument used when `method = 'mip'`.  If `TRUE`, the mip program
+#'   will be warm_started with the solution from `method = 'qp-heuristic'` to
+#'   potentially improve speed.
 #' @param .fns (argument for `misvm.mild_df()` method) list of functions to
 #'   summarize instances over.
 #' @param cor (argument for `misvm.mild_df()` method) logical, whether to
 #'   include correlations between all features in the summarization.
+#' @param ... Arguments passed to or from other methods.
 #'
-#' @return an object of class 'misvm'.  The object contains the following
+#' @return an object of class `misvm.`  The object contains the following
 #'   components:
-#'   - `model`: a model that will depend on the method used to fit.  It holds
+#'   * `model`: a model that will depend on the method used to fit.  It holds
 #'   the main model components used for prediction.  If the model is fit with
-#'   method = 'heuristic', this object is of class 'svm' from the package
-#'   `e1071`.
-#'   - `representative_inst`: Instances from positive bags that are selected to
+#'   `method = 'heuristic'`, this object is of class `svm` from the e1071
+#'   package.
+#'   * `representative_inst`: Instances from positive bags that are selected to
 #'   be most representative of the positive instance.
-#'   - `features`: the features used for prediction.  These are needed for
+#'   * `features`: the features used for prediction.  These are needed for
 #'   prediction.
-#'   - `call_type`: the call type, which specifies whether `misvm()` was called
+#'   * `call_type`: the call type, which specifies whether `misvm()` was called
 #'   via the formula or data.frame method.
-#'   - `levels`: levels of `y` that are recorded for future prediction.
+#'   * `levels`: levels of `y` that are recorded for future prediction.
+#'
+#' @seealso
+#' * [predict.misvm()] for prediction on new data.
+#' * [cv_misvm()] for cross-validation fitting.
 #'
 #' @examples
 #' set.seed(8)
-#' mil_data <- generate_mild_df(
-#'   positive_dist = 'mvt',
-#'   negative_dist = 'mvnormal',
-#'   remainder_dist = 'mvnormal',
-#'   nbag = 20,
-#'   nsample = 20,
-#'   positive_degree = 3,
-#'   positive_prob = 0.15,
-#'   positive_mean = rep(0, 5)
-#' )
+#' mil_data <- generate_mild_df(nbag = 15, nsample = 20, positive_degree = 3)
 #' df <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
 #'
 #' # Heuristic method
@@ -105,8 +110,8 @@ validate_misvm <- function(x) {
 #'               bags = df$bag_name, method = "heuristic")
 #' mdl2 <- misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean + X3_mean, data = df)
 #'
+#' # MIP method
 #' if (require(gurobi)) {
-#'   # solve using the MIP method
 #'   mdl3 <- misvm(x = df[, 4:123], y = df$bag_label,
 #'                 bags = df$bag_name, method = "mip")
 #' }
@@ -126,56 +131,26 @@ validate_misvm <- function(x) {
 NULL
 
 #' @export
-misvm <- function(x, y, bags, ...) {
+misvm <- function(x, ...) {
   UseMethod("misvm")
-}
-
-#' @describeIn misvm Method for passing formula
-#' @export
-misvm.formula <- function(formula, data, cost = 1, method = c("heuristic", "mip", "qp-heuristic"), weights = TRUE,
-                          control = list(kernel = "linear",
-                                         sigma = 1,
-                                         nystrom_args = list(m = nrow(x), r = nrow(x), sampling = 'random'),
-                                         max_step = 500,
-                                         type = "C-classification",
-                                         scale = TRUE,
-                                         verbose = FALSE,
-                                         time_limit = 60,
-                                         start = FALSE))
-{
-  # NOTE: other 'professional' functions use a different type of call that I
-  #   couldn't get to work. See https://github.com/therneau/survival/blob/master/R/survfit.R
-  #   or https://github.com/cran/e1071/blob/master/R/svm.R
-  #   right now we're using something that should work for most generic formulas
-
-  mi_names <- as.character(stats::terms(formula, data = data)[[2]])
-  bag_name <- mi_names[[3]]
-
-  x <- x_from_mi_formula(formula, data)
-  response <- stats::get_all_vars(formula, data = data)
-  y <- response[, 1]
-  bags <- response[, 2]
-
-  res <- misvm.default(x, y, bags, cost = cost, method = method, weights = weights, control = control)
-
-  res$call_type <- "misvm.formula"
-  res$formula <- formula
-  res$bag_name <- bag_name
-  return(res)
 }
 
 #' @describeIn misvm Method for data.frame-like objects
 #' @export
-misvm.default <- function(x, y, bags, cost = 1, method = c("heuristic", "mip", "qp-heuristic"), weights = TRUE,
+misvm.default <- function(x, y, bags,
+                          cost = 1,
+                          method = c("heuristic", "mip", "qp-heuristic"),
+                          weights = TRUE,
                           control = list(kernel = "linear",
-                                         sigma = 1,
+                                         sigma = if (is.vector(x)) 1 else 1 / ncol(x),
                                          nystrom_args = list(m = nrow(x), r = nrow(x), sampling = 'random'),
                                          max_step = 500,
                                          type = "C-classification",
                                          scale = TRUE,
                                          verbose = FALSE,
                                          time_limit = 60,
-                                         start = FALSE))
+                                         start = FALSE),
+                          ...)
 {
 
   method <- match.arg(method)
@@ -204,7 +179,7 @@ misvm.default <- function(x, y, bags, cost = 1, method = c("heuristic", "mip", "
   # store colnames of x
   col_x <- colnames(x)
 
-  ## weights
+  # weights
   if (is.numeric(weights)) {
     stopifnot(names(weights) == lev | names(weights) == rev(lev))
     weights <- weights[lev]
@@ -216,7 +191,7 @@ misvm.default <- function(x, y, bags, cost = 1, method = c("heuristic", "mip", "
     weights <- NULL
   }
 
-  ## Nystrom approximation to x for mip and qp-heuristic methods
+  # Nystrom approximation to x for mip and qp-heuristic methods
   # NOTE: this isn't strictly necessary for qp-heuristic, but it's the easiest way to implement
   if (method %in% c("mip") & control$kernel == "radial") {
     control$nystrom_args$df <- as.matrix(x)
@@ -277,15 +252,41 @@ misvm.default <- function(x, y, bags, cost = 1, method = c("heuristic", "mip", "
   # return(res)
 }
 
-#' @describeIn misvm Method for 'mild_df' objects. Summarize samples to the
-#'   instance level based on specified functions, then perform misvm on instance
-#'   level data.
+#' @describeIn misvm Method for passing formula
 #' @export
-misvm.mild_df <- function(data, .fns = list(mean = mean, sd = sd), cor = FALSE, ...)
+misvm.formula <- function(formula, data, ...) {
+  # NOTE: other 'professional' functions use a different type of call that I
+  #   couldn't get to work. See https://github.com/therneau/survival/blob/master/R/survfit.R
+  #   or https://github.com/cran/e1071/blob/master/R/svm.R
+  #   right now we're using something that should work for most generic formulas
+
+  mi_names <- as.character(stats::terms(formula, data = data)[[2]])
+  bag_name <- mi_names[[3]]
+
+  x <- x_from_mi_formula(formula, data)
+  response <- stats::get_all_vars(formula, data = data)
+  y <- response[, 1]
+  bags <- response[, 2]
+
+  res <- misvm.default(x, y, bags, ...)
+
+  res$call_type <- "misvm.formula"
+  res$formula <- formula
+  res$bag_name <- bag_name
+  return(res)
+}
+
+#' @describeIn misvm Method for `mild_df` objects. Summarize samples to the
+#'   instance level based on specified functions, then perform `misvm()` on
+#'   instance level data.
+#' @export
+misvm.mild_df <- function(data, .fns = list(mean = mean, sd = stats::sd), cor = FALSE, ...)
 {
   instance_data <- summarize_samples(data, .fns, cor)
+  x <- instance_data
+  x$bag_label <- x$bag_name <- x$instance_name <- NULL
   res <- misvm.default(
-    x = subset(instance_data, select = -c(bag_label, bag_name, instance_name)),
+    x,
     y = instance_data$bag_label,
     bags = instance_data$bag_name,
     ...
@@ -298,55 +299,62 @@ misvm.mild_df <- function(data, .fns = list(mean = mean, sd = sd), cor = FALSE, 
   return(res)
 }
 
-
-
-#' Predict method for 'misvm' object
-#' @param object an object of class misvm
-#' @param new_data matrix to predict from.  Needs to have the same number of
-#'   columns as the X that trained the misvm object
-#' @param type if 'class', return predicted values with threshold of 0 as
-#'   -1 or +1.  If 'raw', return the raw predicted scores.
-#' @param layer if 'bag', return predictions at the bag level.  If 'instance',
-#'   return predictions at the instance level.
-#' @param new_bags character or character vector.  Can specify a singular
-#'   character that provides the column name for the bag names in `new_data`,
-#'   default = "bag_name".  Can also specify a vector of length `nrow(new_data)`
-#'   that has bag name for each instance.  When `object` was fitted with
-#'   `misvm.formula`, this parameter is not necessary as the bag name can be
-#'   pulled directly from new_data, if available.
+#' Predict method for `misvm` object
 #'
-#' @return tibble with `nrow(new_data)` rows.  If type = 'class', the tibble
-#'   will have a column '.pred_class'.  If type = 'raw', the tibble will have
-#'   a column '.pred'.
+#' @details
+#' When the object was fitted using the `formula` method, then the parameters
+#' `new_bags` and `new_instances` are not necessary, as long as the names match
+#' the original function call.
+#'
+#' @param object An object of class `misvm`.
+#' @param new_data A data frame to predict from. This needs to have all of the
+#'   features that the data was originally fitted with.
+#' @param type If `'class'`, return predicted values with threshold of 0 as
+#'   -1 or +1.  If `'raw'`, return the raw predicted scores.
+#' @param layer If `'bag'`, return predictions at the bag level.  If
+#'   `'instance'`, return predictions at the instance level.
+#' @param new_bags A character or character vector.  Can specify a singular
+#'   character that provides the column name for the bag names in `new_data`
+#'   (default `'bag_name'`).  Can also specify a vector of length
+#'   `nrow(new_data)` that has bag name for each row.
+#' @param ... Arguments passed to or from other methods.
+#'
+#' @return A tibble with `nrow(new_data)` rows.  If `type = 'class'`, the tibble
+#'   will have a column `.pred_class`.  If `type = 'raw'`, the tibble will have
+#'   a column `.pred`.
+#'
+#' @seealso
+#' * [misvm()] for fitting the `misvm` object.
+#' * [cv_misvm()] for fitting the `misvm` object with cross-validation.
 #'
 #' @examples
 #' mil_data <- generate_mild_df(
-#'   positive_dist = 'mvt',
-#'   negative_dist = 'mvnormal',
-#'   remainder_dist = 'mvnormal',
-#'   nbag = 20,
-#'   nsample = 20,
-#'   positive_degree = 3,
-#'   positive_prob = 0.15,
-#'   positive_mean = rep(0, 5)
+#'     nbag = 20,
+#'     ncov = 5,
+#'     positive_degree = 3,
+#'     positive_mean = rep(5, 5)
 #' )
 #' df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
-#' mdl1 <- misvm.default(df1, cost = 1, kernel = "radial", method = "mip")
+#' mdl1 <- misvm(x = df1[, 4:63], y = df1$bag_label,
+#'               bags = df1$bag_name, method = "heuristic")
 #'
 #' predict(mdl1, new_data = df1, type = "raw", layer = "bag")
 #'
 #' # summarize predictions at the bag layer
 #' library(dplyr)
 #' df1 %>%
-#'   bind_cols(predict(mdl2, df1, type = "class")) %>%
-#'   bind_cols(predict(mdl2, df1, type = "raw")) %>%
+#'   bind_cols(predict(mdl1, df1, type = "class")) %>%
+#'   bind_cols(predict(mdl1, df1, type = "raw")) %>%
 #'   distinct(bag_name, bag_label, .pred_class, .pred)
 #'
 #' @export
 #' @author Sean Kent
-predict.misvm <- function(object, new_data,
-                          type = c("class", "raw"), layer = c("bag", "instance"),
-                          new_bags = "bag_name")
+predict.misvm <- function(object,
+                          new_data,
+                          type = c("class", "raw"),
+                          layer = c("bag", "instance"),
+                          new_bags = "bag_name",
+                          ...)
 {
   type <- match.arg(type)
   layer <- match.arg(layer)
@@ -354,7 +362,7 @@ predict.misvm <- function(object, new_data,
 
   if (object$call_type == "misvm.mild_df") {
     mil_cols <- c("bag_label", "bag_name", "instance_name")
-    mil_info <- new_data[, mil_cols]
+    mil_info <- new_data[, mil_cols, drop = FALSE]
     new_data <- summarize_samples(new_data,
                                   group_cols = mil_cols,
                                   .fns = object$summary_fns,
@@ -419,7 +427,7 @@ predict.misvm <- function(object, new_data,
   if (object$call_type == "misvm.mild_df") {
     # bring back the predictions from instance level to the sample level
     ind <- match(mil_info$instance_name, new_data$instance_name)
-    res <- res[ind, ]
+    res <- res[ind, , drop = FALSE]
   }
   # TODO: consider returning the AUC here as an attribute.  Can only do if we have the true bag labels
   # attr(res, "AUC") <- calculated_auc
@@ -433,21 +441,21 @@ predict.misvm <- function(object, new_data,
 
 #' INTERNAL Fit MI-SVM model based on full MIP problem
 #'
-#' Function to train an MI-SVM classifier based on the full
-#' specification of the Mixed Integer Programming (MIP) problem.  The optimization
-#' problem is solved using the `gurobi` R package through the Gurobi backend.
+#' Function to train an MI-SVM classifier based on the full specification of the
+#' Mixed Integer Programming (MIP) problem.  The optimization problem is solved
+#' using the `gurobi` R package through the Gurobi backend.
 #'
 #' @param y a nx1 numeric vector of bag labels with length equal to the number
 #'   of instances (not the number of bags). Must have -1 for negative bags and
 #'   +1 for positive bags
-#' @param bags a nx1 vector specifying which instance belongs to each bag.  Can be
-#'   a string, numeric, of factor
+#' @param bags a nx1 vector specifying which instance belongs to each bag.  Can
+#'   be a string, numeric, of factor
 #' @param X an nxp data.frame of covariates.  Can also supply a matrix.
-#' @param c scalar indicating the penalty term on the sum of Xi in the
-#'   objective function
+#' @param c scalar indicating the penalty term on the sum of Xi in the objective
+#'   function
 #' @param rescale logical; whether to rescale the input before fitting
-#' @param weights named vector to control the weight of the cost parameter
-#'   for each possible y value.  Weights multiply against the cost vector.
+#' @param weights named vector to control the weight of the cost parameter for
+#'   each possible y value.  Weights multiply against the cost vector.
 #' @param verbose whether to message output to the console; default is FALSE.
 #' @param time_limit FALSE, or a time limit (in seconds) passed to gurobi
 #'   parameters. If FALSE, no time limit is given.
@@ -458,22 +466,23 @@ predict.misvm <- function(object, new_data,
 #' @return `misvm_mip_fit()` returns an object of class `"misvm"`.
 #'   An object of class "misvm" is a list containing at least the following
 #'   components:
-#'   - `model`: a list with components:
-#'     - `w`: weights to apply to the predictors to make the classifier
-#'     - `b`: intercept term used to make the classifier
-#'     - `xi`: slack variables returned from the optimization
-#'     - `z`: integer variables returned from the optimization that determine selected instances
+#'   * `model`: a list with components:
+#'     * `w`: weights to apply to the predictors to make the classifier
+#'     * `b`: intercept term used to make the classifier
+#'     * `xi`: slack variables returned from the optimization
+#'     * `z`: integer variables returned from the optimization that determine
+#'     selected instances
 #'     `status`: solution status from `gurobi::gurobi`
 #'     `itercount`: itercount from `gurobi::gurobi`
 #'     `baritercount`: baritercount from `gurobi::gurobi`
 #'     `objval`: value of the objective at the solution
 #'     `c`: value of the cost parameter used in solving the optimization
-#'   - `representative_inst`: NULL, TODO: mesh with other misvm method
-#'   - `traindata`: NULL, TODO: mesh with other misvm method
-#'   - `useful_inst_idx`: NULL, TODO: mesh with other misvm method
+#'   * `representative_inst`: NULL, TODO: mesh with other misvm method
+#'   * `traindata`: NULL, TODO: mesh with other misvm method
+#'   * `useful_inst_idx`: NULL, TODO: mesh with other misvm method
 #'
 #' @author Sean Kent
-#' @keywords internal
+#' @noRd
 misvm_mip_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
                           verbose = FALSE, time_limit = FALSE, start = FALSE) {
   # TODO: maybe change function call to y, X, bags?
@@ -534,11 +543,11 @@ misvm_mip_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
 #' @param warm_start NULL, or a list with components 'opt' and 'selected' which
 #'   provide the warm start values to use for the (w, b, xi) and (z)
 #'   constraints, respectively.
-#' @return a model that can be passed to `gurobi::gurobi` that contains the MIQP
-#'   problem defined by MI-SVM in Andrews et al. (2003)
+#' @return a model that can be passed to `gurobi::gurobi()` that contains the
+#'   MIQP problem defined by MI-SVM in Andrews et al. (2003)
 #'
 #' @author Sean Kent
-#' @keywords internal
+#' @noRd
 misvm_mip_model <- function(y, bags, X, c, weights = NULL, warm_start = NULL) {
   L <- 1e2 * sum(abs(X) / nrow(X))
   # TODO: check that y has only -1 and 1
@@ -547,7 +556,7 @@ misvm_mip_model <- function(y, bags, X, c, weights = NULL, warm_start = NULL) {
   bags <- r$b
   X <- r$X
 
-  ## Build constraint matrix
+  # Build constraint matrix
   # order of variables is [w, b, xi, z]
   n_w <- ncol(X)
   n_b <- 1
@@ -592,18 +601,18 @@ misvm_mip_model <- function(y, bags, X, c, weights = NULL, warm_start = NULL) {
   }
 
   model <- list()
-  ## Objective
+  # Objective
   model$modelsense <- "min"
   model$obj <- c(rep(0, n_w + n_b), c_vec, rep(0, n_z)) # linear portion of objective
   model$Q <- diag(c(rep(1, n_w), rep(0, n_b + n_xi + n_z))) # quadratic portion of objective
-  ## Constraints
+  # Constraints
   model$varnames <- c(paste0("w",1:n_w), "b", paste0("xi",1:n_xi), paste0("z",1:n_z))
   model$A <- rbind(constraint1, constraint2)
   model$sense <- c(rep(">=", length(rhs1)), rep("<=", length(rhs2))) # rep("<=", length(model$rhs))
   model$rhs <- c(rhs1, rhs2)
   model$vtype <- c(rep("C", n_w + n_b + n_xi), rep("B", n_z))
   model$lb <- c(rep(-Inf, n_w + n_b), rep(0, n_xi + n_z))
-  ## Advanced
+  # Advanced
   if (!is.null(warm_start)) model$start <- c(warm_start[["opt"]], warm_start[["selected"]][r$order][y == 1])
   return(model)
 }
@@ -630,7 +639,7 @@ misvm_mip_model <- function(y, bags, X, c, weights = NULL, warm_start = NULL) {
 #' mdl <- MI_SVM(data = df1, cost = 1, kernel = 'radial')
 #' @importFrom e1071 svm
 #' @author Yifei Liu, Sean Kent
-#' @keywords internal
+#' @noRd
 misvm_heuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
                                 kernel = "radial", sigma = 1, max_step = 500, type = "C-classification",
                                 scale = TRUE) {
@@ -726,22 +735,22 @@ misvm_heuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
 #' @return `misvm_qpheuristic_fit()` returns an object of class `"misvm"`.
 #'   An object of class "misvm" is a list containing at least the following
 #'   components:
-#'   - `model`: a list with components:
-#'     - `w`: weights to apply to the predictors to make the classifier
-#'     - `b`: intercept term used to make the classifier
-#'     - `xi`: slack variables returned from the optimization
-#'     - `status`: solution status from `gurobi::gurobi`
-#'     - `itercount`: itercount from `gurobi::gurobi`
-#'     - `baritercount`: baritercount from `gurobi::gurobi`
-#'     - `objval`: value of the objective at the solution
-#'     - `c`: value of the cost parameter used in solving the optimization
-#'     - `n_selections`: the number of selections used in fitting
-#'   - `representative_inst`: NULL, TODO: mesh with other misvm method
-#'   - `traindata`: NULL, TODO: mesh with other misvm method
-#'   - `useful_inst_idx`: NULL, TODO: mesh with other misvm method
+#'   * `model`: a list with components:
+#'     * `w`: weights to apply to the predictors to make the classifier
+#'     * `b`: intercept term used to make the classifier
+#'     * `xi`: slack variables returned from the optimization
+#'     * `status`: solution status from `gurobi::gurobi`
+#'     * `itercount`: itercount from `gurobi::gurobi`
+#'     * `baritercount`: baritercount from `gurobi::gurobi`
+#'     * `objval`: value of the objective at the solution
+#'     * `c`: value of the cost parameter used in solving the optimization
+#'     * `n_selections`: the number of selections used in fitting
+#'   * `representative_inst`: NULL, TODO: mesh with other misvm method
+#'   * `traindata`: NULL, TODO: mesh with other misvm method
+#'   * `useful_inst_idx`: NULL, TODO: mesh with other misvm method
 #'
 #' @author Sean Kent
-#' @keywords internal
+#' @noRd
 misvm_qpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
                                   verbose = FALSE, time_limit = FALSE, max_step = 500) {
   r <- .reorder(y, bags, X)
@@ -841,24 +850,24 @@ misvm_qpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
 #' @return `misvm_qpheuristic_fit()` returns an object of class `"misvm"`.
 #'   An object of class "misvm" is a list containing at least the following
 #'   components:
-#'   - `model`: a list with components:
-#'     - `b`: intercept term used to make the classifier
-#'     - `xmatrix`: data used in future kernel calculations
-#'     - `ay`: alpha vectors multiplied by y
-#'     - `status`: solution status from `gurobi::gurobi`
-#'     - `itercount`: itercount from `gurobi::gurobi`
-#'     - `baritercount`: baritercount from `gurobi::gurobi`
-#'     - `objval`: value of the objective at the solution
-#'     - `c`: value of the cost parameter used in solving the optimization
-#'     - `n_selections`: the number of selections used in fitting
-#'   - `representative_inst`: NULL, TODO: mesh with other misvm method
-#'   - `traindata`: NULL, TODO: mesh with other misvm method
-#'   - `useful_inst_idx`: NULL, TODO: mesh with other misvm method
-#'   - `center`: vector of centering means, if `rescale`
-#'   - `scale`: vector of scaling sds, if `rescale`
+#'   * `model`: a list with components:
+#'     * `b`: intercept term used to make the classifier
+#'     * `xmatrix`: data used in future kernel calculations
+#'     * `ay`: alpha vectors multiplied by y
+#'     * `status`: solution status from `gurobi::gurobi`
+#'     * `itercount`: itercount from `gurobi::gurobi`
+#'     * `baritercount`: baritercount from `gurobi::gurobi`
+#'     * `objval`: value of the objective at the solution
+#'     * `c`: value of the cost parameter used in solving the optimization
+#'     * `n_selections`: the number of selections used in fitting
+#'   * `representative_inst`: NULL, TODO: mesh with other misvm method
+#'   * `traindata`: NULL, TODO: mesh with other misvm method
+#'   * `useful_inst_idx`: NULL, TODO: mesh with other misvm method
+#'   * `center`: vector of centering means, if `rescale`
+#'   * `scale`: vector of scaling sds, if `rescale`
 #'
 #' @author Sean Kent
-#' @keywords internal
+#' @noRd
 misvm_dualqpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
                                       kernel = "linear", sigma = NULL,
                                       verbose = FALSE, time_limit = FALSE, max_step = 500) {
@@ -966,11 +975,11 @@ misvm_dualqpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = N
 #'   problem defined by MI-SVM in Andrews et al. (2003)
 #'
 #' @author Sean Kent
-#' @keywords internal
+#' @noRd
 misvm_qpheuristic_model <- function(y, bags, X, c, weights = NULL) {
   # assumes that the data is already re-ordered to save time
 
-  ## Build constraint matrix
+  # Build constraint matrix
   # order of variables is [w, b, xi]
   n_w <- ncol(X)
   n_b <- 1
@@ -998,11 +1007,11 @@ misvm_qpheuristic_model <- function(y, bags, X, c, weights = NULL) {
 
   model <- list()
 
-  ## Objective
+  # Objective
   model$modelsense <- "min"
   model$obj <- c(rep(0, n_w + n_b), c_vec) # linear portion of objective
   model$Q <- diag(c(rep(1, n_w), rep(0, n_b + n_xi))) # quadratic portion of objective
-  ## Constraints
+  # Constraints
   model$varnames <- c(paste0("w",1:n_w), "b", paste0("xi",1:n_xi))
   model$A <- constraint
   model$sense <- rep(">=", nrow(X))
@@ -1025,7 +1034,7 @@ misvm_qpheuristic_model <- function(y, bags, X, c, weights = NULL) {
 #'   QP problem defined by MI-SVM in Andrews et al. (2003)
 #'
 #' @author Sean Kent
-#' @keywords internal
+#' @noRd
 misvm_dualqpheuristic_model <- function(y, bags, K, c, weights = NULL) {
   # assumes that the data is already re-ordered to save time
 
@@ -1053,11 +1062,11 @@ misvm_dualqpheuristic_model <- function(y, bags, K, c, weights = NULL) {
 
   model <- list()
 
-  ## Objective
+  # Objective
   model$modelsense <- "max"
   model$obj <- rep(1, n_a)
   model$Q <- - 1/2 * y %*% t(y) * K # TODO: replace this with kernel at some point
-  ## Constraints
+  # Constraints
   model$varnames <- c(paste0("a", 1:n_a))
   model$A <- constraint
   model$sense <- rep(">=", nrow(constraint))

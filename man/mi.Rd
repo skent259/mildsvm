@@ -2,38 +2,36 @@
 % Please edit documentation in R/mi.R
 \name{mi}
 \alias{mi}
-\title{Create a mi object}
+\title{Create an \code{mi} object}
 \usage{
 mi(bag_label, bag_name)
 }
 \arguments{
-\item{bag_label}{the bag label or response, recorded as 0 = negative, 1 = positive}
+\item{bag_label}{The bag label or response, recorded as 0 = negative, 1 =
+positive.}
 
-\item{bag_name}{a unique bag identifier for each instance.}
+\item{bag_name}{A unique bag identifier for each instance.}
 }
 \value{
-An object of class \code{mi}.  Currently, no methods are implemented for this
+An object of class \code{mi}.  Currently, no methods are implemented for
+this.
 }
 \description{
-Create a \code{mi} object, usually used as a response variable in a model formula.
+Create an \code{mi} object, usually used as a response variable in a model
+formula.
 }
 \examples{
-
-mil_data <- generate_mild_df(
-  positive_dist = 'mvt',
-  negative_dist = 'mvnormal',
-  remainder_dist = 'mvnormal',
-  nbag = 50,
-  nsample = 20,
-  positive_degree = 3,
-  positive_prob = 0.15,
-  positive_mean = rep(0, 5)
-)
-with(mil_data, mi(bag_label, bag_name))
+mil_data <- generate_mild_df(positive_degree = 3, nbag = 10)
+with(mil_data, head(mi(bag_label, bag_name)))
 df <- get_all_vars(mi(bag_label, bag_name) ~ X1 + X2, data = mil_data)
 head(df)
 
 }
+\seealso{
+Other multiple instance formula helper functions: 
+\code{\link{mild}()}
+}
 \author{
 Sean Kent
 }
+\concept{multiple instance formula helper functions}

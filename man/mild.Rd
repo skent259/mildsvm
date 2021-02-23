@@ -7,16 +7,16 @@
 mild(bag_label, bag_name, instance_name)
 }
 \arguments{
-\item{bag_label}{the bag label or response, recorded as 0 = negative, 1 =
-positive}
+\item{bag_label}{The bag label or response, recorded as 0 = negative, 1 =
+positive.}
 
-\item{bag_name}{a unique bag identifier for each instance.}
+\item{bag_name}{A unique bag identifier for each instance.}
 
-\item{instance_name}{a unique instance identifier for each sample.}
+\item{instance_name}{A unique instance identifier for each sample.}
 }
 \value{
 An object of class \code{mild}.  Currently, no methods are implemented for
-this
+this.
 }
 \description{
 Create a \code{mild} object, usually used as a response variable in a model
@@ -24,21 +24,17 @@ formula.
 }
 \examples{
 
-mild_data <- generate_mild_df(
-  positive_dist = 'mvt',
-  negative_dist = 'mvnormal',
-  remainder_dist = 'mvnormal',
-  nbag = 50,
-  nsample = 20,
-  positive_degree = 3,
-  positive_prob = 0.15,
-  positive_mean = rep(0, 5)
-)
-with(mild_data, mild(bag_label, bag_name, instance_name))
-df <- get_all_vars(mild(bag_label, bag_name) ~ X1 + X2, data = mild_data)
+mil_data <- generate_mild_df(positive_degree = 3, nbag = 10)
+with(mil_data, head(mild(bag_label, bag_name, instance_name)))
+df <- get_all_vars(mild(bag_label, bag_name) ~ X1 + X2, data = mil_data)
 head(df)
 
+}
+\seealso{
+Other multiple instance formula helper functions: 
+\code{\link{mi}()}
 }
 \author{
 Sean Kent
 }
+\concept{multiple instance formula helper functions}

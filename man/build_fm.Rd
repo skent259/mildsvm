@@ -13,14 +13,16 @@ build_fm(kfm_fit, new_data, ...)
 \method{build_fm}{kfm_nystrom}(kfm_fit, new_data, ...)
 }
 \arguments{
-\item{kfm_fit}{object from a function in the \verb{kfm_*} family, such as
-\code{kfm_nystrom()}.}
+\item{kfm_fit}{An object from a function in the \verb{kfm_*} family, such as
+\code{\link[=kfm_nystrom]{kfm_nystrom()}}.}
 
-\item{new_data}{data to generate features from.}
+\item{new_data}{The data to generate features from.}
+
+\item{...}{Additional arguments for methods.}
 }
 \value{
-a matrix of covariates in the feature space, with the same number of
-rows as \code{new_data}.  If \code{new_data} is an 'mild_df' object, \code{build_fm()}
+A matrix of covariates in the feature space, with the same number of
+rows as \code{new_data}.  If \code{new_data} is a \code{mild_df} object, \code{build_fm()}
 will also return the columns containing 'bag_label', 'bag_name',
 'instance_name'.
 }
@@ -31,9 +33,9 @@ specifies the feature map and a provided dataset.
 }
 \section{Methods (by class)}{
 \itemize{
-\item \code{kfm_exact}: Method for 'kfm_exact' class.
+\item \code{kfm_exact}: Method for \code{kfm_exact} class.
 
-\item \code{kfm_nystrom}: Method for 'kfm_nystrom' class.
+\item \code{kfm_nystrom}: Method for \code{kfm_nystrom} class.
 }}
 
 \examples{
@@ -49,6 +51,12 @@ fm <- build_fm(fit, df)
 fit <- kfm_exact(kernel = "polynomial", degree = 2, const = 1)
 fm <- build_fm(fit, df)
 
+}
+\seealso{
+\itemize{
+\item \code{\link[=kfm_nystrom]{kfm_nystrom()}} fit a Nystrom kernel feature map approximation.
+\item \code{\link[=kfm_exact]{kfm_exact()}} create an exact kernel feature map.
+}
 }
 \author{
 Sean Kent

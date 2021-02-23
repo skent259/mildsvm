@@ -2,7 +2,7 @@
 % Please edit documentation in R/smm.R
 \name{predict.smm}
 \alias{predict.smm}
-\title{Predict method for 'smm' object}
+\title{Predict method for \code{smm} object}
 \usage{
 \method{predict}{smm}(
   object,
@@ -16,46 +16,50 @@
 )
 }
 \arguments{
-\item{object}{an object of class smm}
+\item{object}{an object of class \code{smm}}
 
-\item{new_data}{matrix to predict from.  Needs to have the same number of
-columns as the X that trained the 'smm' object}
+\item{new_data}{A data frame to predict from. This needs to have all of the
+features that the data was originally fitted with.}
 
-\item{type}{if 'class', return predicted values with threshold of 0 as
--1 or +1.  If 'raw', return the raw predicted scores.}
+\item{type}{If \code{'class'}, return predicted values with threshold of 0 as
+-1 or +1.  If \code{'raw'}, return the raw predicted scores.}
 
-\item{layer}{If 'instance', return predictions at the instance level. Option
-'bag' returns predictions at the bag level, but only if the model was fit
-with \code{smm.mild_df()},}
+\item{layer}{If \code{'instance'}, return predictions at the instance level.
+Option \code{'bag'} returns predictions at the bag level, but only if the model
+was fit with \code{smm.mild_df()},}
 
-\item{new_instances}{character or character vector.  Can specify a singular
+\item{new_instances}{A character or character vector.  Can specify a singular
 character that provides the column name for the instance names in
-\code{new_data}, default = "instance_name".  Can also specify a vector of length
-\code{nrow(new_data)} that has instance name for each row.  When \code{object} was
-fitted with \code{smm.formula()}, this parameter is not necessary as the bag
-name can be pulled directly from new_data, if available.}
+\code{new_data} (default \code{'instance_name'}).  Can also specify a vector of length
+\code{nrow(new_data)} that has instance name for each row.}
 
-\item{new_bags}{character or character vector.  Only relevant when fit with
+\item{new_bags}{A character or character vector.  Only relevant when fit with
 \code{smm.mild_df()}, which contains bag level information.  Can specify a
 singular character that provides the column name for the bag names in
 \code{new_data}, default = "bag_name".  Can also specify a vector of length
 \code{nrow(new_data)} that has bag name for each instance.}
 
-\item{kernel}{optional pre-computed kernel matrix at the instance level,
-default = NULL. This can be specified to speed up computations.  The rows
-should correspond to instances in the new data to predict, and columns
-should correspond to instances in the original training data.}
+\item{kernel}{An optional pre-computed kernel matrix at the instance level or
+\code{NULL} (default \code{NULL}). The rows should correspond to instances in the new
+data to predict, and columns should correspond to instances in the original
+training data, such as a call to \code{\link[=kme]{kme()}}.}
+
+\item{...}{Arguments passed to or from other methods.}
 }
 \value{
-tibble with \code{nrow(new_data)} rows.  If type = 'class', the tibble
-will have a column named '.pred_class'.  If type = 'raw', the tibble will
-have a column name '.pred'.
+tibble with \code{nrow(new_data)} rows.  If \code{type = 'class'}, the tibble
+will have a column named \code{.pred_class}.  If \code{type = 'raw'}, the tibble will
+have a column name \code{.pred}.
 }
 \description{
-Predict method for 'smm' object
+Predict method for \code{smm} object
+}
+\details{
+When the object was fitted using the \code{formula} method, then the parameters
+\code{new_bags} and \code{new_instances} are not necessary, as long as the names match
+the original function call.
 }
 \examples{
-# Some fake data
 set.seed(8)
 n_instances <- 10
 n_samples <- 20
@@ -68,6 +72,7 @@ x <- data.frame(x1 = rnorm(length(y), mean = 1*(y==1)),
 mdl <- smm(x, y, instances, control = list(sigma = 1/3))
 
 # instance level predictions (training data)
+suppressWarnings(library(dplyr))
 data.frame(instance_name = instances, y = y, x) \%>\%
   bind_cols(predict(mdl, type = "raw", new_data = x, new_instances = instances)) \%>\%
   bind_cols(predict(mdl, type = "class", new_data = x, new_instances = instances)) \%>\%
@@ -84,8 +89,11 @@ new_x <- data.frame(x1 = rnorm(length(new_inst), mean = 1*(new_inst=="11")),
 data.frame(instance_name = new_inst, y = new_y, new_x) \%>\%
   bind_cols(predict(mdl, type = "raw", new_data = new_x, new_instances = new_inst)) \%>\%
   bind_cols(predict(mdl, type = "class", new_data = new_x, new_instances = new_inst)) \%>\%
-    distinct(instance_name, y, .pred, .pred_class)
+  distinct(instance_name, y, .pred, .pred_class)
 
+}
+\seealso{
+\code{\link[=smm]{smm()}} for fitting the \code{smm} object.
 }
 \author{
 Sean Kent

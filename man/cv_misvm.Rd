@@ -2,23 +2,10 @@
 % Please edit documentation in R/cv_misvm.R
 \name{cv_misvm}
 \alias{cv_misvm}
-\alias{cv_misvm.formula}
 \alias{cv_misvm.default}
+\alias{cv_misvm.formula}
 \title{Fit MI-SVM model to the data using cross-validation}
 \usage{
-\method{cv_misvm}{formula}(
-  formula,
-  data,
-  cost_seq,
-  n_fold,
-  fold_id,
-  method = c("heuristic", "mip", "qp-heuristic"),
-  weights = TRUE,
-  control = list(kernel = "linear", sigma = 1, nystrom_args = list(m = nrow(x), r =
-    nrow(x), sampling = "random"), max_step = 500, type = "C-classification", scale =
-    TRUE, verbose = FALSE, time_limit = 60, start = FALSE)
-)
-
 \method{cv_misvm}{default}(
   x,
   y,
@@ -30,114 +17,121 @@
   weights = TRUE,
   control = list(kernel = "linear", sigma = 1, nystrom_args = list(m = nrow(x), r =
     nrow(x), sampling = "random"), max_step = 500, type = "C-classification", scale =
-    TRUE, verbose = FALSE, time_limit = 60, start = FALSE)
+    TRUE, verbose = FALSE, time_limit = 60, start = FALSE),
+  ...
 )
+
+\method{cv_misvm}{formula}(formula, data, cost_seq, n_fold, fold_id, ...)
 }
 \arguments{
-\item{formula}{a formula with specification \code{mi(y, bags) ~ x} which uses the
-\code{mi} function to create the bag-instance structure. This argument is an
-alternative to the \verb{x, y, bags} arguments, but requires the \code{data} argument.
-See examples.}
+\item{x}{A data.frame, matrix, or similar object of covariates, where each
+row represents a sample.}
 
-\item{data}{a data.frame or similar from which formula elements will be
-extracted.  Used only when the first argument is a formula object.}
+\item{y}{A numeric, character, or factor vector of bag labels for each
+instance.  Must satisfy \code{length(y) == nrow(x)}. Suggest that one of the
+levels is 1, '1', or TRUE, which becomes the positive class; otherwise, a
+positive class is chosen and a message will be supplied.}
 
-\item{cost_seq}{Sequence of \code{cost} argument in \code{misvm()}, default is 2^(-2:2).}
+\item{bags}{A vector specifying which instance belongs to each bag.  Can be a
+string, numeric, of factor.}
 
-\item{n_fold}{The number of folds. If this is specified, \code{fold_id} need not
-be specified.  Default is 5}
+\item{cost_seq}{A sequence of \code{cost} arguments (default \code{2^(-2:2)}) in
+\code{misvm()}.}
 
-\item{fold_id}{Ids for the specific the fold for each instance. Care must be
-taken to ensure that ids respect the bag structure to avoid information
+\item{n_fold}{The number of folds (default 5). If this is specified,
+\code{fold_id} need not be specified.}
+
+\item{fold_id}{The ids for the specific the fold for each instance. Care must
+be taken to ensure that ids respect the bag structure to avoid information
 leakage.  If \code{n_fold} is specified, \code{fold_id} will be computed
 automatically.}
 
-\item{method}{MI-SVM algorithm to use in fitting; default is 'heuristic',
-which employs an algorithm similar to Andrews et al. (2003). When \code{method}
-= 'mip', the novel MIP method will be used.  See details.}
+\item{method}{The algorithm to use in fitting (default  \code{'heuristic'}).  When
+\code{method = 'heuristic'}, which employs an algorithm similar to Andrews et
+al. (2003). When \code{method = 'mip'}, the novel MIP method will be used.  When
+\verb{method = 'qp-heuristic}, the heuristic algorithm is computed using the
+dual SVM.  See details.}
 
-\item{weights}{named vector, or TRUE, to control the weight of the cost
+\item{weights}{named vector, or \code{TRUE}, to control the weight of the cost
 parameter for each possible y value.  Weights multiply against the cost
-vector. If TRUE, weights are calculated based on inverse counts of
+vector. If \code{TRUE}, weights are calculated based on inverse counts of
 instances with given label, where we only count one positive instance per
 bag. Otherwise, names must match the levels of \code{y}.}
 
 \item{control}{list of additional parameters passed to the method that
 control computation with the following components:
 \itemize{
-\item \code{kernel} argument used when \code{method} = 'heuristic'.  The kernel function
-to be used for \code{e1071::svm}. Currently, only 'radial' is supported.
+\item \code{kernel} either a character the describes the kernel ('linear' or
+'radial') or a kernel matrix at the instance level.
 \item \code{sigma} argument needed for radial basis kernel.
-\item \code{max_step} argument used when \code{method} = 'heuristic'. Maximum steps of
+\item \code{nystrom_args} a list of parameters to pass to \code{\link[=kfm_nystrom]{kfm_nystrom()}}. This is
+used when \code{method = 'mip'} and \code{kernel = 'radial'} to generate a Nystrom
+approximation of the kernel features.
+\item \code{max_step} argument used when \code{method = 'heuristic'}. Maximum steps of
 iteration for the heuristic algorithm.
-\item \code{type} argument used when \code{method} = 'heuristic'. The \code{type} argument is
-passed to \code{e1071::svm}.
-\item \code{scale} argument used for all methods. Logical; whether to rescale
-the input before fitting
-\item \code{verbose} argument used when \code{method} = 'mip'. Whether to message output
+\item \code{type}: argument used when \code{method = 'heuristic'}. The \code{type} argument is
+passed to \code{e1071::svm()}.
+\item \code{scale} argument used for all methods. A logical for whether to rescale
+the input before fitting.
+\item \code{verbose} argument used when \code{method = 'mip'}. Whether to message output
 to the console.
-\item \code{time_limit} argument used when \code{method} = 'mip'. FALSE, or a time limit
-(in seconds) passed to \code{gurobi} parameters.  If FALSE< no time limit is
-given.
-\item \code{start} argument used when \code{method} = 'mip'.  If TRUE, the mip program
-will be warm_started with the solution from \code{method} = 'qp-heuristic' to
-improve speed.
+\item \code{time_limit} argument used when \code{method = 'mip'}. \code{FALSE}, or a time
+limit (in seconds) passed to \code{gurobi()} parameters.  If \code{FALSE}, no time
+limit is given.
+\item \code{start} argument used when \code{method = 'mip'}.  If \code{TRUE}, the mip program
+will be warm_started with the solution from \code{method = 'qp-heuristic'} to
+potentially improve speed.
 }}
 
-\item{x}{a data.frame, matrix, or similar object of covariates, where each
-row represents an instance.}
+\item{...}{Arguments passed to or from other methods.}
 
-\item{y}{a numeric, character, or factor vector of bag labels for each
-instance.  Must satisfy \code{length(y) == nrow(x)}. Suggest that one of the
-levels is 1, '1', of TRUE, which becomes the positive class in MI-SVM;
-otherwise, a positive class is chosen and a message will be supplied.}
+\item{formula}{a formula with specification \code{mi(y, bags) ~ x} which uses the
+\code{mi} function to create the bag-instance structure. This argument is an
+alternative to the \verb{x, y, bags} arguments, but requires the \code{data}
+argument. See examples.}
 
-\item{bags}{a vector specifying which instance belongs to each bag.  Can be
-a string, numeric, of factor.}
+\item{data}{If \code{formula} is provided, a data.frame or similar from which
+formula elements will be extracted.  Otherwise, a \code{mild_df} object from
+which \verb{x, y, bags, instances} are automatically extracted. If a \code{mild_df}
+object is used, all columns will be used as predictors.}
 }
 \value{
-an object of class 'cv_misvm'.  The object contains the following
+an object of class \code{cv_misvm}.  The object contains the following
 components:
 \itemize{
-\item \code{model}: a model of class 'misvm' trained on the full data with the
-cross-validated choice of cost parameter.   See \code{?misvm} for more details.
+\item \code{model}: a model of class \code{misvm} trained on the full data with the
+cross-validated choice of cost parameter.
 \item \code{cost_seq}: the input sequence of cost arguments
 \item \code{cost_aucs}: estimated AUC for the models trained for each \code{cost_seq}
-parameter.  These are the average of the fold models for that cost,
-excluding any folds that don't have both levels of \code{y} in the validation
-set.
-\item \code{best_cost}: The optimal choice of cost parameter, chosen as that which
-has the maximum AUC.  If there are ties, this will pick the smallest cost
-with maximum AUC.
+parameter.  These are the average of the fold models for that cost, excluding
+any folds that don't have both levels of \code{y} in the validation set.
+\item \code{best_cost}: The optimal choice of cost parameter, chosen as that which has
+the maximum AUC.  If there are ties, this will pick the smallest cost with
+maximum AUC.
 }
 }
 \description{
-Cross-validation wrapper on the \code{misvm()} function to fit the MI-SVM model
+Cross-validation wrapper on the \code{\link[=misvm]{misvm()}} function to fit the MI-SVM model
 over a variety of specified cost parameters.  The optimal cost parameter
 is chosen by the best AUC of the cross-fit models.  See \code{?misvm} for
 more details on the fitting function.
 }
 \section{Methods (by class)}{
 \itemize{
-\item \code{formula}: Method for passing formula
-
 \item \code{default}: Method for data.frame-like objects
+
+\item \code{formula}: Method for passing formula
 }}
 
 \examples{
 set.seed(8)
 mil_data <- generate_mild_df(
-  positive_dist = 'mvt',
-  negative_dist = 'mvnormal',
-  remainder_dist = 'mvnormal',
-  nbag = 20,
+  nbag = 10,
   nsample = 20,
-  positive_degree = 3,
-  positive_prob = 0.15,
-  positive_mean = rep(0, 5)
+  positive_degree = 3
 )
 df <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
-cost_seq <- 2^seq(-5, 7, length.out = 5)
+cost_seq <- 2^seq(-5, 7, length.out = 3)
 
 # Heuristic method
 mdl1 <- cv_misvm(x = df[, 4:123], y = df$bag_label,
@@ -156,12 +150,15 @@ if (require(gurobi)) {
 predict(mdl1, new_data = df, type = "raw", layer = "bag")
 
 # summarize predictions at the bag layer
-library(dplyr)
+suppressWarnings(library(dplyr))
 df \%>\%
   bind_cols(predict(mdl2, df, type = "class")) \%>\%
   bind_cols(predict(mdl2, df, type = "raw")) \%>\%
   distinct(bag_name, bag_label, .pred_class, .pred)
 
+}
+\seealso{
+\code{\link[=misvm]{misvm()}} for fitting without cross-validation.
 }
 \author{
 Sean Kent, Yifei Liu

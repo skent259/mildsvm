@@ -8,30 +8,24 @@ validate_mi <- function(x) {
   x
 }
 
-#' Create a mi object
+#' Create an `mi` object
 #'
-#' Create a `mi` object, usually used as a response variable in a model formula.
+#' Create an `mi` object, usually used as a response variable in a model
+#' formula.
 #'
-#' @param bag_label the bag label or response, recorded as 0 = negative, 1 = positive
-#' @param bag_name a unique bag identifier for each instance.
-#' @return An object of class `mi`.  Currently, no methods are implemented for this
+#' @param bag_label The bag label or response, recorded as 0 = negative, 1 =
+#'   positive.
+#' @param bag_name A unique bag identifier for each instance.
+#' @return An object of class `mi`.  Currently, no methods are implemented for
+#'   this.
 #' @examples
-#'
-#' mil_data <- generate_mild_df(
-#'   positive_dist = 'mvt',
-#'   negative_dist = 'mvnormal',
-#'   remainder_dist = 'mvnormal',
-#'   nbag = 50,
-#'   nsample = 20,
-#'   positive_degree = 3,
-#'   positive_prob = 0.15,
-#'   positive_mean = rep(0, 5)
-#' )
-#' with(mil_data, mi(bag_label, bag_name))
+#' mil_data <- generate_mild_df(positive_degree = 3, nbag = 10)
+#' with(mil_data, head(mi(bag_label, bag_name)))
 #' df <- get_all_vars(mi(bag_label, bag_name) ~ X1 + X2, data = mil_data)
 #' head(df)
 #'
 #' @export
+#' @family multiple instance formula helper functions
 #' @author Sean Kent
 mi <- function(bag_label, bag_name) {
   # TODO: figure out if the character matrix that gets returned will be a problem

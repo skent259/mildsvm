@@ -7,16 +7,16 @@
 kfm_exact(kernel = "polynomial", degree = 2, const = 1)
 }
 \arguments{
-\item{kernel}{a character determining the kernel to use.  Currently, only
-'radial' is implemented.}
+\item{kernel}{A character determining the kernel to use.  Currently, only
+\code{'radial'} is implemented.}
 
-\item{degree}{numeric (default 2), provides the degree for \code{kernel} =
-'polynomial'}
+\item{degree}{A numeric value (default 2) that provides the degree for
+\code{kernel} = 'polynomial'}
 
-\item{const}{numeric (default 1), constant term for \code{kernel} = 'polynomial'}
+\item{const}{A numeric value (default 1) for the constant term when \code{kernel = 'polynomial'}.}
 }
 \value{
-an object of class 'kfm_exact' with the following components,
+An object of class \code{kfm_exact} with the following components,
 returned from the inputs:
 \itemize{
 \item \code{kernel}
@@ -32,7 +32,7 @@ features.
 \details{
 Currently, the following kernels are supported:
 \itemize{
-\item 'polynomial', with \code{degree} = d and \code{const} = c
+\item \code{'polynomial'}, with \code{degree} = d and \code{const} = c
 }
 }
 \examples{
@@ -46,6 +46,11 @@ fit <- kfm_exact(kernel = "polynomial", degree = 2, const = 1)
 fm <- build_fm(fit, df)
 
 }
+\seealso{
+Other kernel feature map functions: 
+\code{\link{kfm_nystrom}()}
+}
 \author{
 Sean Kent
 }
+\concept{kernel feature map functions}

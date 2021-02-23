@@ -2,32 +2,53 @@
 % Please edit documentation in R/kme.R
 \name{kme}
 \alias{kme}
-\title{Function to calculate the kernel mean embedding matrix for two distributional data with a given kernel}
+\alias{kme.default}
+\alias{kme.mild_df}
+\title{Calculate the kernel mean embedding matrix}
 \usage{
-kme(df, df2 = NULL, sigma = 0.05)
+\method{kme}{default}(df, df2 = NULL, sigma = 0.05, ...)
+
+\method{kme}{mild_df}(df, df2 = NULL, sigma = 0.05, ...)
 }
 \arguments{
-\item{df}{A data.frame with first column being \code{instance_name} and the rest being features. Or a mild_df object.}
+\item{df}{A data.frame of \code{mild_df} object, must have column
+\code{'instance_name'} which defines the instances.}
 
-\item{df2}{If \code{df2} is null, the inner embedding of \code{df} and itself will be calculated. Otherwise \code{df2} is a data.frame with first column being \code{instance_name} and the rest being features. Or a mild_df object.}
+\item{df2}{A data.frame, \code{mild_df} object, or \code{NULL} (default \code{NULL}).}
 
-\item{sigma}{The parameter for rbf kernel.}
+\item{sigma}{The parameter for \code{'radial'} kernel (default \code{0.05}).}
+
+\item{...}{Additional arguments passed to methods.}
 }
 \value{
-A matrix K of number of unique instance labels in df by that in df2.
+A matrix of kernel mean embedding at the instance level.
 }
 \description{
-Function to calculate the kernel mean embedding for to distributional data sets. It uses the empirical approximation for the integral
-\deqn{\int_{\mathcal X} \int_{\mathcal Y} K(x, y) d P_X d Q_Y },
-for a given kernel \eqn{K(\cdot, \cdot)}. Currently only supports radial basis function kernel for fast computation.
+Function to calculate the kernel mean embedding for to distributional data
+sets. It uses the empirical approximation for the integral
+\deqn{\int_{\mathcal X} \int_{\mathcal Y} K(x, y) d P_X d Q_Y } for a given
+kernel \eqn{K(\cdot, \cdot)}. Currently only supports radial basis function
+kernel for fast computation.
 }
+\details{
+If \code{df2 = NULL}, calculate the kernel mean embedding matrix of (\code{df}, \code{df})
+otherwise calculate (\code{df}, \code{df2})
+}
+\section{Methods (by class)}{
+\itemize{
+\item \code{default}: Default S3 method
+
+\item \code{mild_df}: S3 method for class \code{mild_df}
+}}
+
 \examples{
-mild_df1 <- generate_mild_df(positive_dist = 'mvt',
-                             negative_dist = 'mvnormal',
-                             remainder_dist = 'mvnormal',
-                             nbag = 10,
-                             positive_degree = 3)
-K <- kme(mild_df1)
+x = data.frame('instance_name' = c('inst_1', 'inst_2', 'inst_1'),
+               'X1' = c(-0.4, 0.5, 2))
+kme(x)
+
+mild_df1 <- generate_mild_df(nbag = 10, positive_degree = 3)
+kme(mild_df1)
+
 }
 \author{
 Yifei Liu, Sean Kent

@@ -11,12 +11,20 @@ Encoding: UTF-8
 LazyData: true
 Imports:
     stats, 
+    tibble,
+    rlang,
+    tidyr,
     dplyr,
+    purrr, 
+    magrittr,
     e1071,
     kernlab,
     mvtnorm,
     pROC
 Suggests: 
-    testthat
+    testthat,
+    gurobi,  
+    utils,
+    Matrix
 RoxygenNote: 7.1.1
 Roxygen: list(markdown = TRUE)

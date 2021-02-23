@@ -15,47 +15,44 @@ validate_cv_misvm <- function(x) {
 
 #' Fit MI-SVM model to the data using cross-validation
 #'
-#' Cross-validation wrapper on the `misvm()` function to fit the MI-SVM model
+#' Cross-validation wrapper on the [misvm()] function to fit the MI-SVM model
 #'   over a variety of specified cost parameters.  The optimal cost parameter
 #'   is chosen by the best AUC of the cross-fit models.  See `?misvm` for
 #'   more details on the fitting function.
 #'
 #' @inheritParams misvm
-#' @param cost_seq Sequence of `cost` argument in `misvm()`, default is 2^(-2:2).
-#' @param n_fold The number of folds. If this is specified, `fold_id` need not
-#'   be specified.  Default is 5
-#' @param fold_id Ids for the specific the fold for each instance. Care must be
-#'   taken to ensure that ids respect the bag structure to avoid information
+#' @param cost_seq A sequence of `cost` arguments (default `2^(-2:2)`) in
+#'   `misvm()`.
+#' @param n_fold The number of folds (default 5). If this is specified,
+#'   `fold_id` need not be specified.
+#' @param fold_id The ids for the specific the fold for each instance. Care must
+#'   be taken to ensure that ids respect the bag structure to avoid information
 #'   leakage.  If `n_fold` is specified, `fold_id` will be computed
 #'   automatically.
 #'
-#' @return an object of class 'cv_misvm'.  The object contains the following
+#' @return an object of class `cv_misvm`.  The object contains the following
 #'   components:
-#'   - `model`: a model of class 'misvm' trained on the full data with the
-#'   cross-validated choice of cost parameter.   See `?misvm` for more details.
-#'   - `cost_seq`: the input sequence of cost arguments
-#'   - `cost_aucs`: estimated AUC for the models trained for each `cost_seq`
-#'   parameter.  These are the average of the fold models for that cost,
-#'   excluding any folds that don't have both levels of `y` in the validation
-#'   set.
-#'   - `best_cost`: The optimal choice of cost parameter, chosen as that which
-#'   has the maximum AUC.  If there are ties, this will pick the smallest cost
-#'   with maximum AUC.
+#' * `model`: a model of class `misvm` trained on the full data with the
+#' cross-validated choice of cost parameter.
+#' * `cost_seq`: the input sequence of cost arguments
+#' * `cost_aucs`: estimated AUC for the models trained for each `cost_seq`
+#' parameter.  These are the average of the fold models for that cost, excluding
+#' any folds that don't have both levels of `y` in the validation set.
+#' * `best_cost`: The optimal choice of cost parameter, chosen as that which has
+#' the maximum AUC.  If there are ties, this will pick the smallest cost with
+#' maximum AUC.
+#'
+#' @seealso [misvm()] for fitting without cross-validation.
 #'
 #' @examples
 #' set.seed(8)
 #' mil_data <- generate_mild_df(
-#'   positive_dist = 'mvt',
-#'   negative_dist = 'mvnormal',
-#'   remainder_dist = 'mvnormal',
-#'   nbag = 20,
+#'   nbag = 10,
 #'   nsample = 20,
-#'   positive_degree = 3,
-#'   positive_prob = 0.15,
-#'   positive_mean = rep(0, 5)
+#'   positive_degree = 3
 #' )
 #' df <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
-#' cost_seq <- 2^seq(-5, 7, length.out = 5)
+#' cost_seq <- 2^seq(-5, 7, length.out = 3)
 #'
 #' # Heuristic method
 #' mdl1 <- cv_misvm(x = df[, 4:123], y = df$bag_label,
@@ -74,25 +71,27 @@ validate_cv_misvm <- function(x) {
 #' predict(mdl1, new_data = df, type = "raw", layer = "bag")
 #'
 #' # summarize predictions at the bag layer
-#' library(dplyr)
+#' suppressWarnings(library(dplyr))
 #' df %>%
 #'   bind_cols(predict(mdl2, df, type = "class")) %>%
 #'   bind_cols(predict(mdl2, df, type = "raw")) %>%
 #'   distinct(bag_name, bag_label, .pred_class, .pred)
 #'
 #' @author Sean Kent, Yifei Liu
+#' @importFrom magrittr %>%
 #' @name cv_misvm
 NULL
 
 #' @export
-cv_misvm <- function(x, y, bags, ...) {
+cv_misvm <- function(x, ...) {
   UseMethod("cv_misvm")
 }
 
-#' @describeIn cv_misvm Method for passing formula
+#' @describeIn cv_misvm Method for data.frame-like objects
 #' @export
-cv_misvm.formula <- function(formula, data, cost_seq, n_fold, fold_id,
-                             method = c("heuristic", "mip", "qp-heuristic"), weights = TRUE,
+cv_misvm.default <- function(x, y, bags, cost_seq, n_fold, fold_id,
+                             method = c("heuristic", "mip", "qp-heuristic"),
+                             weights = TRUE,
                              control = list(kernel = "linear",
                                             sigma = 1,
                                             nystrom_args = list(m = nrow(x), r = nrow(x), sampling = 'random'),
@@ -101,50 +100,11 @@ cv_misvm.formula <- function(formula, data, cost_seq, n_fold, fold_id,
                                             scale = TRUE,
                                             verbose = FALSE,
                                             time_limit = 60,
-                                            start = FALSE)) {
+                                            start = FALSE),
+                             ...)
+{
 
-  mi_names <- as.character(stats::terms(formula, data = data)[[2]])
-  bag_label <- mi_names[[2]]
-  bag_name <- mi_names[[3]]
-
-  predictors <- setdiff(colnames(data), c(bag_label, bag_name))
-
-  x <- model.matrix(formula[-2], data = data[, predictors])
-  if (attr(stats::terms(formula, data = data), "intercept") == 1) x <- x[, -1, drop = FALSE]
-  x <- as.data.frame(x)
-
-  response <- stats::get_all_vars(formula, data = data)
-  y <- response[, 1]
-  bags <- response[, 2]
-
-  res <- cv_misvm.default(x, y, bags, cost_seq = cost_seq, n_fold = n_fold,
-                          fold_id = fold_id, method = method, weights = weights,
-                          control = control)
-
-  # TODO: may need to adjust these outputs and put them in the model
-  res$model$call_type <- "misvm.formula"
-  res$model$formula <- formula
-  res$model$bag_name <- bag_name
-  res$call_type <- "cv_misvm.formula"
-  return(res)
-
-}
-
-#' @describeIn cv_misvm Method for data.frame-like objects
-#' @export
-cv_misvm.default <- function(x, y, bags, cost_seq, n_fold, fold_id,
-                          method = c("heuristic", "mip", "qp-heuristic"), weights = TRUE,
-                          control = list(kernel = "linear",
-                                         sigma = 1,
-                                         nystrom_args = list(m = nrow(x), r = nrow(x), sampling = 'random'),
-                                         max_step = 500,
-                                         type = "C-classification",
-                                         scale = TRUE,
-                                         verbose = FALSE,
-                                         time_limit = 60,
-                                         start = FALSE)) {
-
-  method = match.arg(method)
+  method = match.arg(method, c("heuristic", "mip", "qp-heuristic"))
   if (!missing(n_fold) & !missing(fold_id)) {
     message("Both n_fold and fold_id are supplied, ignoring n_fold in favor of fold_id")
   }
@@ -155,7 +115,7 @@ cv_misvm.default <- function(x, y, bags, cost_seq, n_fold, fold_id,
   y <- y_info$y
   lev <- y_info$lev
 
-  ## weights
+  # weights
   if (is.numeric(weights)) {
     stopifnot(names(weights) == lev | names(weights) == rev(lev))
     weights <- weights[lev]
@@ -189,10 +149,9 @@ cv_misvm.default <- function(x, y, bags, cost_seq, n_fold, fold_id,
       if (length(unique(y[val])) != 2) {
         aucs[i, fold] <- NA
       } else {
-        suppressMessages({
-          aucs[i, fold] <- pROC::auc(response = classify_bags(y[val], bags[val]),
-                                     predictor = classify_bags(pred_i_fold$.pred, bags[val]))
-        })
+        aucs[i, fold] <- pROC::auc(response = classify_bags(y[val], bags[val]),
+                                   predictor = classify_bags(pred_i_fold$.pred, bags[val]),
+                                   levels = c(0,1), direction = "<")
       }
     }
   }
@@ -212,47 +171,71 @@ cv_misvm.default <- function(x, y, bags, cost_seq, n_fold, fold_id,
   new_cv_misvm(res, method = method)
 }
 
+#' @describeIn cv_misvm Method for passing formula
+#' @export
+cv_misvm.formula <- function(formula, data, cost_seq, n_fold, fold_id, ...) {
+  mi_names <- as.character(stats::terms(formula, data = data)[[2]])
+  bag_label <- mi_names[[2]]
+  bag_name <- mi_names[[3]]
 
-#' Predict method for 'cv_misvm' object
+  predictors <- setdiff(colnames(data), c(bag_label, bag_name))
+
+  x <- stats::model.matrix(formula[-2], data = data[, predictors])
+  if (attr(stats::terms(formula, data = data), "intercept") == 1) x <- x[, -1, drop = FALSE]
+  x <- as.data.frame(x)
+
+  response <- stats::get_all_vars(formula, data = data)
+  y <- response[, 1]
+  bags <- response[, 2]
+
+  res <- cv_misvm.default(x, y, bags, cost_seq = cost_seq, n_fold = n_fold,
+                          fold_id = fold_id, ...)
+
+  # TODO: may need to adjust these outputs and put them in the model
+  res$model$call_type <- "misvm.formula"
+  res$model$formula <- formula
+  res$model$bag_name <- bag_name
+  res$call_type <- "cv_misvm.formula"
+  return(res)
+}
+
+#' Predict method for `cv_misvm` object
 #'
-#' @param object an object of class 'cv_misvm'
+#' @param object An object of class `cv_misvm`.
 #' @inheritParams predict.misvm
 #'
-#' @return tibble with `nrow(new_data)` rows.  If type = 'class', the tibble
-#'   will have a column '.pred_class'.  If type = 'raw', the tibble will have
+#' @return A tibble with `nrow(new_data)` rows.  If `type = 'class'`, the tibble
+#'   will have a column '.pred_class'.  If `type = 'raw'`, the tibble will have
 #'   a column '.pred'.
 #'
 #' @examples
 #' mil_data <- generate_mild_df(
-#'   positive_dist = 'mvt',
-#'   negative_dist = 'mvnormal',
-#'   remainder_dist = 'mvnormal',
-#'   nbag = 20,
+#'   nbag = 10,
 #'   nsample = 20,
-#'   positive_degree = 3,
-#'   positive_prob = 0.15,
-#'   positive_mean = rep(0, 5)
+#'   positive_degree = 3
 #' )
 #' df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
-#' mdl1 <- cv_misvm(x = df[, 4:123], y = df$bag_label,
-#'                  bags = df$bag_name, cost_seq = cost_seq,
+#' mdl1 <- cv_misvm(x = df1[, 4:123], y = df1$bag_label,
+#'                  bags = df1$bag_name, cost_seq = 2^(-2:2),
 #'                  n_fold = 3, method = "heuristic")
-#'
 #'
 #' predict(mdl1, new_data = df1, type = "raw", layer = "bag")
 #'
 #' # summarize predictions at the bag layer
-#' library(dplyr)
+#' suppressWarnings(library(dplyr))
 #' df1 %>%
-#'   bind_cols(predict(mdl2, df, type = "class")) %>%
-#'   bind_cols(predict(mdl2, df, type = "raw")) %>%
+#'   bind_cols(predict(mdl1, df1, type = "class")) %>%
+#'   bind_cols(predict(mdl1, df1, type = "raw")) %>%
 #'   distinct(bag_name, bag_label, .pred_class, .pred)
 #'
 #' @export
 #' @author Sean Kent
 predict.cv_misvm <- function(object, new_data,
-                          type = c("class", "raw"), layer = c("bag", "instance"),
-                          new_bags = "bag_name") {
+                             type = c("class", "raw"),
+                             layer = c("bag", "instance"),
+                             new_bags = "bag_name",
+                             ...)
+{
   type <- match.arg(type)
   layer <- match.arg(layer)
 

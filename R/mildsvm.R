@@ -16,106 +16,82 @@ validate_mildsvm <- function(x) {
 #' Fit MILD-SVM model to the data
 #'
 #' This function fits the MILD-SVM model, which takes a multiple-instance
-#' learning with distributions (MILD) dataset and fits a modified SVM to it.  A
-#' core feature of MILD data is that we have multiple levels: bags which contain
-#' instances, instances which we think of as distributions with samples, and
-#' finally samples that comprise the rows of the data. The MILD-SVM methodology
-#' is based on research in progress. Several choices of fitting algorithm are
-#' available, including a version of the heuristic algorithm proposed by Andrews
-#' et al. (2003) and a novel algorithm that explicitly solves the mixed-integer
-#' programming (MIP) problem using the `gurobi` optimization back-end.
+#' learning with distributions (MILD) data set and fits a modified SVM to it.
+#' The MILD-SVM methodology is based on research in progress.
 #'
-#' @param x a data.frame, matrix, or similar object of covariates, where each
-#'   row represents a sample.
-#' @param y a numeric, character, or factor vector of bag labels for each
-#'   instance.  Must satisfy `length(y) == nrow(x)`. Suggest that one of the
-#'   levels is 1, '1', or TRUE, which becomes the positive class;
-#'   otherwise, a positive class is chosen and a message will be supplied.
-#' @param bags a vector specifying which instance belongs to each bag.  Can be a
-#'   string, numeric, of factor.
-#' @param instances a vector specifying which samples belong to each instance.
+#' Several choices of fitting algorithm are available, including a version of
+#' the heuristic algorithm proposed by Andrews et al. (2003) and a novel
+#' algorithm that explicitly solves the mixed-integer programming (MIP) problem
+#' using the gurobi package optimization back-end.
+#'
+#' @inheritParams misvm
+#' @param instances A vector specifying which samples belong to each instance.
 #'   Can be a string, numeric, of factor.
-#' @param formula a formula with specification `mild(y, bags, instances) ~ x`
+#' @param formula A formula with specification `mild(y, bags, instances) ~ x`
 #'   which uses the `mild` function to create the bag-instance structure. This
 #'   argument is an alternative to the `x, y, bags, instances ` arguments, but
 #'   requires the `data` argument. See examples.
-#' @param data If `formula` is provided, a data.frame or similar from which
-#'   formula elements will be extracted.  Otherwise, a 'mild_df' object from
-#'   which `x, y, bags, instances` are automatically extracted. If a 'mild_df'
-#'   object is used, all columns will be used as predictors.
-#' @param cost The cost parameter in SVM. If `method` = 'heuristic', this will
-#'   be fed to `kernlab::ksvm`, otherwise it is similarly in internal functions.
-#' @param method MILD-SVM algorithm to use in fitting; default is 'heuristic',
-#'   which employs an algorithm similar to Andrews et al. (2003). When `method`
-#'   = 'mip', the novel MIP method will be used.  See details.
-#' @param weights named vector, or TRUE, to control the weight of the cost
-#'   parameter for each possible y value.  Weights multiply against the cost
-#'   vector. If TRUE, weights are calculated based on inverse counts of
-#'   instances with given label, where we only count one positive instance per
-#'   bag. Otherwise, names must match the levels of `y`.
 #' @param control list of additional parameters passed to the method that
 #'   control computation with the following components:
-#'   - `kernel` either a character the describes the kernel ('linear' or
+#'   * `kernel` either a character the describes the kernel ('linear' or
 #'   'radial') or a kernel matrix at the instance level.
-#'   - `sigma` argument needed for radial basis kernel.
-#'   - `nystrom_args` a list of parameters to pass to `kfm_nystrom` function,
-#'   used when `method` = 'mip' and `kernel` = 'radial' to generate a nystrom
+#'   * `sigma` argument needed for radial basis kernel.
+#'   * `nystrom_args` a list of parameters to pass to [kfm_nystrom()]. This is
+#'   used when `method = 'mip'` and `kernel = 'radial'` to generate a Nystrom
 #'   approximation of the kernel features.
-#'   - `max_step` argument used when `method` = 'heuristic'. Maximum steps of
+#'   * `max_step` argument used when `method = 'heuristic'`. Maximum steps of
 #'   iteration for the heuristic algorithm.
-#'   - `scale` argument used for all methods. Logical; whether to rescale the
-#'   input before fitting.
-#'   - `verbose` argument used when `method` = 'mip'. Whether to message output
+#'   * `scale` argument used for all methods. A logical for whether to rescale
+#'   the input before fitting.
+#'   * `verbose` argument used when `method = 'mip'`. Whether to message output
 #'   to the console.
-#'   - `time_limit` argument used when `method` = 'mip'. FALSE, or a time limit
-#'   (in seconds) passed to `gurobi` parameters.  If FALSE, no time limit is
-#'   given.
-#'   - `start` argument used when `method` = 'mip'.  If TRUE, the mip program
-#'   will be warm_started with the solution from `method` = 'qp-heuristic' to
+#'   * `time_limit` argument used when `method = 'mip'`. `FALSE`, or a time
+#'   limit (in seconds) passed to `gurobi()` parameters.  If `FALSE`, no time
+#'   limit is given.
+#'   * `start` argument used when `method = 'mip'`.  If `TRUE`, the mip program
+#'   will be warm_started with the solution from `method = 'qp-heuristic'` to
 #'   potentially improve speed.
 #'
-#' @return an object of class 'mildsvm'.  The object contains the following
+#' @return an object of class `mildsvm`.  The object contains the following
 #'   components, if applicable:
-#'   - `model`: a model that will depend on the method used to fit.
+#'   * `model`: a model that will depend on the method used to fit.
 #'   It holds the main model components used for prediction.  If the model is
-#'   fit with method = 'heuristic', this object is of class 'smm'.
-#'   - `total_step`: the number of steps used in the heuristic algorithm, if
+#'   fit with `method = 'heuristic'`, this object is of class `smm`.
+#'   * `total_step`: the number of steps used in the heuristic algorithm, if
 #'   applicable.
-#'   - `representative_inst`: instances from positive bags that
-#'   are selected to be most representative of the positive instance.
-#'   - `traindata`: training data from the underlying fitting.  This data will
+#'   * `representative_inst`: instances from positive bags that are selected to
+#'   be most representative of the positive instance.
+#'   * `traindata`: training data from the underlying fitting.  This data will
 #'   get used when computing the kernel matrix for prediction.
-#'   - `useful_inst_idx`: The instances that were selected to represent the bags
+#'   * `useful_inst_idx`: The instances that were selected to represent the bags
 #'    in the heuristic fitting.
-#'   - `features`: the features used for prediction.
-#'   - `call_type`: the call type, which specifies whether `mildsvm()`
-#'   was called via the formula, data.frame, of mild_df method.
-#'   - `levels`: levels of `y` that are recorded for future prediction.
-#'   - `bag_name`: the name of the column used for bags, if the formula or
+#'   * `features`: the features used for prediction.
+#'   * `call_type`: the call type, which specifies whether `mildsvm()` was
+#'   called via the formula, data.frame, of mild_df method.
+#'   * `levels`: levels of `y` that are recorded for future prediction.
+#'   * `bag_name`: the name of the column used for bags, if the formula or
 #'   mild_df method is applied.
-#'   - `instance_name`: the name of the column used for instances, if the
-#'   formula or mild_df method is applied.
-#'   - `kfm_fit`: the fit from building nystrom features, if method = 'mip' and
-#'   kernel = 'radial'.  This is used for prediction.
-#'   - `center`: values used to center x, if `scale` = TRUE.
-#'   - `scale`: values used to scale x, if `scale` = TRUE.
+#'   * `instance_name`: the name of the column used for instances, if the
+#'   `formula` or `mild_df` method is applied.
+#'   * `kfm_fit`: the fit from building Nystrom features, if `method = 'mip'` and
+#'   `kernel = 'radial'`.  This is used for prediction.
+#'   * `center`: values used to center `x`, if `scale = TRUE`.
+#'   * `scale`: values used to scale `x`, if `scale = TRUE`.
+#'
+#' @seealso [predict.mildsvm()] for prediction on new data.
 #'
 #' @examples
 #' set.seed(8)
-#' mil_data <- generate_mild_df(positive_dist = 'mvt',
-#'                              negative_dist = 'mvnormal',
-#'                              remainder_dist = 'mvnormal',
-#'                              nbag = 15,
-#'                              positive_degree = 3,
-#'                              nsample = 20
-#' )
+#' mil_data <- generate_mild_df(nbag = 15, nsample = 20, positive_degree = 3)
+#'
 #' # Heuristic method
 #' mdl1 <- mildsvm(mil_data)
-#' mdl2 <- mildsvm(mild(bag_label, bag_name, instance_name) ~ X1 + X2 + X3., data = mil_data)
+#' mdl2 <- mildsvm(mild(bag_label, bag_name, instance_name) ~ X1 + X2 + X3, data = mil_data)
 #'
+#' # MIP method
 #' if (require(gurobi)) {
-#'   foo <- mildsvm(mil_data, method = "mip", control = list(nystrom_args = list(m = 10, r = 10)))
-#'   predict(foo, mil_data)
+#'   mdl3 <- mildsvm(mil_data, method = "mip", control = list(nystrom_args = list(m = 10, r = 10)))
+#'   predict(mdl3, mil_data)
 #' }
 #'
 #' predict(mdl1, new_data = mil_data, type = "raw", layer = "bag")
@@ -133,46 +109,8 @@ validate_mildsvm <- function(x) {
 NULL
 
 #' @export
-mildsvm <- function(x, y, bags, instances, ...) {
+mildsvm <- function(x, ...) {
     UseMethod("mildsvm")
-}
-
-#' @describeIn mildsvm Method for passing formula
-#' @export
-mildsvm.formula <- function(formula, data, cost = 1,
-                            method = c("heuristic", "mip"),
-                            weights = TRUE,
-                            control = list(kernel = "radial",
-                                           sigma = 1,
-                                           nystrom_args = list(m = nrow(x), r = nrow(x), sampling = 'random'),
-                                           max_step = 500,
-                                           scale = TRUE,
-                                           verbose = FALSE,
-                                           time_limit = 60,
-                                           start = FALSE)) {
-    # NOTE: other 'professional' functions use a different type of call that I
-    #   couldn't get to work. See https://github.com/therneau/survival/blob/master/R/survfit.R
-    #   or https://github.com/cran/e1071/blob/master/R/svm.R
-    #   right now we're using something that should work for most generic formulas
-    method <- match.arg(method)
-
-    mi_names <- as.character(stats::terms(formula, data = data)[[2]])
-    bag_name <- mi_names[[3]]
-    instance_name <- mi_names[[4]]
-
-    x <- x_from_mild_formula(formula, data)
-    response <- stats::get_all_vars(formula, data = data)
-    y <- response[, 1]
-    bags <- response[, 2]
-    instances <- response[, 3]
-
-    res <- mildsvm.default(x, y, bags, instances, cost = cost, method = method, weights = weights, control = control)
-
-    res$call_type <- "mildsvm.formula"
-    res$formula <- formula
-    res$bag_name <- bag_name
-    res$instance_name <- instance_name
-    return(res)
 }
 
 #' @describeIn mildsvm Method for data.frame-like objects
@@ -181,14 +119,15 @@ mildsvm.default <- function(x, y, bags, instances, cost = 1,
                             method = c("heuristic", "mip"),
                             weights = TRUE,
                             control = list(kernel = "radial",
-                                           sigma = 1,
+                                           sigma = if (is.vector(x)) 1 else 1 / ncol(x),
                                            nystrom_args = list(m = nrow(x), r = nrow(x), sampling = 'random'),
                                            max_step = 500,
                                            scale = TRUE,
                                            verbose = FALSE,
                                            time_limit = 60,
-                                           start = FALSE)) {
-
+                                           start = FALSE),
+                            ...)
+{
     method <- match.arg(method)
     if ("kernel" %ni% names(control)) control$kernel <- "radial"
     if ("sigma" %ni% names(control)) control$sigma <- 1
@@ -213,22 +152,23 @@ mildsvm.default <- function(x, y, bags, instances, cost = 1,
     col_x <- colnames(x)
     x <- as.data.frame(x)
 
-    ## weights
+    # weights
     if (is.numeric(weights)) {
         stopifnot(names(weights) == lev | names(weights) == rev(lev))
         weights <- weights[lev]
         names(weights) <- c("-1", "1")
     } else if (weights) {
         bag_labels <- sapply(split(y, factor(bags)), unique)
-        weights <- c("-1" = sum(bag_labels == 1) / sum(y == 0), "1" = 1)
+        inst_labels <- sapply(split(y, factor(instances)), unique)
+        weights <- c("-1" = sum(bag_labels == 1) / sum(inst_labels == 0), "1" = 1)
     } else {
         weights <- NULL
     }
 
-    ## kernel
-    is_matrix_kernel <- inherits(control$kernel, "matrix")
+    # kernel
+    is_matrix_kernel <- is.matrix(control$kernel)
     n_instances <- length(unique(instances))
-    if (control$kernel != "radial" && !is_matrix_kernel) {
+    if (all(control$kernel != "radial") && !is_matrix_kernel) {
         warning("control$kernel must either be 'radial' or a square matrix.  Defaulting to 'radial'.")
         control$kernel <- "radial"
     } else if (method == "mip" && is_matrix_kernel) {
@@ -242,7 +182,7 @@ mildsvm.default <- function(x, y, bags, instances, cost = 1,
     }
 
     if (method == "mip" && control$kernel == "radial") {
-        ## Nystrom approximation to x for mip and qp-heuristic methods
+        # Nystrom approximation to x for mip and qp-heuristic methods
         control$nystrom_args$df <- x
         control$nystrom_args$kernel <- control$kernel
         control$nystrom_args$sigma <- control$sigma
@@ -265,14 +205,14 @@ mildsvm.default <- function(x, y, bags, instances, cost = 1,
         r <- .reorder(y, bags, x, instances)
 
         data <- as_mild_df(cbind(bag_label = y[r$order],
-                              bag_name = bags[r$order],
-                              instance_name = instances[r$order],
-                              x[r$order, , drop = FALSE]))
-        data <- dplyr::arrange(data, bag_label, bag_name, instance_name)
+                                 bag_name = bags[r$order],
+                                 instance_name = instances[r$order],
+                                 x[r$order, , drop = FALSE]))
+        data <- dplyr::arrange(data, .data$bag_label, .data$bag_name, .data$instance_name)
 
         inst_order <- match(unique(instances[r$order]), unique(instances))
         if (is.matrix(control$kernel)) {
-            control$kernel <- control$kernel[inst_order, inst_order]
+            control$kernel <- control$kernel[inst_order, inst_order, drop = FALSE]
         }
 
         res <- mil_distribution(data,
@@ -321,28 +261,46 @@ mildsvm.default <- function(x, y, bags, instances, cost = 1,
     new_mildsvm(res, method = method)
 }
 
-#' @describeIn mildsvm Method for mild_df objects
+#' @describeIn mildsvm Method for passing formula
 #' @export
-mildsvm.mild_df <- function(data, cost = 1,
-                            method = c("heuristic", "mip"),
-                            weights = TRUE,
-                            control = list(kernel = "radial",
-                                           sigma = 1,
-                                           nystrom_args = list(m = nrow(x), r = nrow(x), sampling = 'random'),
-                                           max_step = 500,
-                                           scale = TRUE,
-                                           verbose = FALSE,
-                                           time_limit = 60,
-                                           start = FALSE))
-{
-    method <- match.arg(method)
+mildsvm.formula <- function(formula, data, ...) {
+    # NOTE: other 'professional' functions use a different type of call that I
+    #   couldn't get to work. See https://github.com/therneau/survival/blob/master/R/survfit.R
+    #   or https://github.com/cran/e1071/blob/master/R/svm.R
+    #   right now we're using something that should work for most generic formulas
 
-    x <- as.data.frame(subset(data, select = -c(bag_label, bag_name, instance_name)))
+    mi_names <- as.character(stats::terms(formula, data = data)[[2]])
+    bag_name <- mi_names[[3]]
+    instance_name <- mi_names[[4]]
+
+    x <- x_from_mild_formula(formula, data)
+    response <- stats::get_all_vars(formula, data = data)
+    y <- response[, 1]
+    bags <- response[, 2]
+    instances <- response[, 3]
+
+    res <- mildsvm.default(x, y, bags, instances, ...)
+
+    res$call_type <- "mildsvm.formula"
+    res$formula <- formula
+    res$bag_name <- bag_name
+    res$instance_name <- instance_name
+    return(res)
+}
+
+
+#' @describeIn mildsvm Method for `mild_df` objects
+#' @export
+mildsvm.mild_df <- function(data, ...) {
+
+    # x <- as.data.frame(subset(data, select = -c(bag_label, bag_name, instance_name)))
+    x <- data
+    x$bag_label <- x$bag_name <- x$instance_name <- NULL
     y <- data$bag_label
     bags <- data$bag_name
     instances <- data$instance_name
 
-    res <- mildsvm.default(x, y, bags, instances, cost, method, weights, control)
+    res <- mildsvm.default(x, y, bags, instances, ...)
     res$call_type <- "mildsvm.mild_df"
     # res$formula <- formula
     res$bag_name <- "bag_name"
@@ -350,47 +308,42 @@ mildsvm.mild_df <- function(data, cost = 1,
     return(res)
 }
 
-#' Predict method for 'mildsvm' object
-#' @param object an object of class mildsvm
-#' @param new_data matrix to predict from.  Needs to have the same number of
-#'   columns as the X that trained the mildsvm object
-#' @inheritParams predict.misvm
-#' @param new_bags character or character vector.  Can specify a singular
-#'   character that provides the column name for the bag names in `new_data`,
-#'   default = "bag_name".  Can also specify a vector of length `nrow(new_data)`
-#'   that has bag name for each instance.  When `object` was fitted with
-#'   `mildsvm.formula`, this parameter is not necessary as the bag name can be
-#'   pulled directly from new_data, if available.
-#' @param new_instances character or character vector.  Can specify a singular
-#'   character that provides the column name for the instance names in
-#'   `new_data`, default = "instance_name".  Can also specify a vector of length
-#'   `nrow(new_data)` that has instance name for each row.  When `object` was
-#'   fitted with `mildsvm.formula`, this parameter is not necessary as the bag
-#'   name can be pulled directly from new_data, if available.
-#' @param kernel optional pre-computed kernel matrix at the instance level,
-#'   default = NULL. This can be specified to speed up computations.  The rows
-#'   should correspond to instances in the new data to predict, and columns
-#'   should correspond to instances in the original training data.
+#' Predict method for `mildsvm` object
 #'
-#' @return tibble with `nrow(new_data)` rows.  If type = 'class', the tibble
-#'   will have a column '.pred_class'.  If type = 'raw', the tibble will have a
-#'   column '.pred'.
+#' @details
+#' When the object was fitted using the `formula` method, then the parameters
+#' `new_bags` and `new_instances` are not necessary, as long as the names match
+#' the original function call.
+#'
+#' @inheritParams predict.misvm
+#' @param object An object of class `mildsvm`.
+#' @param new_instances A character or character vector.  Can specify a singular
+#'   character that provides the column name for the instance names in
+#'   `new_data` (default `'instance_name'`).  Can also specify a vector of length
+#'   `nrow(new_data)` that has instance name for each row.
+#' @param kernel An optional pre-computed kernel matrix at the instance level or
+#'   `NULL` (default `NULL`). The rows should correspond to instances in the new
+#'   data to predict, and columns should correspond to instances in the original
+#'   training data, such as a call to [kme()].
+#'
+#' @return A tibble with `nrow(new_data)` rows.  If `type = 'class'`, the tibble
+#'   will have a column `.pred_class`.  If `type = 'raw'`, the tibble will have
+#'   a column `.pred`.
+#'
+#' @seealso [mildsvm()] for fitting the `mildsvm` object.
 #'
 #' @examples
 #' mil_data <- generate_mild_df(
-#'     positive_dist = 'mvt',
-#'     negative_dist = 'mvnormal',
-#'     remainder_dist = 'mvnormal',
 #'     nbag = 20,
 #'     ncov = 5,
-#'     nsample = 50,
 #'     positive_degree = 3,
 #'     positive_mean = rep(5, 5)
 #' )
 #'
-#' mdl1 <- mildsvm(mil_data, control = list(sigma = 0.05))
+#' mdl1 <- mildsvm(mil_data, control = list(sigma = 1/5))
 #'
 #' # bag level predictions
+#' library(dplyr)
 #' mil_data %>%
 #'     bind_cols(predict(mdl1, mil_data, type = "class")) %>%
 #'     bind_cols(predict(mdl1, mil_data, type = "raw")) %>%
@@ -405,9 +358,12 @@ mildsvm.mild_df <- function(data, cost = 1,
 #' @export
 #' @author Sean Kent
 predict.mildsvm <- function(object, new_data,
-                          type = c("class", "raw"), layer = c("bag", "instance"),
-                          new_bags = "bag_name", new_instances = "instance_name",
-                          kernel = NULL)
+                            type = c("class", "raw"),
+                            layer = c("bag", "instance"),
+                            new_bags = "bag_name",
+                            new_instances = "instance_name",
+                            kernel = NULL,
+                            ...)
 {
     type <- match.arg(type)
     layer <- match.arg(layer)
@@ -432,20 +388,20 @@ predict.mildsvm <- function(object, new_data,
         new_x <- build_fm(object$kfm_fit, as.matrix(new_x))
         new_x <- average_over_instances(new_x, instances)
     }
-    if (method == "heuristic" & "center" %in% names(object)) {
+    if (method == "heuristic" & "center" %in% names(object) & is.null(kernel)) {
         new_x <- as.data.frame(scale(new_x, center = object$center, scale = object$scale))
     }
 
     if (method == "heuristic") {
         new_x <- as.data.frame(new_x) # in case someone passes mild_df to this...
         new_x$instance_name <- instances
-        # these scores are at the instance level
+        # scores at the instance level
         if (!is.null(kernel)) {
-            kernel <- kernel[, object$model$inst_order]
+            kernel <- kernel[, object$model$inst_order, drop = FALSE]
             # TODO: would be good to check that matrix is of the right size here
             scores <- predict(object$model, new_data = new_x,
                               type = "raw",
-                              kernel = kernel[, object$useful_inst_idx])
+                              kernel = kernel[, object$useful_inst_idx, drop = FALSE])
             scores <- scores$.pred
         } else {
             scores <- predict(object$model, new_data = new_x, type = "raw")
@@ -490,35 +446,36 @@ predict.mildsvm <- function(object, new_data,
 
 # Specific implementation methods below ----------------------------------------
 
-##' Function to perform the SMM iteration using full Gram matrix.
-##'
-##' Internal function to perform SMM iteration using full Gram matrix.
-##' @param kernel_full The full Gram matrix, should be of length n_inst * n_inst.
-##' @param data_info the instance level data information which is a data.frame with 3 columns, 'bag_label', 'bag_name' and 'instance_name'
-##' @param max.step maximum iteration steps
-##' @param cost the cost used in SMM
-##' @param weights Weights of each class
-##' @param sigma the rbf kernel parameter
-##' @param yy the response at instance level.
-##' @param useful_inst_idx a vector specifying which indices are of use.
-##' @return A list with several entries.
-##'
-##' @author Yifei Liu
-##' @keywords internal
+#' Function to perform the SMM iteration using full Gram matrix.
+#'
+#' Internal function to perform SMM iteration using full Gram matrix.
+#' @param kernel_full The full Gram matrix, should be of length n_inst * n_inst.
+#' @param data_info the instance level data information which is a data.frame
+#'   with 3 columns, 'bag_label', 'bag_name' and 'instance_name'
+#' @param max.step maximum iteration steps
+#' @param cost the cost used in SMM
+#' @param weights Weights of each class
+#' @param sigma the rbf kernel parameter
+#' @param yy the response at instance level.
+#' @param useful_inst_idx a vector specifying which indices are of use.
+#' @return A list with several entries.
+#'
+#' @author Yifei Liu
+#' @noRd
 kernel_mil <- function(kernel_full, data_info, max.step, cost, weights,
     sigma, yy, useful_inst_idx) {
 
-    ## data_info is at instance_level
+    # data_info is at instance_level
     bag_name <- data_info$bag_name
     bag_label <- data_info$bag_label
     positive_bag_name <- unique(bag_name[bag_label == 1])
     unique_bag_name <- unique(bag_name)
-    n_bag <- length(unique_bag_name)  ## total number of bags
+    n_bag <- length(unique_bag_name)  # total number of bags
 
     len_y <- length(yy)
 
-    selection <- rep(0, length(positive_bag_name))  ## this records which instance is selected in which bag
-    past_selection <- matrix(NA, length(positive_bag_name), max.step)  ## this is the history of past selection.
+    selection <- rep(0, length(positive_bag_name))  # this records which instance is selected in which bag
+    past_selection <- matrix(NA, length(positive_bag_name), max.step)  # this is the history of past selection.
     past_selection[, 1] <- selection
 
     yy_inst <- yy[useful_inst_idx]
@@ -529,7 +486,7 @@ kernel_mil <- function(kernel_full, data_info, max.step, cost, weights,
                          instances = 1:length(yy_inst),
                          cost = cost,
                          weights = weights,
-                         control = list(kernel = kernel_full[useful_inst_idx, useful_inst_idx],
+                         control = list(kernel = kernel_full[useful_inst_idx, useful_inst_idx, drop = FALSE],
                                         sigma = sigma,
                                         scale = FALSE))
 
@@ -537,20 +494,20 @@ kernel_mil <- function(kernel_full, data_info, max.step, cost, weights,
                                   type = "raw",
                                   new_data = NULL,
                                   new_instances = 1:nrow(kernel_full),
-                                  kernel = kernel_full[, useful_inst_idx])
+                                  kernel = kernel_full[, useful_inst_idx, drop = FALSE])
         pred_all_score <- pred_all_score$.pred
 
-        ## update sample
+        # update sample
         last_inst_idx <- 0
         pos_idx <- 1
-        useful_inst_idx <- NULL  ## the same as the previous useful_inst_idx
+        useful_inst_idx <- NULL  # the same as the previous useful_inst_idx
 
         for (i in 1:n_bag) {
-            data_i <- data_info[bag_name == unique_bag_name[i], ]
-            n_inst_i <- nrow(data_i)  ## total number of instances
+            data_i <- data_info[bag_name == unique_bag_name[i], , drop = FALSE]
+            n_inst_i <- nrow(data_i)  # total number of instances
 
             if (data_i$bag_label[1] == -1) {
-                ## negative bag
+                # negative bag
                 useful_inst_idx <- c(useful_inst_idx, (last_inst_idx +
                   1):(last_inst_idx + n_inst_i))
             } else {
@@ -564,13 +521,13 @@ kernel_mil <- function(kernel_full, data_info, max.step, cost, weights,
             last_inst_idx <- last_inst_idx + n_inst_i
         }
 
-        ## if the selection is not changed, break.
+        # if the selection is not changed, break.
         difference = sum(past_selection[, step] != selection)
         repeat_selection <- 0
         if (difference == 0)
             break
 
-        ## if the current selection is the same as a previous one, break.
+        # if the current selection is the same as a previous one, break.
         repeat_selection <- 0
         for (i in 1:step) {
             if (all(selection == past_selection[, i])) {
@@ -615,15 +572,14 @@ kernel_mil <- function(kernel_full, data_info, max.step, cost, weights,
 #'                             nbag = 10,
 #'                             positive_degree = 3
 #'                            )
-#' foo <- mil_distribution(data = mild_df1, cost = 1) ## uses about 10 seconds.
-#' @export
+#' foo <- mil_distribution(data = mild_df1, cost = 1) # uses about 10 seconds.
 #' @author Yifei Liu
-#' @keywords internal
+#' @noRd
 mil_distribution <- function(data, cost, weights, max.step = 500, sigma = 0.05, kernel = "radial") {
-    ## data should be of a mild_df object.  bag_label should be one of '0'
-    ## and '1', where '0' is negative bags and '1' is positive bags
+    # data should be of a mild_df object.  bag_label should be one of '0'
+    # and '1', where '0' is negative bags and '1' is positive bags
 
-    ## divide the bags to positive bags and negative bags
+    # divide the bags to positive bags and negative bags
 
     bag_name <- data$bag_name
     bag_label <- data$bag_label
@@ -634,42 +590,26 @@ mil_distribution <- function(data, cost, weights, max.step = 500, sigma = 0.05, 
     positive_bag_name <- unique(bag_name[bag_label == 1])
     negative_bag_name <- unique(bag_name[bag_label == 0])
     unique_bag_name <- unique(bag_name)
-    n_bag <- length(unique_bag_name)  ## total number of bags
+    n_bag <- length(unique_bag_name)  # total number of bags
 
-    ## Calculate the full kernel matrix, kernel_full is a
-    ## length(instance_name) by length(instance_name) matrix.
-    # if (is.null(list(...)$kernel_full)) {
-    #     kernel_full <- kme(df = data, sigma = sigma)
-    # } else {
-    #     kernel_full <- list(...)$kernel_full
-    # }
     if (all(kernel == "radial")) {
         kernel <- kme(df = data, sigma = sigma)
     }
     stopifnot(inherits(kernel, "matrix"))
 
-    ## initialize the feature
+    # initialize the feature
     instance_selection <- initialize_instance_selection(data)
     useful_inst_idx = instance_selection[["useful_inst_idx"]]
     yy = instance_selection[["yy"]]
 
-    num_neg_inst <- length(useful_inst_idx) - length(positive_bag_name)  ## calculate the number of negative instances.
-    # weights <- c(length(positive_bag_name)/num_neg_inst, 1)  ## this is less affected by the total number of bags.
-    # names(weights) <- c("0", "1")
+    num_neg_inst <- length(useful_inst_idx) - length(positive_bag_name)  # calculate the number of negative instances.
 
-    # ## iterate between updating the model and selecting the most positive
-    # ## bag from an instance.
-    # selection <- rep(0, length(positive_bag_name))  ## this records which instance is selected in which bag
-    # past_selection <- matrix(NA, length(positive_bag_name), max.step)  ## this is the history of past selection.
-    # past_selection[, 1] <- selection
-    # ## step <- 1
-
-    data_info <- unique(data[, c("bag_label", "bag_name", "instance_name")])
+    data_info <- unique(data[, c("bag_label", "bag_name", "instance_name"), drop = FALSE])
     temp_res <- kernel_mil(kernel, data_info, max.step, cost, weights,
         sigma, yy, useful_inst_idx)
 
     sample_df <- data[data$instance_name %in% instance_name[temp_res$useful_inst_idx],
-        -c(1, 2)]
+        -c(1, 2), drop = FALSE]
 
     res <- list(
         model = temp_res$svm_model,
