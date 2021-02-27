@@ -111,8 +111,8 @@ validate_mild_df <- function(x) {
 mild_df <- function(bag_label = character(),
                     bag_name = character(),
                     instance_name = character(),
-                    instance_label = NULL,
-                    ...)
+                    ...,
+                    instance_label = NULL)
 {
   x <- data.frame(
     bag_label = bag_label,

@@ -92,32 +92,29 @@ which \verb{x, y, bags, instances} are automatically extracted. If a \code{mild_
 object is used, all columns will be used as predictors.}
 }
 \value{
-an object of class \code{mildsvm}.  The object contains the following
-components, if applicable:
+An object of class \code{mildsvm}  The object contains at least the
+following components:
 \itemize{
-\item \code{model}: a model that will depend on the method used to fit.
-It holds the main model components used for prediction.  If the model is
-fit with \code{method = 'heuristic'}, this object is of class \code{smm}.
-\item \code{total_step}: the number of steps used in the heuristic algorithm, if
-applicable.
-\item \code{representative_inst}: instances from positive bags that are selected to
-be most representative of the positive instance.
-\item \code{traindata}: training data from the underlying fitting.  This data will
-get used when computing the kernel matrix for prediction.
+\item \verb{*_fit}: A fit object depending on the \code{method} parameter.  If \code{method =   'heuristic'}, this will be a \code{ksvm} fit from the kernlab package.  If
+\code{method = 'mip'} this will be \code{gurobi_fit} from a model optimization.
+\item \code{call_type}: A character indicating which method \code{misvm()} was called
+with.
+\item \code{x}: The training data needed for computing the kernel matrix in
+prediction.
+\item \code{features}: The names of features used in training.
+\item \code{levels}: The levels of \code{y} that are recorded for future prediction.
+\item \code{cost}: The cost parameter from function inputs.
+\item \code{weights}: The calculated weights on the \code{cost} parameter.
+\item \code{sigma}: The radial basis function kernel parameter.
+\item \code{repr_inst}: The instances from positive bags that are selected to be
+most representative of the positive instances.
+\item \code{n_step}: If \code{method \%in\% c('heuristic', 'qp-heuristic')}, the total
+steps used in the heuristic algorithm.
 \item \code{useful_inst_idx}: The instances that were selected to represent the bags
 in the heuristic fitting.
-\item \code{features}: the features used for prediction.
-\item \code{call_type}: the call type, which specifies whether \code{mildsvm()} was
-called via the formula, data.frame, of mild_df method.
-\item \code{levels}: levels of \code{y} that are recorded for future prediction.
-\item \code{bag_name}: the name of the column used for bags, if the formula or
-mild_df method is applied.
-\item \code{instance_name}: the name of the column used for instances, if the
-\code{formula} or \code{mild_df} method is applied.
-\item \code{kfm_fit}: the fit from building Nystrom features, if \code{method = 'mip'} and
-\code{kernel = 'radial'}.  This is used for prediction.
-\item \code{center}: values used to center \code{x}, if \code{scale = TRUE}.
-\item \code{scale}: values used to scale \code{x}, if \code{scale = TRUE}.
+\item \code{inst_order}: A character vector that is used to modify the ordering of
+input data.
+\item \code{x_scale}: If \code{scale = TRUE}, the scaling parameters for new predictions.
 }
 }
 \description{

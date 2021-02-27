@@ -35,10 +35,10 @@ test_that("cv_misvm() works for data-frame-like inputs", {
                                    sigma = 1 / length(4:123))
   )
 
-  expect_equal(names(model), c("model", "cost_seq", "cost_aucs", "best_cost"))
+  expect_equal(names(model), c("misvm_fit", "cost_seq", "cost_aucs", "best_cost"))
   expect_equal(class(model), "cv_misvm")
-  expect_equal(class(model$model), "misvm")
-  expect_equal(class(model$model$model), "svm")
+  expect_equal(class(model$misvm_fit), "misvm")
+  expect_equal(class(model$misvm_fit$svm_fit), "svm")
 
   pred <-
     df_test %>%
@@ -159,7 +159,7 @@ test_that("cv_misvm() works with formula method", {
                    data = df1,
                    n_fold = 3,
                    cost_seq = 2^seq(-5, 7, length.out = 5))
-  expect_equal(mdl1$model$features,
+  expect_equal(mdl1$misvm_fit$features,
                colnames(model.matrix(~ 0 + X1_mean:X2_mean + X2_mean*X3_mean, data = df1)))
   predict(mdl1, df1, type = "raw")
 

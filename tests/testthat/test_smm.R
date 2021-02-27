@@ -1,4 +1,5 @@
 context("Testing the functions in smm.R")
+suppressWarnings(library(dplyr))
 
 ## Generic data set to work with
 set.seed(8)
@@ -38,7 +39,7 @@ test_that("smm() works for data-frame-like inputs", {
   mdl <- smm(x, y, instances, control = list(sigma = 1/3))
   expect_s3_class(mdl, "smm")
   expect_equal(mdl$call_type, "smm.default")
-  expect_s4_class(mdl$model, "ksvm")
+  expect_s4_class(mdl$ksvm_fit, "ksvm")
 
   pred <- predict(mdl, type = "raw", new_data = rbind(x, new_x), new_instances = c(instances, new_inst))
   expect_equal(nrow(pred), nrow(rbind(x, new_x)))
@@ -64,7 +65,7 @@ test_that("smm() works with formula method", {
   expect_s3_class(mdl, "smm")
   expect_equal(mdl$call_type, "smm.formula")
   expect_equal(mdl$instance_name, "instance_name")
-  expect_s4_class(mdl$model, "ksvm")
+  expect_s4_class(mdl$ksvm_fit, "ksvm")
   expect_s3_class(mdl$formula, "formula")
 
   pred <- predict(mdl, type = "raw", new_data = rbind(x, new_x), new_instances = c(instances, new_inst))
@@ -74,7 +75,7 @@ test_that("smm() works with formula method", {
 
   # check equivalence to default method
   mdl1 <- smm(x, y, instances)
-  common_components <- c("model", "sigma", "cost", "levels", "features")
+  common_components <- c("ksvm_fit", "sigma", "cost", "levels", "features")
   expect_equal(mdl[common_components], mdl1[common_components])
   expect_equivalent(mdl$traindata, mdl1$traindata)
 
@@ -99,13 +100,15 @@ test_that("smm() works with mild_df method", {
   mdl <- smm(mil_df)
   expect_s3_class(mdl, "smm")
   expect_equal(mdl$call_type, "smm.mild_df")
-  expect_s4_class(mdl$model, "ksvm")
+  expect_s4_class(mdl$ksvm_fit, "ksvm")
 
   pred <- predict(mdl, mil_df, type = "raw")
   expect_equal(nrow(pred), nrow(mil_df))
   expect_equal(colnames(pred), ".pred")
   expect_equal(length(unique(pred$.pred)), length(unique(mil_df$instance_name)))
 
+  mdl <- smm(mil_df, weights = FALSE)
+  pred <- predict(mdl, mil_df, type = "class", layer = "bag")
 })
 
 test_that("smm() has correct argument handling", {
@@ -117,10 +120,10 @@ test_that("smm() has correct argument handling", {
   )))
 
   # `weights`
-  expect_equal(
-    smm(x, y, instances, weights = c("-1" = 1, "1" = 1)),
-    smm(x, y, instances, weights = FALSE)
-  )
+  mdl1 <- smm(x, y, instances, weights = c("-1" = 1, "1" = 1))
+  mdl1$weights <- NULL
+  mdl2 <- smm(x, y, instances, weights = FALSE)
+  expect_equal(mdl1, mdl2)
 
   y2 <- factor(y, levels = c(1, -1))
   expect_equal(
@@ -130,15 +133,15 @@ test_that("smm() has correct argument handling", {
 
   y2 <- factor(y, labels = c("No", "Yes"))
   expect_message(expect_equal(
-    smm(x, y, instances, weights = c("-1" = 2, "1" = 1))$model,
-    smm(x, y2, instances, weights = c("No" = 2, "Yes" = 1))$model
+    smm(x, y, instances, weights = c("-1" = 2, "1" = 1))$ksvm_fit,
+    smm(x, y2, instances, weights = c("No" = 2, "Yes" = 1))$ksvm_fit
   ))
 
   y <- factor(y)
   # ctrl <- list(sigma = 1/3)
   expect_false(isTRUE(all.equal(
-    smm(x, y, instances, weights = c("-1" = 2e6, "1" = 1))$model,
-    smm(x, y, instances, weights = c("-1" = 1e-6, "1" = 1))$model
+    smm(x, y, instances, weights = c("-1" = 2e6, "1" = 1))$ksvm_fit,
+    smm(x, y, instances, weights = c("-1" = 1e-6, "1" = 1))$ksvm_fit
   )))
 
   # `kernel`
@@ -186,9 +189,9 @@ test_that("smm() has correct argument handling", {
     smm(x, y, instances, control = list(scale = FALSE))
   )))
   mdl <- smm(x, y, instances, control = list(scale = TRUE))
-  expect_type(mdl$center, "double")
-  expect_type(mdl$scale, "double")
-  expect_equal(length(mdl$center), ncol(x))
+  expect_type(mdl$x_scale$center, "double")
+  expect_type(mdl$x_scale$scale, "double")
+  expect_equal(length(mdl$x_scale$center), ncol(x))
 
 })
 
@@ -273,7 +276,7 @@ test_that("predict.smm has correct argument handling", {
     predict(mdl_x, new_data = NULL, new_instances = instances, type = "raw", kernel = kernel_mat)
   ))
 
-  new_km <- kme(data.frame(instance_name = new_inst, scale(new_x, mdl_x$center, mdl_x$scale)),
+  new_km <- kme(data.frame(instance_name = new_inst, scale(new_x, mdl_x$x_scale$center, mdl_x$x_scale$scale)),
                 data.frame(instance_name = instances, scale(x)),
                 sigma = 1/3)
   expect_message(expect_equal(
@@ -381,5 +384,26 @@ test_that("Re-ordering data doesn't reduce performance", {
   eps <- 0.05
   expect_gte(auc2, auc1 - eps)
   expect_lte(auc2, auc1 + eps)
+})
+
+test_that("`smm()` value returns make sense", {
+
+  names(smm(x, y, instances))
+
+  # different S3 methods
+  names(smm(x, y, instances))
+  df <- data.frame(y = y, instance_name = instances, x)
+  names(smm(y ~ x1 + x2 + x3, data = df))
+  names(smm(mil_df))
+
+  # shouldn't have `x_scale`
+  names(smm(x, y, instances, control = list(scale = FALSE)))
+  names(smm(mil_df, control = list(scale = FALSE)))
+
+  # shouldn't have `weights`
+  names(smm(x, y, instances, weights = FALSE))
+  names(smm(mil_df, weights = FALSE))
+
+  expect_true(TRUE)
 })
 

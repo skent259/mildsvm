@@ -30,10 +30,10 @@ validate_cv_misvm <- function(x) {
 #'   leakage.  If `n_fold` is specified, `fold_id` will be computed
 #'   automatically.
 #'
-#' @return an object of class `cv_misvm`.  The object contains the following
+#' @return An object of class `cv_misvm`.  The object contains the following
 #'   components:
-#' * `model`: a model of class `misvm` trained on the full data with the
-#' cross-validated choice of cost parameter.
+#' * `misvm_fit`: A fit object of class `misvm` trained on the full data with
+#' the cross-validated choice of cost parameter. See [misvm()] for details.
 #' * `cost_seq`: the input sequence of cost arguments
 #' * `cost_aucs`: estimated AUC for the models trained for each `cost_seq`
 #' parameter.  These are the average of the fold models for that cost, excluding
@@ -162,12 +162,12 @@ cv_misvm.default <- function(x, y, bags, cost_seq, n_fold, fold_id,
                      cost = best_cost, method = method,
                      weights = weights, control = control)
 
-  res <- list(model = misvm_fit,
+  res <- list(misvm_fit = misvm_fit,
               cost_seq = cost_seq,
               cost_aucs = cost_aucs,
               best_cost = best_cost)
 
-  res$model$levels <- lev
+  res$misvm_fit$levels <- lev
   new_cv_misvm(res, method = method)
 }
 
@@ -191,10 +191,9 @@ cv_misvm.formula <- function(formula, data, cost_seq, n_fold, fold_id, ...) {
   res <- cv_misvm.default(x, y, bags, cost_seq = cost_seq, n_fold = n_fold,
                           fold_id = fold_id, ...)
 
-  # TODO: may need to adjust these outputs and put them in the model
-  res$model$call_type <- "misvm.formula"
-  res$model$formula <- formula
-  res$model$bag_name <- bag_name
+  res$misvm_fit$call_type <- "misvm.formula"
+  res$misvm_fit$formula <- formula
+  res$misvm_fit$bag_name <- bag_name
   res$call_type <- "cv_misvm.formula"
   return(res)
 }
@@ -239,7 +238,7 @@ predict.cv_misvm <- function(object, new_data,
   type <- match.arg(type)
   layer <- match.arg(layer)
 
-  predict.misvm(object$model, new_data = new_data, type = type, layer = layer,
+  predict.misvm(object$misvm_fit, new_data = new_data, type = type, layer = layer,
                 new_bags = new_bags)
 }
 
