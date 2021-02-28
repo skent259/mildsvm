@@ -31,21 +31,18 @@ validate_smm <- function(x) {
 #'   * `scale` argument used for all methods. A logical for whether to rescale
 #'   the input before fitting.
 #'
-#' @return an object of class `smm`.  The object contains the following
-#'   components, if applicable:
-#'   * `model`: An SVM model fit with `kernlab::ksvm()`.
-#'   * `call_type`: The call type, which specifies whether `smm()`
-#'   was called via the `formula`, `data.frame`, of `mild_df` method.
-#'   * `sigma`: The argument used for radial basis kernel.
-#'   * `traindata`: The training data from the underlying fitting.  This data
-#'   will get used when computing the kernel matrix for prediction.
-#'   * `cost`: The argument used for SVM cost parameter.
+#' @return An object of class `smm`  The object contains at least the
+#'   following components:
+#'   * `ksvm_fit`: A fit of class `ksvm` from the kernlab package.
+#'   * `call_type`: A character indicating which method `smm()` was called with.
+#'   * `x`: The training data needed for computing the kernel matrix in
+#'   prediction.
+#'   * `features`: The names of features used in training.
 #'   * `levels`: The levels of `y` that are recorded for future prediction.
-#'   * `features`: The features used for prediction.
-#'   * `instance_name`: The name of the column used for instances, if the
-#'   `formula` or `mild_df` method is applied.
-#'   * `center`: The values used to center x, if `scale` = TRUE.
-#'   * `scale`: The values used to scale x, if `scale` = TRUE.
+#'   * `cost`: The cost parameter from function inputs.
+#'   * `sigma`: The radial basis function kernel parameter.
+#'   * `weights`: The calculated weights on the `cost` parameter, if applicable.
+#'   * `x_scale`: If `scale = TRUE`, the scaling parameters for new predictions.
 #'
 #' @seealso [predict.smm()] for prediction on new data.
 #
@@ -148,18 +145,17 @@ smm.default <- function(x, y, instances,
                          class.weights = weights)
 
     res <- list(
-        model = fit,
+        ksvm_fit = fit,
         call_type = "smm.default",
-        sigma = control$sigma,
-        traindata = x,
-        cost = cost,
-        levels = lev,
+        x = x,
         features = col_x,
-        instance_name = NULL
+        levels = lev,
+        cost = cost
     )
+    res$sigma <- control$sigma
+    res$weights <- weights
     if (control$scale) {
-        res$center <- center
-        res$scale <- scale
+        res$x_scale <- list("center" = center, "scale" = scale)
     }
     return(new_smm(res))
 }
@@ -187,7 +183,8 @@ smm.formula <- function(formula, data, instances = "instance_name", ...)
     return(res)
 }
 
-#' @describeIn smm Method for `mild_df` objects
+#' @describeIn smm Method for `mild_df` objects. Use the `bag_label` as `y` at
+#'   the instance level, then perform `smm()` ignoring the MIL structure.
 #' @export
 smm.mild_df <- function(data, ...)
 {
@@ -200,7 +197,6 @@ smm.mild_df <- function(data, ...)
     res <- smm.default(x, y, instances, ...)
     res$call_type <- "smm.mild_df"
     res$bag_name <- "bag_name"
-
     res$instance_name <- "instance_name"
     return(res)
 }
@@ -277,18 +273,12 @@ predict.smm <- function(object,
     type <- match.arg(type)
     layer <- match.arg(layer, c("instance", "bag"))
 
-    if (layer == "bag" && object$call_type != "smm.mild_df") {
-        message("`layer` = 'bag' is not permitted unless model was fit with `smm.mild_df()`.")
-        message("Changing `layer` to 'instance'.")
-        layer <- "instance"
-    }
-
-    if (is.matrix(kernel) && !is.null(object$center)) {
+    if (is.matrix(kernel) && !is.null(object$x_scale)) {
         message("Model was fit using scaling, make sure that kernel matrix was similarly scaled.")
     }
 
-    traindata <- object$traindata
-    model <- object$model
+    traindata <- object$x
+    model <- object$ksvm_fit
 
     # instance information
     if (object$call_type == "smm.formula" & new_instances[1] == "instance_name" & length(new_instances) == 1) {
@@ -317,8 +307,8 @@ predict.smm <- function(object,
     } else {
         new_x <- new_data[, object$features, drop = FALSE]
     }
-    if (!is.null(new_x) && "center" %in% names(object) && is.null(kernel)) {
-        new_x <- as.data.frame(scale(new_x, center = object$center, scale = object$scale))
+    if (!is.null(new_x) && "x_scale" %in% names(object) && is.null(kernel)) {
+        new_x <- as.data.frame(scale(new_x, center = object$x_scale$center, scale = object$x_scale$scale))
     }
 
     # kernel_m
@@ -337,17 +327,20 @@ predict.smm <- function(object,
     raw <- kernlab::predict(model, kernel_m, type = "decision")
     raw <- as.numeric(raw)
     names(raw) <- unique(instances)
+    raw <- raw[instances]
+
+    if (layer == "bag") {
+        raw <- classify_bags(raw, bags, condense = FALSE)
+    }
 
     pos <- 2*(raw > 0) - 1
     pos <- factor(pos, levels = c(-1, 1), labels = object$levels)
 
     res <- switch(
         type,
-        "raw" = tibble::tibble(.pred = raw[instances]),
-        "class" = tibble::tibble(.pred_class = pos[instances])
+        "raw" = tibble::tibble(.pred = raw),
+        "class" = tibble::tibble(.pred_class = pos)
     )
-    if (layer == "bag") {
-        res[[1]] <- classify_bags(res[[1]], bags, condense = FALSE)
-    }
+    attr(res, "layer") <- layer
     return(res)
 }

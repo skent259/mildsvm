@@ -23,7 +23,6 @@
 #' summarize_samples(mtcars, group_cols = c("cyl", "gear"), .fns = fns, cor = TRUE)
 #'
 #' @author Sean Kent
-#' @importFrom magrittr %>%
 #' @name summarize_samples
 NULL
 

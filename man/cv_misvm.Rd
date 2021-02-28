@@ -96,11 +96,11 @@ which \verb{x, y, bags, instances} are automatically extracted. If a \code{mild_
 object is used, all columns will be used as predictors.}
 }
 \value{
-an object of class \code{cv_misvm}.  The object contains the following
+An object of class \code{cv_misvm}.  The object contains the following
 components:
 \itemize{
-\item \code{model}: a model of class \code{misvm} trained on the full data with the
-cross-validated choice of cost parameter.
+\item \code{misvm_fit}: A fit object of class \code{misvm} trained on the full data with
+the cross-validated choice of cost parameter. See \code{\link[=misvm]{misvm()}} for details.
 \item \code{cost_seq}: the input sequence of cost arguments
 \item \code{cost_aucs}: estimated AUC for the models trained for each \code{cost_seq}
 parameter.  These are the average of the fold models for that cost, excluding

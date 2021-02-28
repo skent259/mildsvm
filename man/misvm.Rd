@@ -97,20 +97,23 @@ summarize instances over.}
 include correlations between all features in the summarization.}
 }
 \value{
-an object of class \code{misvm.}  The object contains the following
-components:
+An object of class \code{misvm.}  The object contains at least the
+following components:
 \itemize{
-\item \code{model}: a model that will depend on the method used to fit.  It holds
-the main model components used for prediction.  If the model is fit with
-\code{method = 'heuristic'}, this object is of class \code{svm} from the e1071
-package.
-\item \code{representative_inst}: Instances from positive bags that are selected to
-be most representative of the positive instance.
-\item \code{features}: the features used for prediction.  These are needed for
-prediction.
-\item \code{call_type}: the call type, which specifies whether \code{misvm()} was called
-via the formula or data.frame method.
-\item \code{levels}: levels of \code{y} that are recorded for future prediction.
+\item \verb{*_fit}: A fit object depending on the \code{method} parameter.  If \code{method =   'heuristic'}, this will be an \code{svm} fit from the e1071 package.  If
+\verb{method = 'mip', 'qp-heuristic'} this will be \code{gurobi_fit} from a model
+optimization.
+\item \code{call_type}: A character indicating which method \code{misvm()} was called
+with.
+\item \code{features}: The names of features used in training.
+\item \code{levels}: The levels of \code{y} that are recorded for future prediction.
+\item \code{cost}: The cost parameter from function inputs.
+\item \code{weights}: The calculated weights on the \code{cost} parameter.
+\item \code{repr_inst}: The instances from positive bags that are selected to be
+most representative of the positive instances.
+\item \code{n_step}: If \code{method \%in\% c('heuristic', 'qp-heuristic')}, the total
+steps used in the heuristic algorithm.
+\item \code{x_scale}: If \code{scale = TRUE}, the scaling parameters for new predictions.
 }
 }
 \description{

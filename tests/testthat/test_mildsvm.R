@@ -1,4 +1,5 @@
 context("Testing the functions in mildsvm.R")
+suppressWarnings(library(dplyr))
 
 set.seed(8)
 mil_data <- generate_mild_df(positive_dist = "mvnormal",
@@ -101,7 +102,7 @@ test_that("mildsvm() works with formula method", {
                           bags = df1$bag_name,
                           instances = df1$instance_name)
 
-  expect_equal(mdl1$model, mdl2$model)
+  expect_equal(mdl1$ksvm_fit, mdl2$ksvm_fit)
   expect_equal(mdl1$total_step, mdl2$total_step)
   expect_equal(mdl1$call_type, "mildsvm.formula")
   expect_equal(mdl1$features, c("X1", "X2", "X3"))
@@ -146,7 +147,7 @@ test_that("mildsvm() works with mild_df method", {
                           bags = df1$bag_name,
                           instances = df1$instance_name)
 
-  expect_equal(mdl1$model, mdl2$model)
+  expect_equal(mdl1$ksvm_fit, mdl2$ksvm_fit)
   expect_equal(mdl1$total_step, mdl2$total_step)
   expect_equal(mdl1$call_type, "mildsvm.mild_df")
   expect_equal(mdl1$features, paste0("X", 1:10))
@@ -227,18 +228,16 @@ test_that("Dots work in mildsvm() formula", {
                                positive_degree = 3,
                                positive_prob = 0.15,
                                positive_mean = rep(0, 5))
+  mil_data2 <- mil_data %>% select(bag_label, bag_name, instance_name, X1, X2, X3)
 
-  df1 <- summarize_samples(mil_data, .fns = list(mean = mean)) %>%
-    select(bag_label, bag_name, X1_mean, X2_mean, X3_mean)
+  mildsvm_dot <- mildsvm(mild(bag_label, bag_name, instance_name) ~ ., data = mil_data2)
+  mildsvm_nodot <- mildsvm(mild(bag_label, bag_name, instance_name) ~ X1 + X2 + X3, data = mil_data2)
 
-  misvm_dot <- misvm(mi(bag_label, bag_name) ~ ., data = df1)
-  misvm_nodot <- misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean + X3_mean, data = df1)
+  expect_equal(mildsvm_dot$ksvm_fit, mildsvm_nodot$ksvm_fit)
+  expect_equal(mildsvm_dot$features, mildsvm_nodot$features)
+  expect_equal(mildsvm_dot$bag_name, mildsvm_nodot$bag_name)
 
-  expect_equal(misvm_dot$model, misvm_nodot$model)
-  expect_equal(misvm_dot$features, misvm_nodot$features)
-  expect_equal(misvm_dot$bag_name, misvm_nodot$bag_name)
-
-  expect_equal(predict(misvm_dot, new_data = df1), predict(misvm_nodot, new_data = df1))
+  expect_equal(predict(mildsvm_dot, new_data = mil_data2), predict(mildsvm_nodot, new_data = mil_data2))
 
 })
 
@@ -255,8 +254,10 @@ test_that("misvm() has correct argument handling", {
 
   ## weights
   mildsvm(mild(bag_label, bag_name, instance_name) ~ ., data = df1, weights = TRUE)
+  mdl1 <- mildsvm(mild(bag_label, bag_name, instance_name) ~ ., data = df1, weights = c("0" = 1, "1" = 1))
+  mdl1$weights <- NULL
   expect_equal(
-    mildsvm(mild(bag_label, bag_name, instance_name) ~ ., data = df1, weights = c("0" = 1, "1" = 1)),
+    mdl1,
     mildsvm(mild(bag_label, bag_name, instance_name) ~ ., data = df1, weights = FALSE)
   )
 
@@ -275,24 +276,23 @@ test_that("misvm() has correct argument handling", {
   df2 <- df1 %>% mutate(bag_label = factor(bag_label, labels = c("No", "Yes")))
   dimnames(df2) <- dimnames(df1)
   expect_equal(
-    mildsvm(mild(bag_label, bag_name, instance_name) ~ ., data = df1, weights = c("0" = 2, "1" = 1))$model,
-    mildsvm(mild(bag_label, bag_name, instance_name) ~ ., data = df2, weights = c("No" = 2, "Yes" = 1))$model
+    mildsvm(mild(bag_label, bag_name, instance_name) ~ ., data = df1, weights = c("0" = 2, "1" = 1))$ksvm_fit,
+    mildsvm(mild(bag_label, bag_name, instance_name) ~ ., data = df2, weights = c("No" = 2, "Yes" = 1))$ksvm_fit
   )
   set.seed(8) # nystrom sampling may change, need to set seed for each
   tmp1 <- mildsvm(mild(bag_label, bag_name, instance_name) ~ ., data = df1, weights = c("0" = 2, "1" = 1), method = "mip")
   set.seed(8)
   tmp2 <- mildsvm(mild(bag_label, bag_name, instance_name) ~ ., data = df2, weights = c("No" = 2, "Yes" = 1), method = "mip")
-  expect_equal(tmp1$model, tmp2$model)
+  expect_equal(tmp1$gurobi_fit, tmp2$gurobi_fit)
 
   expect_false(isTRUE(all.equal(
-    mildsvm(mild(bag_label, bag_name, instance_name) ~ ., data = df1, weights = c("0" = 2, "1" = 1), method = "mip")$model,
-    mildsvm(mild(bag_label, bag_name, instance_name) ~ ., data = df1, weights = c("0" = 1e-6, "1" = 1), method = "mip")$model
+    mildsvm(mild(bag_label, bag_name, instance_name) ~ ., data = df1, weights = c("0" = 2, "1" = 1), method = "mip")$gurobi_fit,
+    mildsvm(mild(bag_label, bag_name, instance_name) ~ ., data = df1, weights = c("0" = 1e-6, "1" = 1), method = "mip")$gurobi_fit
   )))
-  # TODO: understand why this fails...
-  # expect_false(isTRUE(all.equal(
-  #   mildsvm(mild(bag_label, bag_name, instance_name) ~ ., data = df1, weights = c("0" = 200, "1" = 1), method = "heuristic")$model,
-  #   mildsvm(mild(bag_label, bag_name, instance_name) ~ ., data = df1, weights = c("0" = 1e-6, "1" = 1), method = "heuristic")$model
-  # )))
+  expect_false(isTRUE(all.equal(
+    mildsvm(mild(bag_label, bag_name, instance_name) ~ ., data = df1, weights = c("0" = 200, "1" = 1), method = "heuristic")$ksvm_fit,
+    mildsvm(mild(bag_label, bag_name, instance_name) ~ ., data = df1, weights = c("0" = 1e-6, "1" = 1), method = "heuristic")$ksvm_fit
+  )))
 
   ## kernel
   # there isn't a "linear" kernel option for mildsvm
@@ -321,7 +321,7 @@ test_that("misvm() has correct argument handling", {
   mdl <- mildsvm(mild(bag_label, bag_name, instance_name) ~ ., data = df1, method = "mip",
                  control = list(nystrom_args = list(m = 100, r = 50)))
 
-  expect_equal(length(mdl$model$w), 50)
+  expect_equal(length(mdl$gurobi_fit$w), 50)
   expect_equal(dim(mdl$kfm_fit$dv), c(50, 100))
   expect_equal(dim(mdl$kfm_fit$df_sub), c(100, ncol(df1) - 3))
 
@@ -361,9 +361,9 @@ test_that("mildsvm mip can warm start", {
                   method = "mip",
                   control = list(start = FALSE, verbose = verbose))
 
-  expect_equal(mdl1$model[c("b", "xi", "z")],
-               mdl2$model[c("b", "xi", "z")])
-  expect_equal(abs(mdl1$model$w), abs(mdl2$model$w))
+  expect_equal(mdl1$gurobi_fit[c("b", "xi", "z")],
+               mdl2$gurobi_fit[c("b", "xi", "z")])
+  expect_equal(abs(mdl1$gurobi_fit$w), abs(mdl2$gurobi_fit$w))
 
   pred1 <- predict(mdl1, new_data = df1, type = "raw", layer = "instance")
   pred2 <- predict(mdl2, new_data = df1, type = "raw", layer = "instance")
@@ -491,4 +491,40 @@ test_that("Re-ordering data doesn't reduce performance", {
   expect_lte(auc2, auc1 + eps)
 })
 
+test_that("`mildsvm()` value returns make sense", {
+
+  # different methods
+  names(mildsvm(mil_data, method = "heuristic"))
+  names(mildsvm(mil_data, method = "mip", control = list(nystrom_args = list(m = 10))))
+
+  # # different S3 methods
+  names(mildsvm(x = as.data.frame(mil_data[, 4:13]),
+                y = mil_data$bag_label,
+                bags = mil_data$bag_name,
+                instances = mil_data$instance_name))
+  names(mildsvm(mild(bag_label, bag_name, instance_name) ~ ., data = mil_data))
+  names(mildsvm(mil_data))
+
+  # shouldn't have `x_scale`
+  names(mildsvm(mil_data, method = "heuristic", control = list(scale = FALSE)))
+  names(mildsvm(mil_data, method = "mip", control = list(scale = FALSE, nystrom_args = list(m = 10))))
+
+  # shouldn't have `weights`
+  names(mildsvm(mil_data, method = "heuristic", weights = FALSE))
+  expect_true(TRUE)
+})
+
+test_that("`predict.mildsvm()` works without new_data", {
+
+  mdl1 <- mildsvm(mil_data, method = "heuristic",
+                  control = list(scale = FALSE, sigma = 1/10))
+
+  pred1 <- predict(mdl1, mil_data_test, type = "raw", layer = "instance")
+  pred2 <- predict(mdl1, NULL, "raw", "instance",
+                   new_bags = mil_data_test$bag_label,
+                   new_instances = mil_data_test$instance_name,
+                   kernel = kme(mil_data_test, mil_data, sigma = 1/10))
+
+  expect_equal(pred1, pred2)
+})
 

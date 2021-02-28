@@ -65,22 +65,19 @@ which \verb{x, y, bags, instances} are automatically extracted. If a \code{mild_
 object is used, all columns will be used as predictors.}
 }
 \value{
-an object of class \code{smm}.  The object contains the following
-components, if applicable:
+An object of class \code{smm}  The object contains at least the
+following components:
 \itemize{
-\item \code{model}: An SVM model fit with \code{kernlab::ksvm()}.
-\item \code{call_type}: The call type, which specifies whether \code{smm()}
-was called via the \code{formula}, \code{data.frame}, of \code{mild_df} method.
-\item \code{sigma}: The argument used for radial basis kernel.
-\item \code{traindata}: The training data from the underlying fitting.  This data
-will get used when computing the kernel matrix for prediction.
-\item \code{cost}: The argument used for SVM cost parameter.
+\item \code{ksvm_fit}: A fit of class \code{ksvm} from the kernlab package.
+\item \code{call_type}: A character indicating which method \code{smm()} was called with.
+\item \code{x}: The training data needed for computing the kernel matrix in
+prediction.
+\item \code{features}: The names of features used in training.
 \item \code{levels}: The levels of \code{y} that are recorded for future prediction.
-\item \code{features}: The features used for prediction.
-\item \code{instance_name}: The name of the column used for instances, if the
-\code{formula} or \code{mild_df} method is applied.
-\item \code{center}: The values used to center x, if \code{scale} = TRUE.
-\item \code{scale}: The values used to scale x, if \code{scale} = TRUE.
+\item \code{cost}: The cost parameter from function inputs.
+\item \code{sigma}: The radial basis function kernel parameter.
+\item \code{weights}: The calculated weights on the \code{cost} parameter, if applicable.
+\item \code{x_scale}: If \code{scale = TRUE}, the scaling parameters for new predictions.
 }
 }
 \description{
@@ -97,7 +94,8 @@ train the appropriate SVM model.
 
 \item \code{formula}: Method for passing formula
 
-\item \code{mild_df}: Method for \code{mild_df} objects
+\item \code{mild_df}: Method for \code{mild_df} objects. Use the \code{bag_label} as \code{y} at
+the instance level, then perform \code{smm()} ignoring the MIL structure.
 }}
 
 \examples{

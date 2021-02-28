@@ -82,19 +82,23 @@ validate_misvm <- function(x) {
 #'   include correlations between all features in the summarization.
 #' @param ... Arguments passed to or from other methods.
 #'
-#' @return an object of class `misvm.`  The object contains the following
-#'   components:
-#'   * `model`: a model that will depend on the method used to fit.  It holds
-#'   the main model components used for prediction.  If the model is fit with
-#'   `method = 'heuristic'`, this object is of class `svm` from the e1071
-#'   package.
-#'   * `representative_inst`: Instances from positive bags that are selected to
-#'   be most representative of the positive instance.
-#'   * `features`: the features used for prediction.  These are needed for
-#'   prediction.
-#'   * `call_type`: the call type, which specifies whether `misvm()` was called
-#'   via the formula or data.frame method.
-#'   * `levels`: levels of `y` that are recorded for future prediction.
+#' @return An object of class `misvm.`  The object contains at least the
+#'   following components:
+#'   * `*_fit`: A fit object depending on the `method` parameter.  If `method =
+#'   'heuristic'`, this will be an `svm` fit from the e1071 package.  If
+#'   `method = 'mip', 'qp-heuristic'` this will be `gurobi_fit` from a model
+#'   optimization.
+#'   * `call_type`: A character indicating which method `misvm()` was called
+#'   with.
+#'   * `features`: The names of features used in training.
+#'   * `levels`: The levels of `y` that are recorded for future prediction.
+#'   * `cost`: The cost parameter from function inputs.
+#'   * `weights`: The calculated weights on the `cost` parameter.
+#'   * `repr_inst`: The instances from positive bags that are selected to be
+#'   most representative of the positive instances.
+#'   * `n_step`: If `method %in% c('heuristic', 'qp-heuristic')`, the total
+#'   steps used in the heuristic algorithm.
+#'   * `x_scale`: If `scale = TRUE`, the scaling parameters for new predictions.
 #'
 #' @seealso
 #' * [predict.misvm()] for prediction on new data.
@@ -241,15 +245,20 @@ misvm.default <- function(x, y, bags,
     stop("misvm requires method = 'heuristic', 'mip', or 'qp-heuristic'.")
   }
 
-  res$features <- col_x
-  res$call_type <- "misvm.default"
-  res$bag_name <- NULL
-  res$levels <- lev
+  out <- res[1]
   if (method %in% c("mip") & control$kernel == "radial") {
-    res$kfm_fit <- kfm_fit
+    out$kfm_fit <- kfm_fit
   }
-  new_misvm(res, method = method)
-  # return(res)
+  out$call_type <- "misvm.default"
+  out$x <- res$x
+  out$features <- col_x
+  out$levels <- lev
+  out$cost <- cost
+  out$weights <- weights
+  out$repr_inst <- res$repr_inst
+  out$n_step <- res$n_step
+  out$x_scale <- res$x_scale
+  new_misvm(out, method = method)
 }
 
 #' @describeIn misvm Method for passing formula
@@ -293,6 +302,7 @@ misvm.mild_df <- function(data, .fns = list(mean = mean, sd = stats::sd), cor = 
   )
 
   res$call_type <- "misvm.mild_df"
+  res$bag_name <- "bag_name"
   res$instance_name <- "instance_name"
   res$summary_fns <- .fns
   res$summary_cor <- cor
@@ -356,8 +366,8 @@ predict.misvm <- function(object,
                           new_bags = "bag_name",
                           ...)
 {
-  type <- match.arg(type)
-  layer <- match.arg(layer)
+  type <- match.arg(type, c("class", "raw"))
+  layer <- match.arg(layer, c("bag", "instance"))
   method <- attr(object, "method")
 
   if (object$call_type == "misvm.mild_df") {
@@ -377,29 +387,29 @@ predict.misvm <- function(object,
   if ("kfm_fit" %in% names(object)) {
     new_x <- build_fm(object$kfm_fit, as.matrix(new_x))
   }
-  if (method == "qp-heuristic" & "center" %in% names(object)) {
-    new_x <- as.data.frame(scale(new_x, center = object$center, scale = object$scale))
+  if (method == "qp-heuristic" & "x_scale" %in% names(object)) {
+    new_x <- as.data.frame(scale(new_x, center = object$x_scale$center, scale = object$x_scale$scale))
   }
 
   # kernel
   if (method == "qp-heuristic") {
     kernel <- compute_kernel(as.matrix(new_x),
-                             object$model$xmatrix,
-                             type = object$model$kernel,
-                             sigma = object$model$sigma)
+                             object$gurobi_fit$xmatrix,
+                             type = object$gurobi_fit$kernel,
+                             sigma = object$gurobi_fit$sigma)
   }
 
   if (method == "heuristic") {
-    pos <- predict(object = object$model, newdata = new_x, decision.values = TRUE)
+    pos <- predict(object = object$svm_fit, newdata = new_x, decision.values = TRUE)
     scores <- attr(pos, "decision.values")
     pos <- as.numeric(as.character(pos))
 
   } else if (method == "mip") {
-    scores <- as.matrix(new_x) %*% object$model$w + object$model$b
+    scores <- as.matrix(new_x) %*% object$gurobi_fit$w + object$gurobi_fit$b
     pos <- 2*(scores > 0) - 1
 
   } else if (method == "qp-heuristic") {
-    scores <- kernel %*% object$model$ay + object$model$b
+    scores <- kernel %*% object$gurobi_fit$ay + object$gurobi_fit$b
     pos <- 2*(scores > 0) - 1
 
   } else {
@@ -513,7 +523,7 @@ misvm_mip_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
   }
 
   res <- list(
-    model = list(
+    gurobi_fit = list(
       w = w,
       b = b_,
       xi = gurobi_result$x[grepl("xi", model$varnames)],
@@ -525,13 +535,17 @@ misvm_mip_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
       mipgap = gurobi_result$mipgap,
       c = c
     ),
-    representative_inst = NULL, # TODO: fill in these parameters or remove
-    traindata = NULL,
-    useful_inst_idx = NULL
+    x = NULL,
+    repr_inst = NULL
   )
-  names(res$model$w) <- colnames(X)
-
-  return(new_misvm(res, method = "mip"))
+  if (rescale) {
+    res$x_scale = list(
+      "center" = attr(X, "scaled:center"),
+      "scale" = attr(X, "scaled:scale")
+    )
+  }
+  names(res$gurobi_fit$w) <- colnames(X)
+  return(res)
 }
 
 #' INTERNAL Create optimization model for MI-SVM problem
@@ -637,7 +651,6 @@ misvm_mip_model <- function(y, bags, X, c, weights = NULL, warm_start = NULL) {
 #'                              positive_mean = rep(0, 5))
 #' df1 <- build_instance_feature(mild_df1, seq(0.05, 0.95, length.out = 10))
 #' mdl <- MI_SVM(data = df1, cost = 1, kernel = 'radial')
-#' @importFrom e1071 svm
 #' @author Yifei Liu, Sean Kent
 #' @noRd
 misvm_heuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
@@ -675,16 +688,16 @@ misvm_heuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
     # X_model <- rbind(X[y == -1, , drop = FALSE],
     #                  X_selected)
 
-    model <- e1071::svm(x = X_model,
-                        y = y_model,
-                        class.weights = weights,
-                        cost = c,
-                        kernel = kernel,
-                        gamma = sigma,
-                        scale = rescale,
-                        type = type)
+    svm_fit <- e1071::svm(x = X_model,
+                          y = y_model,
+                          class.weights = weights,
+                          cost = c,
+                          kernel = kernel,
+                          gamma = sigma,
+                          scale = rescale,
+                          type = type)
 
-    pred_all_inst <- predict(object = model, newdata = X, decision.values = TRUE)
+    pred_all_inst <- predict(object = svm_fit, newdata = X, decision.values = TRUE)
     pred_all_score <- attr(pred_all_inst, "decision.values")
 
     # update selections and check for repeats
@@ -715,11 +728,15 @@ misvm_heuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
   selected_vec[selected] <- 1
   selected_vec <- selected_vec[order(r$order)] # un-order the vector
 
-  return(list(
-    model = model,
-    total_step = n_selections,
-    representative_inst = selected_vec
-  ))
+  res <- list(
+    svm_fit = svm_fit,
+    n_step = n_selections,
+    repr_inst = selected_vec
+  )
+  if (rescale) {
+    res$x_scale <- stats::setNames(svm_fit$x.scale, c("center", "scale"))
+  }
+  return(res)
 }
 
 #' INTERNAL Fit MI-SVM model based on heuristic method and QP optimization
@@ -816,7 +833,7 @@ misvm_qpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
   selected_vec <- selected_vec[order(r$order)] # un-order the vector
 
   res <- list(
-    model = list(
+    gurobi_fit = list(
       w = w,
       b = b_,
       xi = gurobi_result$x[grepl("xi", model$varnames)],
@@ -827,13 +844,15 @@ misvm_qpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
       c = c,
       n_selections = n_selections
     ),
-    representative_inst = selected_vec,
-    traindata = NULL,
-    useful_inst_idx = NULL
+    repr_inst = selected_vec,
+    x = NULL,
+    x_scale = list(
+      "center" = attr(X, "scaled:center"),
+      "scale" = attr(X, "scaled:scale")
+    )
   )
-  names(res$model$w) <- colnames(X)
-
-  return(new_misvm(res, method = "qp-heuristic"))
+  names(res$gurobi_fit$w) <- colnames(X)
+  return(res)
 }
 
 
@@ -934,7 +953,7 @@ misvm_dualqpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = N
   selected_vec <- selected_vec[order(r$order)] # un-order the vector
 
   res <- list(
-    model = list(
+    gurobi_fit = list(
       # w = w,
       b = b_,
       xmatrix = X[ind, , drop = FALSE],
@@ -949,19 +968,18 @@ misvm_dualqpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = N
       c = c,
       n_selections = n_selections
     ),
-    representative_inst = selected_vec,
-    traindata = NULL,
-    useful_inst_idx = NULL
+    n_step = n_selections,
+    repr_inst = selected_vec,
+    x = NULL
   )
   if (rescale) {
-    res$center <- attr(X, "scaled:center")
-    res$scale <- attr(X, "scaled:scale")
+    res$x_scale <- list(
+      "center" = attr(X, "scaled:center"),
+      "scale" = attr(X, "scaled:scale")
+    )
   }
-
-  # TODO: return the scale parameters so they can be used in prediction
   # names(res$model$w) <- colnames(X)
-
-  return(new_misvm(res, method = "qp-heuristic"))
+  return(res)
 }
 
 #' INTERNAL Create optimization model for MI-SVM problem

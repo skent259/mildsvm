@@ -97,11 +97,11 @@ test_that("mildsvm.R functions have identical output", {
   mdl2 <- MilDistribution::mil_distribution(mil_data2, cost = 1)
 
   # models are equal on key components, just differ some naming
-  expect_equal(mdl1$model$model@alpha, mdl2$model$ksvm_res@alpha)
-  expect_equal(mdl1$model$model@b, mdl2$model$ksvm_res@b)
-  expect_equal(mdl1$total_step, mdl2$total_step)
-  expect_equal(mdl1$representative_inst, mdl2$representative_inst)
-  expect_equivalent(mdl1$traindata, mdl2$traindata)
+  expect_equal(mdl1$ksvm_fit@alpha, mdl2$model$ksvm_res@alpha)
+  expect_equal(mdl1$ksvm_fit@b, mdl2$model$ksvm_res@b)
+  expect_equal(mdl1$n_step, mdl2$total_step)
+  expect_equal(mdl1$repr_inst, mdl2$representative_inst)
+  expect_equivalent(mdl1$x, mdl2$traindata)
   expect_equivalent(mdl1$useful_inst_idx, mdl2$useful_inst_idx)
 
   # predictions should match
@@ -169,7 +169,7 @@ test_that("misvm.R functions have identical output.", {
   set.seed(8)
   MilDistribution_output <- MilDistribution::MI_SVM(df1, cost = 1)
 
-  expect_equal(mildsvm_output$total_step, MilDistribution_output$total_step)
+  expect_equal(mildsvm_output$n_step, MilDistribution_output$total_step)
 
   # objects are quite different because of different ordering, but as long as predictions match that is okay
   mildsvm_inst_pred <- df1 %>%
@@ -224,7 +224,7 @@ test_that("cv_misvm.R functions have identical output.", {
 
   mildsvm_cv_output$model$model$call <- NULL
   MilDistribution_cv_output$BestMdl$svm_mdl$call <- NULL
-  expect_equal(mildsvm_cv_output$model$total_step, MilDistribution_cv_output$BestMdl$total_step)
+  expect_equal(mildsvm_cv_output$misvm_fit$n_step, MilDistribution_cv_output$BestMdl$total_step)
 
   mildsvm_inst_pred <- df1 %>%
     select(bag_label, bag_name) %>%
@@ -278,10 +278,10 @@ test_that("smm.R functions have identical output", {
                        control = list(sigma = 0.05, scale = FALSE))
   mdl2 <- MilDistribution::SMM(df %>% arrange(instance_name))
 
-  expect_equal(mdl1$model, mdl2$ksvm_res)
+  expect_equal(mdl1$ksvm_fit, mdl2$ksvm_res)
   common_components <- c("sigma", "cost")
   expect_equal(mdl1[common_components], mdl2[common_components])
-  expect_equivalent(mdl1$traindata,
+  expect_equivalent(mdl1$x,
                     mdl2$traindata %>% select(-instance_label))
 
 })
@@ -313,8 +313,8 @@ test_that("misvm.R functions have identical output on MilData object.", {
 
   mdl2 <- MilDistribution::mil_with_feature(mil_data, cost = 1)
 
-  expect_equal(mdl1$model$coefs, mdl2$svm_mdl$coefs)
-  expect_equal(mdl1$total_step, mdl2$total_step)
+  expect_equal(mdl1$svm_fit$coefs, mdl2$svm_mdl$coefs)
+  expect_equal(mdl1$n_step, mdl2$total_step)
 
   # objects are quite different because of different ordering, but as long as predictions match that is okay
   mildsvm_bag_pred <- mil_data %>%

@@ -1,4 +1,5 @@
 context("Testing the functions in misvm.R")
+suppressWarnings(library(dplyr))
 
 set.seed(8)
 mil_data <- generate_mild_df(positive_dist = 'mvnormal',
@@ -18,6 +19,9 @@ mil_data_test <- generate_mild_df(positive_dist = 'mvnormal',
                                   positive_mean = rep(2, 5))
 
 df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10)) %>%
+  select(-instance_name)
+
+df1_test <- build_instance_feature(mil_data_test, seq(0.05, 0.95, length.out = 10)) %>%
   select(-instance_name)
 
 test_that("misvm() works for data-frame-like inputs", {
@@ -190,10 +194,10 @@ test_that("Dots work in misvm() formula", {
 test_that("misvm() has correct argument handling", {
   ## weights
   misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = TRUE)
-  expect_equal(
-    misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 1, "1" = 1)),
-    misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = FALSE)
-  )
+  mdl1 <- misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 1, "1" = 1))
+  mdl1$weights <- NULL
+  mdl2 <- misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = FALSE)
+  expect_equal(mdl1, mdl2)
 
   df2 <- df1 %>% mutate(bag_label = factor(bag_label, levels = c(1, 0)))
   dimnames(df2) <- dimnames(df1)
@@ -209,20 +213,20 @@ test_that("misvm() has correct argument handling", {
   df2 <- df1 %>% mutate(bag_label = factor(bag_label, labels = c("No", "Yes")))
   dimnames(df2) <- dimnames(df1)
   expect_equal(
-    misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 2, "1" = 1))$model,
-    misvm(mi(bag_label, bag_name) ~ ., data = df2, weights = c("No" = 2, "Yes" = 1))$model
+    misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 2, "1" = 1))$svm_fit,
+    misvm(mi(bag_label, bag_name) ~ ., data = df2, weights = c("No" = 2, "Yes" = 1))$svm_fit
   )
   expect_equal(
-    misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 2, "1" = 1), method = "mip")$model,
-    misvm(mi(bag_label, bag_name) ~ ., data = df2, weights = c("No" = 2, "Yes" = 1), method = "mip")$model
+    misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 2, "1" = 1), method = "mip")$gurobi_fit,
+    misvm(mi(bag_label, bag_name) ~ ., data = df2, weights = c("No" = 2, "Yes" = 1), method = "mip")$gurobi_fit
   )
 
   expect_false(isTRUE(all.equal(
-    misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 2, "1" = 1), method = "mip")$model,
-    misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 1e-6, "1" = 1), method = "mip")$model
+    misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 2, "1" = 1), method = "mip")$gurobi_fit,
+    misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 1e-6, "1" = 1), method = "mip")$gurobi_fit
   )))
   expect_false(isTRUE(all.equal(
-    misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 2, "1" = 1), method = "qp-heuristic")$model,
+    misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 2, "1" = 1), method = "qp-heuristic")$gurobi_fit,
     misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 1e-6, "1" = 1), method = "qp-heuristic")$model
   )))
 
@@ -397,3 +401,69 @@ test_that("misvm() works on 'mild_df' objects", {
   expect_equal(mdl$summary_fns, list(mean = mean, med = median, qtl25 = ~quantile(.x, 0.25)))
   pred <- predict(mdl, new_data = mil_data_test, type = "raw")
 })
+
+test_that("`misvm()` value returns make sense", {
+
+  # different methods
+  names(misvm(x = df1[, 3:122], y = df1$bag_label, bags = df1$bag_name, method = "heuristic"))
+  names(misvm(x = df1[, 3:122], y = df1$bag_label, bags = df1$bag_name, method = "mip"))
+  names(misvm(x = df1[, 3:122], y = df1$bag_label, bags = df1$bag_name, method = "qp-heuristic"))
+
+  # different S3 methods
+  names(misvm(x = df1[, 3:122], y = df1$bag_label, bags = df1$bag_name, method = "heuristic"))
+  names(misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean, method = "heuristic", data = df1))
+  names(misvm(mil_data))
+
+  # shouldn't have `x_scale`
+  names(misvm(x = df1[, 3:122], y = df1$bag_label, bags = df1$bag_name, method = "heuristic", control = list(scale = FALSE)))
+  names(misvm(x = df1[, 3:122], y = df1$bag_label, bags = df1$bag_name, method = "mip", control = list(scale = FALSE)))
+  names(misvm(x = df1[, 3:122], y = df1$bag_label, bags = df1$bag_name, method = "qp-heuristic", control = list(scale = FALSE)))
+
+  # should have `kfm_fit`
+  expect_warning({
+    names(misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean, data = df1, method = "mip", control = list(kernel = "radial")))
+  })
+
+  # shoudln't have `weights`
+  names(misvm(x = df1[, 3:122], y = df1$bag_label, bags = df1$bag_name, method = "heuristic", weights = FALSE))
+  names(misvm(mil_data))
+
+  expect_true(TRUE)
+})
+
+test_that("Ordering of data doesn't change `misvm()` results", {
+  expect_predictions_equal <- function(model1, model2, data) {
+    # If predictions match for `type = 'raw` and `layer = 'instance'`, they will
+    # match for all other options.
+    expect_equal(predict(model1, data, type = "raw", layer = "instance"),
+                 predict(model2, data, type = "raw", layer = "instance"))
+  }
+
+  # heuristic
+  form <- mi(bag_label, bag_name) ~ X1_mean + X2_mean + X3_mean
+  mdl1 <- misvm(form , data = df1, method = "heuristic")
+  mdl2 <- misvm(form, data = df1[sample(1:nrow(df1)), ], method = "heuristic")
+  expect_predictions_equal(mdl1, mdl2, df1)
+  expect_predictions_equal(mdl1, mdl2, df1_test)
+
+  with(df1_test, {
+       pred <- predict(mdl2, df1_test, type = "raw")$.pred
+       pROC::auc(classify_bags(bag_label, bag_name),
+                 classify_bags(pred, bag_name))
+  })
+
+  # qp-heuristic
+  mdl1 <- misvm(form , data = df1, method = "qp-heuristic")
+  mdl2 <- misvm(form, data = df1[sample(1:nrow(df1)), ], method = "qp-heuristic")
+  expect_predictions_equal(mdl1, mdl2, df1)
+  expect_predictions_equal(mdl1, mdl2, df1_test)
+
+  with(df1_test, {
+    pred <- predict(mdl2, df1_test, type = "raw")$.pred
+    pROC::auc(classify_bags(bag_label, bag_name),
+              classify_bags(pred, bag_name))
+  })
+
+})
+
+

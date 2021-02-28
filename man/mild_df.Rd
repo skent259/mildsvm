@@ -8,8 +8,8 @@ mild_df(
   bag_label = character(),
   bag_name = character(),
   instance_name = character(),
-  instance_label = NULL,
-  ...
+  ...,
+  instance_label = NULL
 )
 }
 \arguments{
@@ -19,11 +19,11 @@ mild_df(
 
 \item{instance_name}{A \code{character} or \code{factor} vector.}
 
-\item{instance_label}{A \code{character}, \code{factor}, or \code{numeric} vector, or
-\code{NULL}.}
-
 \item{...}{A set of name-value pairs. These construct the covariates for a
 \code{mild_df}.}
+
+\item{instance_label}{A \code{character}, \code{factor}, or \code{numeric} vector, or
+\code{NULL}.}
 }
 \value{
 A 'mild_df' object.

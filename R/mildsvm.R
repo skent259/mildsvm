@@ -52,31 +52,29 @@ validate_mildsvm <- function(x) {
 #'   will be warm_started with the solution from `method = 'qp-heuristic'` to
 #'   potentially improve speed.
 #'
-#' @return an object of class `mildsvm`.  The object contains the following
-#'   components, if applicable:
-#'   * `model`: a model that will depend on the method used to fit.
-#'   It holds the main model components used for prediction.  If the model is
-#'   fit with `method = 'heuristic'`, this object is of class `smm`.
-#'   * `total_step`: the number of steps used in the heuristic algorithm, if
-#'   applicable.
-#'   * `representative_inst`: instances from positive bags that are selected to
-#'   be most representative of the positive instance.
-#'   * `traindata`: training data from the underlying fitting.  This data will
-#'   get used when computing the kernel matrix for prediction.
+#' @return An object of class `mildsvm`  The object contains at least the
+#'   following components:
+#'   * `*_fit`: A fit object depending on the `method` parameter.  If `method =
+#'   'heuristic'`, this will be a `ksvm` fit from the kernlab package.  If
+#'   `method = 'mip'` this will be `gurobi_fit` from a model optimization.
+#'   * `call_type`: A character indicating which method `misvm()` was called
+#'   with.
+#'   * `x`: The training data needed for computing the kernel matrix in
+#'   prediction.
+#'   * `features`: The names of features used in training.
+#'   * `levels`: The levels of `y` that are recorded for future prediction.
+#'   * `cost`: The cost parameter from function inputs.
+#'   * `weights`: The calculated weights on the `cost` parameter.
+#'   * `sigma`: The radial basis function kernel parameter.
+#'   * `repr_inst`: The instances from positive bags that are selected to be
+#'   most representative of the positive instances.
+#'   * `n_step`: If `method %in% c('heuristic', 'qp-heuristic')`, the total
+#'   steps used in the heuristic algorithm.
 #'   * `useful_inst_idx`: The instances that were selected to represent the bags
 #'    in the heuristic fitting.
-#'   * `features`: the features used for prediction.
-#'   * `call_type`: the call type, which specifies whether `mildsvm()` was
-#'   called via the formula, data.frame, of mild_df method.
-#'   * `levels`: levels of `y` that are recorded for future prediction.
-#'   * `bag_name`: the name of the column used for bags, if the formula or
-#'   mild_df method is applied.
-#'   * `instance_name`: the name of the column used for instances, if the
-#'   `formula` or `mild_df` method is applied.
-#'   * `kfm_fit`: the fit from building Nystrom features, if `method = 'mip'` and
-#'   `kernel = 'radial'`.  This is used for prediction.
-#'   * `center`: values used to center `x`, if `scale = TRUE`.
-#'   * `scale`: values used to scale `x`, if `scale = TRUE`.
+#'   * `inst_order`: A character vector that is used to modify the ordering of
+#'   input data.
+#'   * `x_scale`: If `scale = TRUE`, the scaling parameters for new predictions.
 #'
 #' @seealso [predict.mildsvm()] for prediction on new data.
 #'
@@ -204,10 +202,10 @@ mildsvm.default <- function(x, y, bags, instances, cost = 1,
 
         r <- .reorder(y, bags, x, instances)
 
-        data <- as_mild_df(cbind(bag_label = y[r$order],
-                                 bag_name = bags[r$order],
-                                 instance_name = instances[r$order],
-                                 x[r$order, , drop = FALSE]))
+        data <- mild_df(bag_label = y[r$order],
+                        bag_name = bags[r$order],
+                        instance_name = instances[r$order],
+                        x[r$order, , drop = FALSE])
         data <- dplyr::arrange(data, .data$bag_label, .data$bag_name, .data$instance_name)
 
         inst_order <- match(unique(instances[r$order]), unique(instances))
@@ -221,9 +219,6 @@ mildsvm.default <- function(x, y, bags, instances, cost = 1,
                                 kernel = control$kernel,
                                 max.step = control$max_step,
                                 sigma = control$sigma)
-        res$model$features <- col_x
-        res$model$traindata <- res$traindata
-        res$model$inst_order <- inst_order
 
     } else if (method == "mip") {
 
@@ -246,19 +241,29 @@ mildsvm.default <- function(x, y, bags, instances, cost = 1,
         stop("mildsvm requires method = 'heuristic', or 'mip'.")
     }
 
-    res$features <- col_x
-    res$call_type <- "mildsvm.default"
-    res$bag_name <- NULL
-    res$instance_name <- NULL
-    res$levels <- lev
-    if (method %in% c("mip") && control$kernel == "radial") {
-        res$kfm_fit <- kfm_fit
+    out <- res[1]
+    if (method %in% c("mip") && all(control$kernel == "radial")) {
+        out$kfm_fit <- kfm_fit
+    }
+    out$call_type <- "mildsvm.default"
+    out$x <- res$x
+    out$features <- col_x
+    out$levels <- lev
+    out$cost <- cost
+    out$sigma <- control$sigma
+    out$weights <- weights
+    out$repr_inst <- res$repr_inst
+    out$n_step <- res$n_step
+    out$useful_inst_idx <- res$useful_inst_idx
+    if (method == "heuristic") {
+        out$inst_order <- inst_order
     }
     if (control$scale & method == "heuristic") {
-        res$center <- center
-        res$scale <- scale
+        out$x_scale <- list("center" = center, "scale" = scale)
+    } else {
+        out$x_scale <- res$x_scale
     }
-    new_mildsvm(res, method = method)
+    new_mildsvm(out, method = method)
 }
 
 #' @describeIn mildsvm Method for passing formula
@@ -369,8 +374,18 @@ predict.mildsvm <- function(object, new_data,
     layer <- match.arg(layer)
     method <- attr(object, "method")
 
+    if (method == "heuristic") {
+        # pass on to the predict.smm method
+        object$call_type <- gsub("mildsvm", "smm", object$call_type)
+        if (!is.null(kernel)) {
+            kernel <- kernel[, object$inst_order, drop = FALSE]
+            kernel <- kernel[, object$useful_inst_idx, drop = FALSE]
+        }
+        return(predict.smm(object, new_data, type, layer, new_instances, new_bags, kernel, ...))
+    }
+
     # Find the instance information
-    if (object$call_type == "misvm.formula" & new_instances[1] == "instance_name" & length(new_instances) == 1) {
+    if (object$call_type == "mildsvm.formula" & new_instances[1] == "instance_name" & length(new_instances) == 1) {
         new_instances <- object$instance_name
     }
     if (length(new_instances) == 1 & new_instances[1] %in% colnames(new_data)) {
@@ -379,7 +394,7 @@ predict.mildsvm <- function(object, new_data,
         instances <- new_instances
     }
 
-    if (object$call_type == "misvm.formula") {
+    if (object$call_type == "mildsvm.formula") {
         new_x <- x_from_mild_formula(object$formula, new_data)
     } else {
         new_x <- new_data[, object$features, drop = FALSE]
@@ -388,29 +403,10 @@ predict.mildsvm <- function(object, new_data,
         new_x <- build_fm(object$kfm_fit, as.matrix(new_x))
         new_x <- average_over_instances(new_x, instances)
     }
-    if (method == "heuristic" & "center" %in% names(object) & is.null(kernel)) {
-        new_x <- as.data.frame(scale(new_x, center = object$center, scale = object$scale))
-    }
 
-    if (method == "heuristic") {
-        new_x <- as.data.frame(new_x) # in case someone passes mild_df to this...
-        new_x$instance_name <- instances
-        # scores at the instance level
-        if (!is.null(kernel)) {
-            kernel <- kernel[, object$model$inst_order, drop = FALSE]
-            # TODO: would be good to check that matrix is of the right size here
-            scores <- predict(object$model, new_data = new_x,
-                              type = "raw",
-                              kernel = kernel[, object$useful_inst_idx, drop = FALSE])
-            scores <- scores$.pred
-        } else {
-            scores <- predict(object$model, new_data = new_x, type = "raw")
-            scores <- scores$.pred
-        }
-
-    } else if (method == "mip") {
+    if (method == "mip") {
         # these scores are at the instance level
-        scores <- as.matrix(new_x) %*% object$model$w + object$model$b
+        scores <- as.matrix(new_x) %*% object$gurobi_fit$w + object$gurobi_fit$b
         # map scores back to the sample level to match nrow(new_data)
         scores <- sapply(instances, function(i) scores[which(rownames(scores) == i)])
     } else {
@@ -419,7 +415,7 @@ predict.mildsvm <- function(object, new_data,
     pos <- 2*(scores > 0) - 1
 
     if (layer == "bag") {
-        if (object$call_type == "misvm.formula" & new_bags[1] == "bag_name" & length(new_bags) == 1) {
+        if (object$call_type == "mildsvm.formula" & new_bags[1] == "bag_name" & length(new_bags) == 1) {
             new_bags <- object$bag_name
         }
         if (length(new_bags) == 1 & new_bags[1] %in% colnames(new_data)) {
@@ -441,7 +437,7 @@ predict.mildsvm <- function(object, new_data,
     # TODO: consider returning the AUC here as an attribute.  Can only do if we have the true bag labels
     # attr(res, "AUC") <- calculated_auc
     attr(res, "layer") <- layer
-    res
+    return(res)
 }
 
 # Specific implementation methods below ----------------------------------------
@@ -481,7 +477,7 @@ kernel_mil <- function(kernel_full, data_info, max.step, cost, weights,
     yy_inst <- yy[useful_inst_idx]
     step <- 1
     while (step < max.step) {
-        svm_model <- smm(x = 1:length(yy_inst),
+        smm_model <- smm(x = 1:length(yy_inst),
                          y = yy_inst,
                          instances = 1:length(yy_inst),
                          cost = cost,
@@ -490,7 +486,7 @@ kernel_mil <- function(kernel_full, data_info, max.step, cost, weights,
                                         sigma = sigma,
                                         scale = FALSE))
 
-        pred_all_score <- predict(svm_model,
+        pred_all_score <- predict(smm_model,
                                   type = "raw",
                                   new_data = NULL,
                                   new_instances = 1:nrow(kernel_full),
@@ -542,15 +538,13 @@ kernel_mil <- function(kernel_full, data_info, max.step, cost, weights,
         past_selection[, step] <- selection
     }
 
-    list(
-        svm_model = svm_model,
-        useful_inst_idx = useful_inst_idx,
-        step = step,
-        selection = selection,
-        difference = difference,
-        repeat_selection = repeat_selection,
-        n_bag = n_bag
-    )
+    smm_model$useful_inst_idx <- useful_inst_idx
+    smm_model$n_step <- step
+    smm_model$selection <- selection
+    smm_model$difference <- difference
+    smm_model$repeat_selection <- repeat_selection
+    smm_model$n_bag <- n_bag
+    return(smm_model)
 }
 
 #' Function to implement the iterative multiple instance learning with
@@ -605,20 +599,14 @@ mil_distribution <- function(data, cost, weights, max.step = 500, sigma = 0.05, 
     num_neg_inst <- length(useful_inst_idx) - length(positive_bag_name)  # calculate the number of negative instances.
 
     data_info <- unique(data[, c("bag_label", "bag_name", "instance_name"), drop = FALSE])
-    temp_res <- kernel_mil(kernel, data_info, max.step, cost, weights,
+    res <- kernel_mil(kernel, data_info, max.step, cost, weights,
         sigma, yy, useful_inst_idx)
 
-    sample_df <- data[data$instance_name %in% instance_name[temp_res$useful_inst_idx],
+    sample_df <- data[data$instance_name %in% instance_name[res$useful_inst_idx],
         -c(1, 2), drop = FALSE]
 
-    res <- list(
-        model = temp_res$svm_model,
-        total_step = temp_res$step,
-        representative_inst = cbind(positive_bag_name, temp_res$selection),
-        traindata = sample_df,
-        useful_inst_idx = temp_res$useful_inst_idx
-    )
-
-    return(new_mildsvm(res, method = "heuristic"))
+    res$x <- sample_df
+    res$repr_inst <- cbind(positive_bag_name, res$selection)
+    return(res)
 }
 
