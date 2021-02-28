@@ -491,7 +491,7 @@ test_that("Re-ordering data doesn't reduce performance", {
   expect_lte(auc2, auc1 + eps)
 })
 
-test_that("`misvm()` value returns make sense", {
+test_that("`mildsvm()` value returns make sense", {
 
   # different methods
   names(mildsvm(mil_data, method = "heuristic"))
@@ -514,4 +514,17 @@ test_that("`misvm()` value returns make sense", {
   expect_true(TRUE)
 })
 
+test_that("`predict.mildsvm()` works without new_data", {
+
+  mdl1 <- mildsvm(mil_data, method = "heuristic",
+                  control = list(scale = FALSE, sigma = 1/10))
+
+  pred1 <- predict(mdl1, mil_data_test, type = "raw", layer = "instance")
+  pred2 <- predict(mdl1, NULL, "raw", "instance",
+                   new_bags = mil_data_test$bag_label,
+                   new_instances = mil_data_test$instance_name,
+                   kernel = kme(mil_data_test, mil_data, sigma = 1/10))
+
+  expect_equal(pred1, pred2)
+})
 
