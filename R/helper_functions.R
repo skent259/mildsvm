@@ -143,7 +143,6 @@ select_cv_folds <- function(data, n_fold, fold_id) {
 #' the same variables as `misvm()`, `mildsvm()` and `smm()`.
 #' @inheritParams classify_bags
 #' @inheritParams select_cv_folds
-#' @importFrom magrittr %>%
 #' @noRd
 select_cv_folds2 <- function(y, bags, n_fold, fold_id) {
 

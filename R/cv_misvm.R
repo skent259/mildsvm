@@ -78,7 +78,6 @@ validate_cv_misvm <- function(x) {
 #'   distinct(bag_name, bag_label, .pred_class, .pred)
 #'
 #' @author Sean Kent, Yifei Liu
-#' @importFrom magrittr %>%
 #' @name cv_misvm
 NULL
 
