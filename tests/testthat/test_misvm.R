@@ -21,6 +21,9 @@ mil_data_test <- generate_mild_df(positive_dist = 'mvnormal',
 df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10)) %>%
   select(-instance_name)
 
+df1_test <- build_instance_feature(mil_data_test, seq(0.05, 0.95, length.out = 10)) %>%
+  select(-instance_name)
+
 test_that("misvm() works for data-frame-like inputs", {
   mdl1 <- misvm.default(x = df1[, 3:122],
                         y = df1$bag_label,
@@ -426,6 +429,41 @@ test_that("`misvm()` value returns make sense", {
   names(misvm(mil_data))
 
   expect_true(TRUE)
+})
+
+test_that("Ordering of data doesn't change `misvm()` results", {
+  expect_predictions_equal <- function(model1, model2, data) {
+    # If predictions match for `type = 'raw` and `layer = 'instance'`, they will
+    # match for all other options.
+    expect_equal(predict(model1, data, type = "raw", layer = "instance"),
+                 predict(model2, data, type = "raw", layer = "instance"))
+  }
+
+  # heuristic
+  form <- mi(bag_label, bag_name) ~ X1_mean + X2_mean + X3_mean
+  mdl1 <- misvm(form , data = df1, method = "heuristic")
+  mdl2 <- misvm(form, data = df1[sample(1:nrow(df1)), ], method = "heuristic")
+  expect_predictions_equal(mdl1, mdl2, df1)
+  expect_predictions_equal(mdl1, mdl2, df1_test)
+
+  with(df1_test, {
+       pred <- predict(mdl2, df1_test, type = "raw")$.pred
+       pROC::auc(classify_bags(bag_label, bag_name),
+                 classify_bags(pred, bag_name))
+  })
+
+  # qp-heuristic
+  mdl1 <- misvm(form , data = df1, method = "qp-heuristic")
+  mdl2 <- misvm(form, data = df1[sample(1:nrow(df1)), ], method = "qp-heuristic")
+  expect_predictions_equal(mdl1, mdl2, df1)
+  expect_predictions_equal(mdl1, mdl2, df1_test)
+
+  with(df1_test, {
+    pred <- predict(mdl2, df1_test, type = "raw")$.pred
+    pROC::auc(classify_bags(bag_label, bag_name),
+              classify_bags(pred, bag_name))
+  })
+
 })
 
 
