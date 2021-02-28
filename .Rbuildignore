@@ -3,3 +3,4 @@
 ^README\.Rmd$
 
 local/
+^LICENSE\.md$
