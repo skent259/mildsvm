@@ -48,3 +48,28 @@ test_that("`classify_bags()` works quickly on large input", {
   expect_lt(tm["elapsed"], 3)
 
 })
+
+test_that("`classify_bags()` works on integer bag input", {
+
+  set.seed(8)
+  scores <- 1:20
+  bags <- rep(c(1, 4, 6, 9, 2), each = 4)
+  correct <- seq(4, 20, length.out = 5)
+
+  expect_equivalent(classify_bags(scores, bags),
+                    correct)
+  expect_equivalent(classify_bags(scores, bags, condense = FALSE),
+                    rep(correct, each = 4))
+
+  bags <- rep(c("a", "b", "d", "c", "e"), each = 4)
+  expect_equivalent(classify_bags(scores, bags),
+                    correct)
+  expect_equivalent(classify_bags(scores, bags, condense = FALSE),
+                    rep(correct, each = 4))
+
+})
+
+
+
+
+
