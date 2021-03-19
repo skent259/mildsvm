@@ -229,7 +229,7 @@ convert_y <- function(y) {
   if (length(lev) == 1) {
     stop(paste0("Response y has only one level, ", lev, ", cannot perform misvm fitting."))
   } else if (length(lev) > 2) {
-    stop(paste0("Response y has more than two levels, ", lev, ", cannot perform misvm fitting."))
+    stop("Response y has more than two levels, cannot perform misvm fitting.")
   }
   if (lev[1] == 1 | lev[1] == "1" | lev[1] == TRUE) {
     lev <- rev(lev)
@@ -238,6 +238,24 @@ convert_y <- function(y) {
     message(paste0("Setting level ", lev[2], " to be the positive class for misvm fitting."))
   } # else lev[2] is like 1, keep it that way.
   y <- as.numeric(y) - 1
+  list(y = y, lev = lev)
+}
+
+#' Store the levels of y and convert to integer format.
+#' @inheritParams .reorder
+#' @noRd
+.convert_y_ordinal <- function(y) {
+  y <- ordered(y)
+  lev <- levels(y)
+  if (length(lev) == 1) {
+    stop(paste0("Response y has only one level, ", lev, ", cannot perform misvm fitting."))
+  } else if (length(lev) == 2) {
+    warning(paste0("Only 2 levels detected.  Consider using a non-ordinal method."))
+  }
+  if (lev[1] != 1 & lev[1] != "1") {
+    message(paste0("Setting level ", lev[1], " to be the lowest ordinal level"))
+  }
+  y <- as.numeric(y)
   list(y = y, lev = lev)
 }
 
