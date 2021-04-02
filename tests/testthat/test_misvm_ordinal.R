@@ -13,6 +13,7 @@ y <- sample(1:5, size = n, prob = (1 / 1:5)^2, replace = TRUE)
 bags <- rep(1:(n/5), each = 5)
 
 classify_bags(y, bags) %>% table()
+y <- classify_bags(y, bags, condense = FALSE)
 
 X <- matrix(NA, nrow = length(y), ncol = 5)
 for (y_ in unique(y)) {
