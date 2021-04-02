@@ -13,7 +13,7 @@
   bags,
   instances,
   cost = 1,
-  method = c("heuristic", "mip"),
+  method = c("heuristic", "mip", "qp-heuristic"),
   weights = TRUE,
   control = list(kernel = "radial", sigma = if (is.vector(x)) 1 else 1/ncol(x),
     nystrom_args = list(m = nrow(x), r = nrow(x), sampling = "random"), max_step = 500,
@@ -44,11 +44,11 @@ Can be a string, numeric, of factor.}
 be fed to \code{kernlab::ksvm()}, otherwise it is similarly in internal
 functions.}
 
-\item{method}{The algorithm to use in fitting (default  \code{'heuristic'}).  When
-\code{method = 'heuristic'}, which employs an algorithm similar to Andrews et
-al. (2003). When \code{method = 'mip'}, the novel MIP method will be used.  When
-\verb{method = 'qp-heuristic}, the heuristic algorithm is computed using the
-dual SVM.  See details.}
+\item{method}{The algorithm to use in fitting (default \code{'heuristic'}).  When
+\code{method = 'heuristic'}, the algorithm iterates between selecting positive
+witnesses and solving an underlying \code{\link[=smm]{smm()}} problem.  When \code{method = 'mip'}, the novel MIP method will be used.  When \code{method = 'qp-heuristic'},
+the heuristic algorithm is computed using a slightly modified dual SMM.
+See details}
 
 \item{weights}{named vector, or \code{TRUE}, to control the weight of the cost
 parameter for each possible y value.  Weights multiply against the cost

@@ -50,7 +50,7 @@ classify_bags <- function(y, bags, condense = TRUE) {
   res <- sapply(unique(bags), function(b) max(y[b == bags]))
   names(res) <- unique(bags)
   if (!condense) {
-    res <- res[bags]
+    res <- res[as.character(bags)]
   }
   return(res)
 }
