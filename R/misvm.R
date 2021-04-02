@@ -207,10 +207,6 @@ misvm.default <- function(x, y, bags,
   }
 
   if (method == "heuristic") {
-    data <- cbind(bag_label = y,
-                  bag_name = bags,
-                  instance_name = as.character(1:length(y)),
-                  x)
     y = 2*y - 1 # convert {0,1} to {-1, 1}
     res <- misvm_heuristic_fit(y, bags, x,
                                c = cost,
@@ -442,7 +438,7 @@ predict.misvm <- function(object,
   # TODO: consider returning the AUC here as an attribute.  Can only do if we have the true bag labels
   # attr(res, "AUC") <- calculated_auc
   attr(res, "layer") <- layer
-  res
+  return(res)
 }
 
 
@@ -900,7 +896,11 @@ misvm_dualqpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = N
   pos_bags <- unique(bags[y==1])
   selected <- sapply(pos_bags, function(bag) {sample(which(bags == bag), size = 1)})
 
-  K <- compute_kernel(X, type = kernel, sigma = sigma)
+  if (!is.matrix(kernel)) {
+    K <- compute_kernel(X, type = kernel, sigma = sigma)
+  } else {
+    K <- kernel
+  }
 
   params <- list()
   params$OutputFlag = 1*verbose
@@ -950,6 +950,7 @@ misvm_dualqpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = N
   # vector representing selected positive instances
   selected_vec <- rep(0, length(y))
   selected_vec[selected] <- 1
+  selected_vec[which(y == -1)] <- 1
   selected_vec <- selected_vec[order(r$order)] # un-order the vector
 
   res <- list(

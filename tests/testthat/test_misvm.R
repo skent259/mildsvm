@@ -453,7 +453,7 @@ test_that("Ordering of data doesn't change `misvm()` results", {
   })
 
   # qp-heuristic
-  mdl1 <- misvm(form , data = df1, method = "qp-heuristic")
+  mdl1 <- misvm(form, data = df1, method = "qp-heuristic")
   mdl2 <- misvm(form, data = df1[sample(1:nrow(df1)), ], method = "qp-heuristic")
   expect_predictions_equal(mdl1, mdl2, df1)
   expect_predictions_equal(mdl1, mdl2, df1_test)
