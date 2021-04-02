@@ -464,6 +464,18 @@ test_that("Ordering of data doesn't change `misvm()` results", {
               classify_bags(pred, bag_name))
   })
 
+  # mild_df object
+  mdl1 <- misvm(mil_data)
+  mdl2 <- misvm(mil_data[sample(1:nrow(mil_data)), ])
+  expect_predictions_equal(mdl1, mdl2, mil_data)
+  expect_predictions_equal(mdl1, mdl2, mil_data_test)
+
+  with(mil_data_test, {
+    pred <- predict(mdl2, mil_data_test, type = "raw")$.pred
+    pROC::auc(classify_bags(bag_label, bag_name),
+              classify_bags(pred, bag_name))
+  })
+
 })
 
 
