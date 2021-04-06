@@ -183,16 +183,24 @@ misvm.default <- function(x, y, bags,
   # store colnames of x
   col_x <- colnames(x)
 
-  # remove NaN columns
+  # remove NaN columns and columns with no variance
   nan_columns <- vapply(x, function(.x) any(is.nan(.x)), FUN.VALUE = logical(1))
-  col_x <- setdiff(col_x, names(which(nan_columns)))
-  x <- x[, col_x, drop = FALSE]
   if (any(nan_columns)) {
     rlang::warn(c(
-      "Cannot use columns with NaN values",
+      "Cannot use columns with NaN values.",
       x = paste("Removing columns", paste0(names(which(nan_columns)), collapse = ", "))
     ))
   }
+  ident_columns <- vapply(x, function(.x) all(.x == .x[1]), FUN.VALUE = logical(1))
+  if (any(ident_columns, na.rm = TRUE)) {
+    rlang::warn(c(
+      "Cannot use columns that have the same value for all rows.",
+      x = paste("Removing columns", paste0(names(which(ident_columns)), collapse = ", "))
+    ))
+  }
+  col_x <- setdiff(col_x, names(which(nan_columns)))
+  col_x <- setdiff(col_x, names(which(ident_columns)))
+  x <- x[, col_x, drop = FALSE]
 
   # weights
   if (is.numeric(weights)) {

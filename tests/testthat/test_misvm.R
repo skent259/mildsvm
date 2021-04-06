@@ -466,7 +466,7 @@ test_that("Ordering of data doesn't change `misvm()` results", {
 
 })
 
-test_that("`misvm()` works even when there are Nan columns", {
+test_that("`misvm()` works even when there are Nan columns or idential columns", {
 
   df2 <- df1
   df2$nan_feature <- NaN
@@ -487,6 +487,17 @@ test_that("`misvm()` works even when there are Nan columns", {
 
   pred <- predict(mdl1, new_data = df1_test, layer = "instance", type = "raw")
   pred <- predict(mdl2, new_data = df1_test, layer = "instance", type = "raw")
+
+  df3 <- df2
+  df3$ident_feature <- 50
+
+  expect_warning({
+    mdl1 <- misvm(x = df3[, 3:124],
+                  y = df3$bag_label,
+                  bags = df3$bag_name,
+                  method = "qp-heuristic")
+  })
+  pred <- predict(mdl1, new_data = df1_test, layer = "instance", type = "raw")
 
 })
 
