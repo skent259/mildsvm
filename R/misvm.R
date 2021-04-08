@@ -183,6 +183,25 @@ misvm.default <- function(x, y, bags,
   # store colnames of x
   col_x <- colnames(x)
 
+  # remove NaN columns and columns with no variance
+  nan_columns <- vapply(x, function(.x) any(is.nan(.x)), FUN.VALUE = logical(1))
+  if (any(nan_columns)) {
+    rlang::warn(c(
+      "Cannot use columns with NaN values.",
+      x = paste("Removing columns", paste0(names(which(nan_columns)), collapse = ", "))
+    ))
+  }
+  ident_columns <- vapply(x, function(.x) all(.x == .x[1]), FUN.VALUE = logical(1))
+  if (any(ident_columns, na.rm = TRUE)) {
+    rlang::warn(c(
+      "Cannot use columns that have the same value for all rows.",
+      x = paste("Removing columns", paste0(names(which(ident_columns)), collapse = ", "))
+    ))
+  }
+  col_x <- setdiff(col_x, names(which(nan_columns)))
+  col_x <- setdiff(col_x, names(which(ident_columns)))
+  x <- x[, col_x, drop = FALSE]
+
   # weights
   if (is.numeric(weights)) {
     stopifnot(names(weights) == lev | names(weights) == rev(lev))
@@ -195,8 +214,7 @@ misvm.default <- function(x, y, bags,
     weights <- NULL
   }
 
-  # Nystrom approximation to x for mip and qp-heuristic methods
-  # NOTE: this isn't strictly necessary for qp-heuristic, but it's the easiest way to implement
+  # Nystrom approximation to x for mip and  methods
   if (method %in% c("mip") & control$kernel == "radial") {
     control$nystrom_args$df <- as.matrix(x)
     control$nystrom_args$kernel <- control$kernel
@@ -207,10 +225,6 @@ misvm.default <- function(x, y, bags,
   }
 
   if (method == "heuristic") {
-    data <- cbind(bag_label = y,
-                  bag_name = bags,
-                  instance_name = as.character(1:length(y)),
-                  x)
     y = 2*y - 1 # convert {0,1} to {-1, 1}
     res <- misvm_heuristic_fit(y, bags, x,
                                c = cost,
@@ -442,7 +456,7 @@ predict.misvm <- function(object,
   # TODO: consider returning the AUC here as an attribute.  Can only do if we have the true bag labels
   # attr(res, "AUC") <- calculated_auc
   attr(res, "layer") <- layer
-  res
+  return(res)
 }
 
 
@@ -900,7 +914,11 @@ misvm_dualqpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = N
   pos_bags <- unique(bags[y==1])
   selected <- sapply(pos_bags, function(bag) {sample(which(bags == bag), size = 1)})
 
-  K <- compute_kernel(X, type = kernel, sigma = sigma)
+  if (!is.matrix(kernel)) {
+    K <- compute_kernel(X, type = kernel, sigma = sigma)
+  } else {
+    K <- kernel
+  }
 
   params <- list()
   params$OutputFlag = 1*verbose
@@ -950,6 +968,7 @@ misvm_dualqpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = N
   # vector representing selected positive instances
   selected_vec <- rep(0, length(y))
   selected_vec[selected] <- 1
+  selected_vec[which(y == -1)] <- 1
   selected_vec <- selected_vec[order(r$order)] # un-order the vector
 
   res <- list(

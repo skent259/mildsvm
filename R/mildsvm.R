@@ -1,4 +1,4 @@
-new_mildsvm <- function(x = list(), method = c("heuristic", "mip")) {
+new_mildsvm <- function(x = list(), method = c("heuristic", "mip", "qp-heuristic")) {
     stopifnot(is.list(x))
     method <- match.arg(method)
     structure(
@@ -27,6 +27,12 @@ validate_mildsvm <- function(x) {
 #' @inheritParams misvm
 #' @param instances A vector specifying which samples belong to each instance.
 #'   Can be a string, numeric, of factor.
+#' @param method The algorithm to use in fitting (default `'heuristic'`).  When
+#'   `method = 'heuristic'`, the algorithm iterates between selecting positive
+#'   witnesses and solving an underlying [smm()] problem.  When `method =
+#'   'mip'`, the novel MIP method will be used.  When `method = 'qp-heuristic'`,
+#'   the heuristic algorithm is computed using a slightly modified dual SMM.
+#'   See details
 #' @param formula A formula with specification `mild(y, bags, instances) ~ x`
 #'   which uses the `mild` function to create the bag-instance structure. This
 #'   argument is an alternative to the `x, y, bags, instances ` arguments, but
@@ -114,7 +120,7 @@ mildsvm <- function(x, ...) {
 #' @describeIn mildsvm Method for data.frame-like objects
 #' @export
 mildsvm.default <- function(x, y, bags, instances, cost = 1,
-                            method = c("heuristic", "mip"),
+                            method = c("heuristic", "mip", "qp-heuristic"),
                             weights = TRUE,
                             control = list(kernel = "radial",
                                            sigma = if (is.vector(x)) 1 else 1 / ncol(x),
@@ -178,6 +184,12 @@ mildsvm.default <- function(x, y, bags, instances, cost = 1,
             control$kernel <- "radial"
         }
     }
+    if (method == "qp-heuristic") {
+        if (all(control$kernel == "radial")) {
+            control$kernel <- kme(df = data.frame(instance_name = instances, x), sigma = control$sigma)
+        }
+        stopifnot(is.matrix(control$kernel))
+    }
 
     if (method == "mip" && control$kernel == "radial") {
         # Nystrom approximation to x for mip and qp-heuristic methods
@@ -237,8 +249,27 @@ mildsvm.default <- function(x, y, bags, instances, cost = 1,
                              time_limit = control$time_limit,
                              start = control$start)
 
+    } else if (method == "qp-heuristic") {
+        y <- classify_bags(y, instances)
+        bags <- classify_bags(bags, instances)
+        ind <- sapply(unique(instances), function(i) min(which(instances == i)))
+
+        y = 2*y - 1 # convert {0,1} to {-1, 1}
+        res <- misvm_dualqpheuristic_fit(y, bags, x[ind, , drop = FALSE],
+                                         c = cost,
+                                         rescale = control$scale,
+                                         weights = weights,
+                                         kernel = control$kernel,
+                                         sigma = control$sigma,
+                                         verbose = control$verbose,
+                                         time_limit = control$time_limit,
+                                         max_step = control$max_step)
+        res$x <- x # need the full x matrix for future kernel computations
+        res$gurobi_fit$instances <- instances
+        res$gurobi_fit$xmatrix <- NULL # remove for space
+        res$gurobi_fit$kernel <- NULL # remove for space
     } else {
-        stop("mildsvm requires method = 'heuristic', or 'mip'.")
+        stop("misvm requires method = 'heuristic', 'mip', or 'qp-heuristic'.")
     }
 
     out <- res[1]
@@ -403,14 +434,35 @@ predict.mildsvm <- function(object, new_data,
         new_x <- build_fm(object$kfm_fit, as.matrix(new_x))
         new_x <- average_over_instances(new_x, instances)
     }
+    if (method == "qp-heuristic") {
+        old_instances <- object$gurobi_fit$instances
+        used_instance_names <- unique(old_instances)[object$repr_inst == 1]
+        ind <- which(old_instances %in% used_instance_names)
+
+        if (is.null(kernel)) {
+            traindata <- data.frame(instance_name = old_instances[ind], object$x[ind, , drop = FALSE])
+            kernel <- kme(data.frame(instance_name = instances, new_x),
+                          traindata,
+                          sigma = object$gurobi_fit$sigma)
+        } else {
+            kernel <- kernel[, object$repr_inst == 1]
+        }
+        colnames(kernel) <- unique(old_instances[ind])
+    }
 
     if (method == "mip") {
         # these scores are at the instance level
         scores <- as.matrix(new_x) %*% object$gurobi_fit$w + object$gurobi_fit$b
         # map scores back to the sample level to match nrow(new_data)
         scores <- sapply(instances, function(i) scores[which(rownames(scores) == i)])
+    } else if (method == "qp-heuristic") {
+        ay_order <- names(object$gurobi_fit$ay)
+        scores <- kernel[, ay_order] %*% object$gurobi_fit$ay + object$gurobi_fit$b
+        scores <- as.numeric(scores)
+        names(scores) <- unique(instances)
+        scores <- scores[instances]
     } else {
-        stop("predict.mildsvm requires method = 'heuristic' or 'mip'.")
+        stop("predict.mildsvm requires method = 'heuristic', 'mip', 'qp-heuristic'.")
     }
     pos <- 2*(scores > 0) - 1
 
