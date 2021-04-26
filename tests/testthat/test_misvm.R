@@ -513,3 +513,12 @@ test_that("`misvm()` works with a few bags with only one instance", {
   expect_s3_class(mdl, "misvm")
 })
 
+test_that("`misvm()` works fine with matrices", {
+  for (method in c("heuristic", "mip", "qp-heuristic")) {
+    mdl <- misvm(x = as.matrix(df1[, 3:10]),
+                 y = df1$bag_label,
+                 bags = df1$bag_name,
+                 method = method)
+    expect_s3_class(mdl, "misvm")
+  }
+})

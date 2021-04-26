@@ -181,6 +181,7 @@ misvm.default <- function(x, y, bags,
   lev <- y_info$lev
 
   # store colnames of x
+  x <- as.data.frame(x)
   col_x <- colnames(x)
 
   # remove NaN columns and columns with no variance
