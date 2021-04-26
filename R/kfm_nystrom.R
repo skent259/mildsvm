@@ -67,10 +67,10 @@ kfm_nystrom.default <- function(df, m = nrow(df), r = m, kernel = "radial", samp
   if (is.numeric(sampling)) {
     if (length(sampling) != m)  {
       warning("Length of input 'sampling' is not equal to 'm', reverting to sampling = 'random'.")
-      sampling <- sample(1:nrow(df), m)
+      sampling <- resample(1:nrow(df), m)
     }
   } else if (sampling == 'random') {
-    sampling <- sample(1:nrow(df), m)
+    sampling <- resample(1:nrow(df), m)
   } else {
     stop("parameter 'sampling' must be a numeric vector or the character 'random'. ")
   }

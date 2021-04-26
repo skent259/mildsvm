@@ -1,5 +1,9 @@
 `%ni%` <- Negate(`%in%`)
 
+#' Safer version of sample
+#' @noRd
+resample <- function(x, ...) x[sample.int(length(x), ...)]
+
 #' Function to reorder the data by bag label, bag number, and then first data
 #' column
 #' @param y A vector of labels.
@@ -118,8 +122,8 @@ select_cv_folds <- function(data, n_fold, fold_id) {
 
     positive_bag_idx <- which(bag_info$bag_label == 1)
     negative_bag_idx <- which(bag_info$bag_label == 0)
-    positive_fold_id <- base::sample((1:length(positive_bag_idx))%%n_fold + 1)
-    negative_fold_id <- base::sample((1:length(negative_bag_idx))%%n_fold + 1)
+    positive_fold_id <- resample((1:length(positive_bag_idx))%%n_fold + 1)
+    negative_fold_id <- resample((1:length(negative_bag_idx))%%n_fold + 1)
 
     bag_id <- numeric(nrow(bag_info))
     bag_id[positive_bag_idx] <- positive_fold_id
@@ -155,8 +159,8 @@ select_cv_folds2 <- function(y, bags, n_fold, fold_id) {
 
     positive_bag_idx <- which(info_bag_layer$y == 1)
     negative_bag_idx <- which(info_bag_layer$y == 0)
-    positive_fold_id <- base::sample((1:length(positive_bag_idx))%%n_fold + 1)
-    negative_fold_id <- base::sample((1:length(negative_bag_idx))%%n_fold + 1)
+    positive_fold_id <- resample((1:length(positive_bag_idx))%%n_fold + 1)
+    negative_fold_id <- resample((1:length(negative_bag_idx))%%n_fold + 1)
 
     bag_id <- numeric(nrow(info_bag_layer))
     bag_id[positive_bag_idx] <- positive_fold_id
@@ -307,12 +311,10 @@ compute_kernel <- function(x, x2 = NULL, type = "linear", sigma = NULL) {
 #' @author Sean Kent
 bag_instance_sampling <- function(data, size) {
   stopifnot(inherits(data, "mild_df"))
-  resample <- function(x, ...) x[sample.int(length(x), ...)] # safer version of sample
-
 
   bags <- unique(data$bag_name)
   sampled_bags <- resample(c(rep(bags, size %/% length(bags)),
-                             sample(bags, size %% length(bags))))
+                             resample(bags, size %% length(bags))))
   sampled_instances <- character(size)
   sampled_rows <- numeric(size)
 
@@ -321,14 +323,14 @@ bag_instance_sampling <- function(data, size) {
     k <- length(ind)
     instances <- unique(data$instance_name[which(data$bag_name == bag)])
     sampled_instances[ind] <- resample(c(rep(instances, k %/% length(instances)),
-                                         sample(instances, k %% length(instances))))
+                                         resample(instances, k %% length(instances))))
 
     for (instance in instances) {
       ind2 <- which(instance == sampled_instances)
       l <- length(ind2)
       rows <- which(data$instance_name == instance)
       sampled_rows[ind2] <- resample(c(rep(rows, l %/% length(rows)),
-                                       sample(rows, l %% length(rows))))
+                                       resample(rows, l %% length(rows))))
     }
   }
   return(sampled_rows)

@@ -912,7 +912,9 @@ misvm_dualqpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = N
 
   # randomly select initial representative instances
   pos_bags <- unique(bags[y==1])
-  selected <- sapply(pos_bags, function(bag) {sample(which(bags == bag), size = 1)})
+  selected <- sapply(pos_bags, function(bag) {
+    resample(which(bags == bag), size = 1)
+  })
 
   if (!is.matrix(kernel)) {
     K <- compute_kernel(X, type = kernel, sigma = sigma)

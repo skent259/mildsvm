@@ -501,4 +501,15 @@ test_that("`misvm()` works even when there are Nan columns or idential columns",
 
 })
 
+test_that("`misvm()` works with a few bags with only one instance", {
+  df2 <- df1[-(2:4), ]
+  table(df2$bag_name)
+
+  mdl <- misvm(x = df2[, 3:10],
+               y = df2$bag_label,
+               bags = df2$bag_name,
+               method = "qp-heuristic")
+
+  expect_s3_class(mdl, "misvm")
+})
 
