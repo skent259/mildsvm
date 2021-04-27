@@ -1,14 +1,249 @@
+new_mior <- function(x = list()) {
+  stopifnot(is.list(x))
+  structure(
+    x,
+    class = "mior"
+  )
+}
+
+validate_mior <- function(x) {
+  message("No validations currently in place for object of class 'mior'.")
+  x
+}
+
+#' Fit MIOR model to the data
+#'
+#' TODO: add description here
+#'
+#' @inheritParams misvm
+#' @param data If `formula` is provided, a data.frame or similar from which
+#'   formula elements will be extracted
+#' @param ... Arguments passed to or from other methods.
+#'
+#' @return An object of class `mior`  The object contains at least the
+#'   following components:
+#'   TODO
+#'
+#' @seealso TODO
+#' @examples
+#' TODO
+#'
+#' @author Sean Kent
+#' @name mior
+NULL
+
+#' @export
+mior <- function(x, ...) {
+  UseMethod("mior")
+}
+
+#' @describeIn mior Method for data.frame-like objects
+#' @export
+mior.default <- function(x, y, bags,
+                         cost = 1,
+                         cost_eta = 1,
+                         method = "qp-heuristic",
+                         weights = TRUE,
+                         control = list(kernel = "linear",
+                                        sigma = if (is.vector(x)) 1 else 1 / ncol(x),
+                                        # nystrom_args = list(m = nrow(x), r = nrow(x), sampling = 'random'),
+                                        max_step = 500,
+                                        # type = "C-classification",
+                                        scale = TRUE,
+                                        verbose = FALSE,
+                                        time_limit = 60,
+                                        option = c("corrected", "xiao")
+                                        # start = FALSE
+                         ),
+                         ...)
+{
+  method <- match.arg(method, c("qp-heuristic"))
+  if ("kernel" %ni% names(control)) control$kernel <- "linear"
+  if ("sigma" %ni% names(control)) control$sigma <- if (is.vector(x)) 1 else 1 / ncol(x)
+  if ("max_step" %ni% names(control)) control$max_step <- 500
+  # if ("type" %ni% names(control)) control$type <- "C-classification"
+  if ("scale" %ni% names(control)) control$scale <- TRUE
+  if ("verbose" %ni% names(control)) control$verbose <- FALSE
+  if ("time_limit" %ni% names(control)) control$time_limit <- 60
+  if ("option" %ni% names(control)) control$option <- "corrected"
+  control$option <- match.arg(control$option, c("corrected", "xiao"))
+
+  # store the levels of y and convert to 0,1 numeric format.
+  y_info <- .convert_y_ordinal(y)
+  y <- y_info$y
+  lev <- y_info$lev
+
+  # store colnames of x
+  x <- as.data.frame(x)
+  col_x <- colnames(x)
+
+  # weights
+  if (!is.null(weights)) {
+    weights <- NULL
+    warning("Weights are not currently implemented for `misvm_ordinal()`.")
+  }
+
+  if (method == "qp-heuristic") {
+    res <- mior_dual_fit(y, bags, x,
+                         c0 = cost_eta,
+                         c1 = cost,
+                         rescale = control$scale,
+                         weights = weights,
+                         kernel = control$kernel,
+                         sigma = control$sigma,
+                         verbose = control$verbose,
+                         time_limit = control$time_limit,
+                         max_step = control$max_step,
+                         option = control$option)
+  } else {
+    stop("misvm_ordinal requires method = 'qp-heuristic'.")
+  }
+
+  out <- res[1]
+  out$call_type <- "mior.default"
+  out$x <- res$x
+  out$features <- col_x
+  out$levels <- lev
+  out$cost <- cost
+  out$cost_eta <- cost_eta
+  out$weights <- weights
+  out$repr_inst <- res$repr_inst
+  out$n_step <- res$n_step
+  out$x_scale <- res$x_scale
+  new_mior(out)
+}
+
+#' @describeIn mior Method for passing formula
+#' @export
+mior.formula <- function(formula, data, ...) {
+  mi_names <- as.character(stats::terms(formula, data = data)[[2]])
+  bag_name <- mi_names[[3]]
+
+  x <- x_from_mi_formula(formula, data)
+  response <- stats::get_all_vars(formula, data = data)
+  y <- response[, 1]
+  bags <- response[, 2]
+
+  res <- mior.default(x, y, bags, ...)
+
+  res$call_type <- "mior.formula"
+  res$formula <- formula
+  res$bag_name <- bag_name
+  return(res)
+}
+
+
+#' Predict method for `mior` object
+#'
+#' @param object An object of class `mior`
+#' @inheritParams predict.misvm
+#'
+#' @return A tibble with `nrow(new_data)` rows.  If `type = 'class'`, the tibble
+#'   will have a column `.pred_class`.  If `type = 'raw'`, the tibble will have
+#'   a column `.pred`.
+#'
+#' @seealso [mior()] for fitting the `mior` object.
+#'
+#' @examples
+#' TODO
+#'
+#' @export
+#' @author Sean Kent
+predict.mior <- function(object,
+                         new_data,
+                         type = c("class", "raw"),
+                         layer = c("bag", "instance"),
+                         new_bags = "bag_name",
+                         ...)
+{
+  type <- match.arg(type, c("class", "raw"))
+  layer <- match.arg(layer, c("bag", "instance"))
+
+  if (object$call_type == "mior.formula") {
+    new_x <- x_from_mi_formula(object$formula, new_data)
+  } else {
+    new_x <- new_data[, object$features, drop = FALSE]
+  }
+
+  # kernel
+  # if (method == "qp-heuristic") {
+  #   kernel <- compute_kernel(as.matrix(new_x),
+  #                            object$gurobi_fit$xmatrix,
+  #                            type = object$gurobi_fit$kernel,
+  #                            sigma = object$gurobi_fit$sigma)
+  # }
+
+  # if (method == "heuristic") {
+  #   pos <- predict(object = object$svm_fit, newdata = new_x, decision.values = TRUE)
+  #   scores <- attr(pos, "decision.values")
+  #   pos <- as.numeric(as.character(pos))
+  #
+  # } else if (method == "mip") {
+  #   scores <- as.matrix(new_x) %*% object$gurobi_fit$w + object$gurobi_fit$b
+  #   pos <- 2*(scores > 0) - 1
+  #
+  # } else if (method == "qp-heuristic") {
+  #   scores <- kernel %*% object$gurobi_fit$ay + object$gurobi_fit$b
+  #   pos <- 2*(scores > 0) - 1
+  scores <- as.matrix(new_x) %*% object$gurobi_fit$w
+  b_ <- object$gurobi_fit$b
+  ind <- 2:length(b_)
+  midpoints <- (b_[ind-1] + b_[ind]) / 2
+
+  dist_from_mp <- abs(outer(as.vector(scores), midpoints, `-`))
+
+  if (layer == "bag") {
+    if (object$call_type == "mior.formula" & new_bags[1] == "bag_name" & length(new_bags) == 1) {
+      new_bags <- object$bag_name
+    }
+    if (length(new_bags) == 1 & new_bags[1] %in% colnames(new_data)) {
+      bags <- new_data[[new_bags]]
+    } else {
+      bags <- new_bags
+    }
+
+    class_ <- rep(NA, length(bags))
+    for (b in unique(bags)) {
+      ind <- which(bags == b)
+      by_row <- 2
+      instance_min <- apply(dist_from_mp[ind, ], by_row, min)
+      class_[ind] <- which.min(instance_min)
+
+      by_col <- 1
+      mp_min <- apply(dist_from_mp[ind, ], by_col, min)
+      repr_inst <- ind[which.min(mp_min)]
+      scores[ind] <- scores[repr_inst]
+    }
+
+  } else {
+    by_col <- 1
+    class_ <- apply(dist_from_mp, by_col, which.min)
+  }
+
+  class_ <- factor(class_, levels = 1:length(object$levels), labels = object$levels)
+
+  res <- switch(type,
+                "raw" = tibble::tibble(.pred = as.numeric(scores)),
+                "class" = tibble::tibble(.pred_class = class_))
+
+  # TODO: consider returning the AUC here as an attribute.  Can only do if we have the true bag labels
+  # attr(res, "AUC") <- calculated_auc
+  attr(res, "layer") <- layer
+  attr(res, "midpoints") <- midpoints
+  return(res)
+}
 
 # Specific implementation methods below ----------------------------------------
 
 mior_dual_fit <- function(y, bags, x, c0, c1, rescale = TRUE, weights = NULL,
                           kernel = "linear", sigma = NULL,
-                          verbose = FALSE, time_limit = FALSE, max_step = 500) {
+                          verbose = FALSE, time_limit = FALSE, max_step = 500,
+                          option = "xiao") {
 
-  r <- .reorder(y, bags, X)
+  r <- .reorder(y, bags, x)
   y <- r$y
   bags <- r$b
-  X <- r$X
+  x <- r$X
   if (rescale) x <- scale(x)
 
   # kernel
@@ -29,7 +264,9 @@ mior_dual_fit <- function(y, bags, x, c0, c1, rescale = TRUE, weights = NULL,
   # gurobi parameters
   params <- list()
   params$OutputFlag = 1*(verbose == 2)
-  params$IntFeasTol = 1e-5
+  params$IntFeasTol = min(1e-5, 1e-5*c0, 1e-5*c1)
+  params$IntFeasTol = max(params$IntFeasTol, 1e-9) # 1e-9 is smallest gurobi will accept
+  params$BarQCPConvTol = 1e-9
   if (time_limit) params$TimeLimit = time_limit
 
   # initialize parameters
@@ -46,7 +283,7 @@ mior_dual_fit <- function(y, bags, x, c0, c1, rescale = TRUE, weights = NULL,
   b_t <- sort(rnorm(K+1))
 
   while (abs(delta_j / j_(t-1)) > threshold && t < max_step) {
-    if (min(abs(j[t+1] - j[-(t+1)])) < 1e-7) {
+    if (min(abs(j[t+1] - j[-(t+1)])) / j[t+1] < 1e-5) {
       # print(min(abs(j[t+1] - j)))
       rlang::warn(c(
         "Optimization appears to be repeating solutions.",
@@ -64,7 +301,7 @@ mior_dual_fit <- function(y, bags, x, c0, c1, rescale = TRUE, weights = NULL,
     lambda <- sign(scores)
     delta <- theta*lambda
 
-    model <- mior_dual_model(x, y, bags, delta, c0, c1)
+    model <- mior_dual_model(x, y, bags, delta, c0, c1, option)
     gurobi_result <- gurobi::gurobi(model, params = params)
 
     ind <- delta != 0
@@ -72,7 +309,7 @@ mior_dual_fit <- function(y, bags, x, c0, c1, rescale = TRUE, weights = NULL,
     # update w, b, j
     t <- t + 1
     w_t <- - colSums(a * delta[ind] * x[ind, , drop = FALSE])
-    b_t <- compute_b(gurobi_result, model, delta, y, bags, c0, c1)
+    b_t <- compute_b(gurobi_result, model, delta, y, bags, c0, c1, option, t)
     j[t+1] <- gurobi_result$objval # or, sum(a) + t(gurobi_result$x) %*% model$Q %*% gurobi_result$x
     delta_j <- j_(t-2) - j_(t-1)
 
@@ -92,11 +329,18 @@ mior_dual_fit <- function(y, bags, x, c0, c1, rescale = TRUE, weights = NULL,
   # TODO: figure out why this doesn't converge.  Might be an error in my
   # implementation... But it seems to find something that's fairly reasonable.
 
+  if (rescale) { # TODO: edit this to work
+    # NOTE: this differs from other rescaling because we use wx-b instead of wx+b
+    b_t <- b_t + sum(attr(x, "scaled:center") * w_t / attr(x, "scaled:scale"))
+    w_t <- w_t / attr(x, "scaled:scale")
+  }
+
   res <- list(
     gurobi_fit = list(
       w = w_t,
       b = b_t,
-      xmatrix = X[ind, , drop = FALSE],
+      xmatrix = x[ind, , drop = FALSE],
+      a = a,
       # ay = a * y[ind],
       # kernel = kernel,
       # sigma = sigma,
@@ -110,20 +354,20 @@ mior_dual_fit <- function(y, bags, x, c0, c1, rescale = TRUE, weights = NULL,
       n_selections = t
     ),
     n_step = t,
-    # repr_inst = selected_vec,
+    repr_inst = theta,
     x = NULL
   )
   if (rescale) {
     res$x_scale <- list(
-      "center" = attr(X, "scaled:center"),
-      "scale" = attr(X, "scaled:scale")
+      "center" = attr(x, "scaled:center"),
+      "scale" = attr(x, "scaled:scale")
     )
   }
   # names(res$model$w) <- colnames(X)
   return(res)
 }
 
-mior_dual_model <- function(x, y, bags, delta, c0, c1) {
+mior_dual_model <- function(x, y, bags, delta, c0, c1, option = "xiao") {
 
   n_a <- length(unique(bags))
   n_mu <- K <- max(y)
@@ -140,10 +384,13 @@ mior_dual_model <- function(x, y, bags, delta, c0, c1) {
   }
 
   alpha_constr <- matrix(0, nrow = n_mu+1, n_a)
-  sum_delta_plus <- sapply(unique(bags), function(bag) sum(1 + delta[bags == bag]))
-  sum_delta_minus <- sapply(unique(bags), function(bag) sum(1 - delta[bags == bag]))
-  # sum_delta_plus <- sapply(unique(bags), function(bag) 1 + sum(delta[bags == bag]))
-  # sum_delta_minus <- sapply(unique(bags), function(bag) 1 - sum(delta[bags == bag]))
+  if (option == "xiao") {
+    sum_delta_plus <- sapply(unique(bags), function(bag) sum(1 + delta[bags == bag]))
+    sum_delta_minus <- sapply(unique(bags), function(bag) sum(1 - delta[bags == bag]))
+  } else if (option == "corrected") {
+    sum_delta_plus <- sapply(unique(bags), function(bag) 1 + sum(delta[bags == bag]))
+    sum_delta_minus <- sapply(unique(bags), function(bag) 1 - sum(delta[bags == bag]))
+  }
 
   for (i in 1:n_a) {
     p <- y_bag[i] + 1 # +1 for zero-indexing
@@ -191,34 +438,34 @@ compute_theta <- function(g, bags) {
   return(theta)
 }
 
-compute_b <- function(gurobi_result, model, delta, y, bags, c0, c1) {
+compute_b <- function(gurobi_result, model, delta, y, bags, c0, c1, option = "xiao", t) {
   # names(gurobi_result$x) <- model$varnames
   a <- gurobi_result$x[grepl("a", model$varnames)]
   mu <- gurobi_result$x[grepl("mu", model$varnames)]
   rho <- gurobi_result$x[grepl("rho", model$varnames)]
 
   n_b <- length(mu) + 1
-  eps <- 1e-5
+  eps <- 1e-5 * c1
   ind <- which(a > 0 + eps & a < c1 - eps)
   if (length(ind) == 0) {
-    # browser()
     rlang::warn(c(
-      "The optimization didn't return any support vectors.",
+      paste0("[Step ", t, "] The optimization didn't return any support vectors."),
       i = "Resetting the values of `b` randomly. "
     ))
     return(sort(rnorm(n_b)))
-    # return(rep(1, n_b))
   }
 
   support_bags <- unique(bags)[ind]
   y_support <- classify_bags(y, bags)[ind]
 
   Q_tilde <- -2 * model$Q[1:length(a), 1:length(a)] # recovers delta * kernel
-  b_q <- - 0.5 * sapply(unique(bags)[ind], function(bag) sum(delta[bags == bag] + 1))
-  b_q1 <- - 0.5 * sapply(unique(bags)[ind], function(bag) sum(delta[bags == bag] - 1))
-  # b_q <- - 0.5 * sapply(unique(bags)[ind], function(bag) sum(delta[bags == bag]) + 1)
-  # b_q1 <- - 0.5 * sapply(unique(bags)[ind], function(bag) sum(delta[bags == bag]) - 1)
-  # browser()
+  if (option == "xiao") {
+    b_q <- - 0.5 * sapply(unique(bags)[ind], function(bag) sum(delta[bags == bag] + 1))
+    b_q1 <- - 0.5 * sapply(unique(bags)[ind], function(bag) sum(delta[bags == bag] - 1))
+  } else if (option == "corrected") {
+    b_q <- - 0.5 * sapply(unique(bags)[ind], function(bag) sum(delta[bags == bag]) + 1)
+    b_q1 <- - 0.5 * sapply(unique(bags)[ind], function(bag) sum(delta[bags == bag]) - 1)
+  }
   # linear model using complementary slackness constraints: resp ~ pred_matrix
   resp <- as.numeric(- a %*% Q_tilde[, ind] ) + 1
   # resp <- as.numeric(- a %*% Q_tilde ) + 1
@@ -233,8 +480,8 @@ compute_b <- function(gurobi_result, model, delta, y, bags, c0, c1) {
   # information from mu; b_q = b_{q-1} if \mu_q > 0
   for (q in 1:length(mu)) {
     if (mu[q] > 0 + eps) {
-      rlang::warn(c(
-        paste0("The optimization solution suggests that two intercepts are equal: b[", q-1, "] == b[", q, "].")
+      rlang::inform(c(
+        paste0("[Step ", t, "] The optimization solution suggests that two intercepts are equal: b[", q-1, "] == b[", q, "].")
       ))
       start <- length(ind)
       pred_matrix[start + q, q] <- 1
@@ -243,21 +490,21 @@ compute_b <- function(gurobi_result, model, delta, y, bags, c0, c1) {
   }
   # information from rho, gamma, eta; b_0 = b_K if \rho < C_0
   if (rho < c0 - eps) {
-    rlang::warn(c(
-      "The optimization solution suggests that endpoints are equal: b[0] == b[K]."
+    rlang::inform(c(
+      paste0("[Step ", t, "] The optimization solution suggests that endpoints are equal: b[0] == b[K].")
     ))
     start <- length(ind) + length(mu)
     pred_matrix[start + 1, 1] <- -1
     pred_matrix[start + 1, n_b] <- 1
   }
-  # browser()
   b <- coef(lm(resp ~ 0 + pred_matrix))
   if (any(is.na(b))) {
     # If values are NA, that means the particular column isn't needed for
     # prediction, i.e. that the dropped coefficient is 0.
-    rlang::warn("There were NA values in `b`.  Replacing with 0.")
+    rlang::warn(
+      paste0("[Step ", t, "] There were NA values in `b`.  Replacing with 0.")
+    )
     b[which(is.na(b))] <- 0
-    # rlang::abort("There are NA values in `b`.")
   }
   return(b)
 }
