@@ -13,20 +13,89 @@ validate_mior <- function(x) {
 
 #' Fit MIOR model to the data
 #'
-#' TODO: add description here
+#' This function fits the MIOR model, proposed by Xiao Y, Liu B, and Hao Z
+#' (2018) in "Multiple-instance Ordinal Regression".  MIOR is a modified SVM
+#' framework with parallel, ordered hyperplanes where the error terms are based
+#' only on the instance closest to a midpoint between hyperplanes.
+#'
+#' Predictions (see [predict.mior()]) are determined by considering the smallest
+#' distance from each point to the midpoint hyperplanes across all instances in
+#' the bag.  The prediction corresponds to the hyperplane having such a minimal
+#' distance.
+#'
+#' It appears as though an error in Equation (12) persists to the dual form in
+#' (21). A corrected version of this dual formulation can be used with
+#' `control$option = 'corrected'`, or the formulation as writted can be used
+#' with `control$option = 'xiao'`.
+#'
 #'
 #' @inheritParams misvm
+#' @param cost_eta The additional cost parameter in MIOR which controls how far
+#'   away the first and last separating hyperplanes are relative to other costs.
 #' @param data If `formula` is provided, a data.frame or similar from which
 #'   formula elements will be extracted
+#' @param control list of additional parameters passed to the method that
+#'   control computation with the following components:
+#'   * `kernel` either a character the describes the kernel ('linear' or
+#'   'radial') or a kernel matrix at the instance level.
+#'   * `sigma` argument needed for radial basis kernel.
+#'   * `max_step` argument used when `method = 'heuristic'`. Maximum steps of
+#'   iteration for the heuristic algorithm.
+#'   * `scale` argument used for all methods. A logical for whether to rescale
+#'   the input before fitting.
+#'   * `verbose` argument used when `method = 'mip'`. Whether to message output
+#'   to the console.
+#'   * `time_limit` argument used when `method = 'mip'`. `FALSE`, or a time
+#'   limit (in seconds) passed to `gurobi()` parameters.  If `FALSE`, no time
+#'   limit is given.
+#'   * `option` argument the controls the constraint calculation.  See details.
 #' @param ... Arguments passed to or from other methods.
 #'
-#' @return An object of class `mior`  The object contains at least the
-#'   following components:
-#'   TODO
+#' @return An object of class `mior`  The object contains at least the following
+#'   components:
+#'   * `gurobi_fit`: A fit from model optimization that includes relevant
+#'   components.
+#'   * `call_type`: A character indicating which method `misvm()` was called
+#'   with.
+#'   * `features`: The names of features used in training.
+#'   * `levels`: The levels of `y` that are recorded for future prediction.
+#'   * `cost`: The cost parameter from function inputs.
+#'   * `weights`: The calculated weights on the `cost` parameter.
+#'   * `repr_inst`: The instances from positive bags that are selected to be
+#'   most representative of the positive instances.
+#'   * `n_step`: If `method %in% c('heuristic', 'qp-heuristic')`, the total
+#'   steps used in the heuristic algorithm.
+#'   * `x_scale`: If `scale = TRUE`, the scaling parameters for new predictions.
 #'
-#' @seealso TODO
+#' @seealso [predict.misvm()] for prediction on new data.
+#'
 #' @examples
-#' TODO
+#' set.seed(8)
+#' # make some data
+#' n <- 15
+#' X <- rbind(
+#'   mvtnorm::rmvnorm(n/3, mean = c(4, -2, 0)),
+#'   mvtnorm::rmvnorm(n/3, mean = c(0, 0, 0)),
+#'   mvtnorm::rmvnorm(n/3, mean = c(-2, 1, 0))
+#' )
+#' score <- X %*% c(2, -1, 0)
+#' y <- as.numeric(cut(score, c(-Inf, quantile(score, probs = 1:2 / 3), Inf)))
+#' bags <- 1:length(y)
+#'
+#' # add in points outside boundaries
+#' X <- rbind(
+#'   X,
+#'   mvtnorm::rmvnorm(n, mean = c(6, -3, 0)),
+#'   mvtnorm::rmvnorm(n, mean = c(-6, 3, 0))
+#' )
+#' y <- c(y, rep(-1, 2*n))
+#' bags <- rep(bags, 3)
+#' repr <- c(rep(1, n), rep(0, 2*n))
+#'
+#' y_bag <- classify_bags(y, bags, condense = FALSE)
+#'
+#' mdl1 <- mior(X, y_bag, bags)
+#' predict(mdl1, X, new_bags = bags)
 #'
 #' @author Sean Kent
 #' @name mior
@@ -43,7 +112,7 @@ mior.default <- function(x, y, bags,
                          cost = 1,
                          cost_eta = 1,
                          method = "qp-heuristic",
-                         weights = TRUE,
+                         weights = NULL,
                          control = list(kernel = "linear",
                                         sigma = if (is.vector(x)) 1 else 1 / ncol(x),
                                         # nystrom_args = list(m = nrow(x), r = nrow(x), sampling = 'random'),
@@ -135,6 +204,11 @@ mior.formula <- function(formula, data, ...) {
 
 #' Predict method for `mior` object
 #'
+#' @details
+#' When the object was fitted using the `formula` method, then the parameters
+#' `new_bags` and `new_instances` are not necessary, as long as the names match
+#' the original function call.
+#'
 #' @param object An object of class `mior`
 #' @inheritParams predict.misvm
 #'
@@ -145,7 +219,38 @@ mior.formula <- function(formula, data, ...) {
 #' @seealso [mior()] for fitting the `mior` object.
 #'
 #' @examples
-#' TODO
+#' set.seed(8)
+#' # make some data
+#' n <- 15
+#' X <- rbind(
+#'   mvtnorm::rmvnorm(n/3, mean = c(4, -2, 0)),
+#'   mvtnorm::rmvnorm(n/3, mean = c(0, 0, 0)),
+#'   mvtnorm::rmvnorm(n/3, mean = c(-2, 1, 0))
+#' )
+#' score <- X %*% c(2, -1, 0)
+#' y <- as.numeric(cut(score, c(-Inf, quantile(score, probs = 1:2 / 3), Inf)))
+#' bags <- 1:length(y)
+#'
+#' # add in points outside boundaries
+#' X <- rbind(
+#'   X,
+#'   mvtnorm::rmvnorm(n, mean = c(6, -3, 0)),
+#'   mvtnorm::rmvnorm(n, mean = c(-6, 3, 0))
+#' )
+#' y <- c(y, rep(-1, 2*n))
+#' bags <- rep(bags, 3)
+#' repr <- c(rep(1, n), rep(0, 2*n))
+#'
+#' y_bag <- classify_bags(y, bags, condense = FALSE)
+#'
+#' mdl1 <- mior(X, y_bag, bags)
+#' # summarize predictions at the bag layer
+#' library(dplyr)
+#' df1 <- bind_cols(y = y_bag, bags = bags, as.data.frame(X))
+#' df1 %>%
+#'   bind_cols(predict(mdl1, df1, new_bags = bags, type = "class")) %>%
+#'   bind_cols(predict(mdl1, df1, new_bags = bags, type = "raw")) %>%
+#'   distinct(y, bags, .pred_class, .pred)
 #'
 #' @export
 #' @author Sean Kent
@@ -159,6 +264,9 @@ predict.mior <- function(object,
   type <- match.arg(type, c("class", "raw"))
   layer <- match.arg(layer, c("bag", "instance"))
 
+  if (is.matrix(new_data)) {
+    new_data <- as.data.frame(new_data)
+  }
   if (object$call_type == "mior.formula") {
     new_x <- x_from_mi_formula(object$formula, new_data)
   } else {
@@ -279,8 +387,8 @@ mior_dual_fit <- function(y, bags, x, c0, c1, rescale = TRUE, weights = NULL,
   }
   j[1] <- 1e-3 # j(-1)
 
-  w_t <- rnorm(ncol(x)) # check to see if there is a suggested initialization
-  b_t <- sort(rnorm(K+1))
+  w_t <- stats::rnorm(ncol(x)) # check to see if there is a suggested initialization
+  b_t <- sort(stats::rnorm(K+1))
 
   while (abs(delta_j / j_(t-1)) > threshold && t < max_step) {
     if (min(abs(j[t+1] - j[-(t+1)])) / j[t+1] < 1e-5) {
@@ -452,7 +560,7 @@ compute_b <- function(gurobi_result, model, delta, y, bags, c0, c1, option = "xi
       paste0("[Step ", t, "] The optimization didn't return any support vectors."),
       i = "Resetting the values of `b` randomly. "
     ))
-    return(sort(rnorm(n_b)))
+    return(sort(stats::rnorm(n_b)))
   }
 
   support_bags <- unique(bags)[ind]
@@ -497,7 +605,7 @@ compute_b <- function(gurobi_result, model, delta, y, bags, c0, c1, option = "xi
     pred_matrix[start + 1, 1] <- -1
     pred_matrix[start + 1, n_b] <- 1
   }
-  b <- coef(lm(resp ~ 0 + pred_matrix))
+  b <- stats::coef(stats::lm(resp ~ 0 + pred_matrix))
   if (any(is.na(b))) {
     # If values are NA, that means the particular column isn't needed for
     # prediction, i.e. that the dropped coefficient is 0.

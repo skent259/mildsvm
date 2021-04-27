@@ -143,5 +143,5 @@ predict(mdl1, X, new_bags = bags)
 \code{\link[=predict.misvm_ordinal]{predict.misvm_ordinal()}} for prediction on new data.
 }
 \author{
-Sean Kent, Yifei Liu
+Sean Kent
 }

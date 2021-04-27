@@ -63,7 +63,7 @@ validate_misvm_ordinal <- function(x) {
 #' mdl1 <- misvm_ordinal(X, y, bags, weights = NULL)
 #' predict(mdl1, X, new_bags = bags)
 #'
-#' @author Sean Kent, Yifei Liu
+#' @author Sean Kent
 #' @name misvm_ordinal
 NULL
 

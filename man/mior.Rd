@@ -13,7 +13,7 @@
   cost = 1,
   cost_eta = 1,
   method = "qp-heuristic",
-  weights = TRUE,
+  weights = NULL,
   control = list(kernel = "linear", sigma = if (is.vector(x)) 1 else 1/ncol(x),
     max_step = 500, scale = TRUE, verbose = FALSE, time_limit = 60, option =
     c("corrected", "xiao")),
@@ -38,6 +38,9 @@ string, numeric, of factor.}
 be fed to \code{kernlab::ksvm()}, otherwise it is similarly in internal
 functions.}
 
+\item{cost_eta}{The additional cost parameter in MIOR which controls how far
+away the first and last separating hyperplanes are relative to other costs.}
+
 \item{method}{The algorithm to use in fitting (default  \code{'heuristic'}).  When
 \code{method = 'heuristic'}, which employs an algorithm similar to Andrews et
 al. (2003). When \code{method = 'mip'}, the novel MIP method will be used.  When
@@ -56,13 +59,8 @@ control computation with the following components:
 \item \code{kernel} either a character the describes the kernel ('linear' or
 'radial') or a kernel matrix at the instance level.
 \item \code{sigma} argument needed for radial basis kernel.
-\item \code{nystrom_args} a list of parameters to pass to \code{\link[=kfm_nystrom]{kfm_nystrom()}}. This is
-used when \code{method = 'mip'} and \code{kernel = 'radial'} to generate a Nystrom
-approximation of the kernel features.
 \item \code{max_step} argument used when \code{method = 'heuristic'}. Maximum steps of
 iteration for the heuristic algorithm.
-\item \code{type}: argument used when \code{method = 'heuristic'}. The \code{type} argument is
-passed to \code{e1071::svm()}.
 \item \code{scale} argument used for all methods. A logical for whether to rescale
 the input before fitting.
 \item \code{verbose} argument used when \code{method = 'mip'}. Whether to message output
@@ -70,9 +68,7 @@ to the console.
 \item \code{time_limit} argument used when \code{method = 'mip'}. \code{FALSE}, or a time
 limit (in seconds) passed to \code{gurobi()} parameters.  If \code{FALSE}, no time
 limit is given.
-\item \code{start} argument used when \code{method = 'mip'}.  If \code{TRUE}, the mip program
-will be warm_started with the solution from \code{method = 'qp-heuristic'} to
-potentially improve speed.
+\item \code{option} argument the controls the constraint calculation.  See details.
 }}
 
 \item{...}{Arguments passed to or from other methods.}
@@ -86,12 +82,40 @@ argument. See examples.}
 formula elements will be extracted}
 }
 \value{
-An object of class \code{mior}  The object contains at least the
-following components:
-TODO
+An object of class \code{mior}  The object contains at least the following
+components:
+\itemize{
+\item \code{gurobi_fit}: A fit from model optimization that includes relevant
+components.
+\item \code{call_type}: A character indicating which method \code{misvm()} was called
+with.
+\item \code{features}: The names of features used in training.
+\item \code{levels}: The levels of \code{y} that are recorded for future prediction.
+\item \code{cost}: The cost parameter from function inputs.
+\item \code{weights}: The calculated weights on the \code{cost} parameter.
+\item \code{repr_inst}: The instances from positive bags that are selected to be
+most representative of the positive instances.
+\item \code{n_step}: If \code{method \%in\% c('heuristic', 'qp-heuristic')}, the total
+steps used in the heuristic algorithm.
+\item \code{x_scale}: If \code{scale = TRUE}, the scaling parameters for new predictions.
+}
 }
 \description{
-TODO: add description here
+This function fits the MIOR model, proposed by Xiao Y, Liu B, and Hao Z
+(2018) in "Multiple-instance Ordinal Regression".  MIOR is a modified SVM
+framework with parallel, ordered hyperplanes where the error terms are based
+only on the instance closest to a midpoint between hyperplanes.
+}
+\details{
+Predictions (see \code{\link[=predict.mior]{predict.mior()}}) are determined by considering the smallest
+distance from each point to the midpoint hyperplanes across all instances in
+the bag.  The prediction corresponds to the hyperplane having such a minimal
+distance.
+
+It appears as though an error in Equation (12) persists to the dual form in
+(21). A corrected version of this dual formulation can be used with
+\code{control$option = 'corrected'}, or the formulation as writted can be used
+with \code{control$option = 'xiao'}.
 }
 \section{Methods (by class)}{
 \itemize{
@@ -101,11 +125,36 @@ TODO: add description here
 }}
 
 \examples{
-TODO
+set.seed(8)
+# make some data
+n <- 15
+X <- rbind(
+  mvtnorm::rmvnorm(n/3, mean = c(4, -2, 0)),
+  mvtnorm::rmvnorm(n/3, mean = c(0, 0, 0)),
+  mvtnorm::rmvnorm(n/3, mean = c(-2, 1, 0))
+)
+score <- X \%*\% c(2, -1, 0)
+y <- as.numeric(cut(score, c(-Inf, quantile(score, probs = 1:2 / 3), Inf)))
+bags <- 1:length(y)
+
+# add in points outside boundaries
+X <- rbind(
+  X,
+  mvtnorm::rmvnorm(n, mean = c(6, -3, 0)),
+  mvtnorm::rmvnorm(n, mean = c(-6, 3, 0))
+)
+y <- c(y, rep(-1, 2*n))
+bags <- rep(bags, 3)
+repr <- c(rep(1, n), rep(0, 2*n))
+
+y_bag <- classify_bags(y, bags, condense = FALSE)
+
+mdl1 <- mior(X, y_bag, bags)
+predict(mdl1, X, new_bags = bags)
 
 }
 \seealso{
-TODO
+\code{\link[=predict.misvm]{predict.misvm()}} for prediction on new data.
 }
 \author{
 Sean Kent
