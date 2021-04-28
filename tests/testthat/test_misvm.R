@@ -522,3 +522,34 @@ test_that("`misvm()` works fine with matrices", {
     expect_s3_class(mdl, "misvm")
   }
 })
+
+
+test_that("`misvm.formula()` handles identical columns correctly.", {
+  df2 <- df1
+  df2$constant <- 1
+
+  for (method in c("heuristic", "qp-heuristic", "mip")) {
+    expect_warning({
+      mdl1 <- misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean + constant,
+                    data = df2,
+                    method = method)
+    }, "Cannot use columns"  )
+
+    expect_warning({
+      mdl2 <- misvm(x = df2[, c("X1_mean", "X2_mean", "constant")],
+                    y = df2$bag_label,
+                    bags = df2$bag_name,
+                    method = method)
+    })
+
+    expect_equal(mdl1$features, c("X1_mean", "X2_mean"))
+
+    expect_equal(
+      predict(mdl1, new_data = df2),
+      predict(mdl2, new_data = df2)
+    )
+  }
+
+
+})
+

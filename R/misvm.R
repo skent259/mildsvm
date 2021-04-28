@@ -396,6 +396,7 @@ predict.misvm <- function(object,
 
   if (object$call_type == "misvm.formula") {
     new_x <- x_from_mi_formula(object$formula, new_data)
+    new_x <- new_x[, object$features, drop = FALSE]
   } else {
     new_x <- new_data[, object$features, drop = FALSE]
   }
