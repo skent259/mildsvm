@@ -70,6 +70,25 @@ test_that("`classify_bags()` works on integer bag input", {
 })
 
 
+test_that("`.reorder()` works as expected", {
+
+  y <- c(rep(-1, 3), rep(1, 5), rep(-1, 2))
+  bags <- c(rep(1, 3), rep(2, 2), rep(3, 3), rep(4, 2))
+  set.seed(8)
+  X <- cbind(rnorm(10), rnorm(10))
+
+  r1 <- .reorder(y, bags, X)
+  ind <- sample(1:length(y))
+  r2 <- .reorder(y[ind], bags[ind], X[ind, , drop = FALSE])
+
+  matching <- c("y", "b", "X", "inst")
+  expect_equal(r1[matching], r1[matching])
+
+
+  .reorder(y, bags, X, i = 1:10)
+  .reorder(y, bags, X, i = 10:1)
+
+})
 
 
 

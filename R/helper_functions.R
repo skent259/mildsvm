@@ -9,11 +9,13 @@
 #' @noRd
 .reorder <- function(y, b, X, i = NULL) {
   b <- as.numeric(as.factor(b))
-  if (is.null(i)) i <- 1:length(y)
-  i <- as.numeric(as.factor(i))
   ## order by bag label (negative first), and then order data by bag
-  data_order <- order(y, b, i, X[,1])
-
+  if (is.null(i)) {
+    data_order <- order(y, b, X[,1])
+  } else {
+    i <- as.numeric(as.factor(i))
+    data_order <- order(y, b, i, X[,1])
+  }
   list(y = y[data_order],
        b = b[data_order],
        X = as.matrix(X[data_order, , drop = FALSE]),

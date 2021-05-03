@@ -340,7 +340,7 @@ test_that("misvm() has correct argument handling", {
 
 
 test_that("mildsvm mip can warm start", {
-
+  set.seed(8)
   verbose <- interactive()
 
   # manually check that the output says "User MIP start produced solution with objective ..."

@@ -102,9 +102,9 @@ test_that("cv_misvm() works for data-frame-like inputs", {
   pROC::auc(response = pred_bag$bag_label, predictor = pred_bag$.pred)
   expect_equal(dim(pred_bag), c(20, 4))
   expect_equal(round(pred_bag$.pred[1:5], 4),
-               c(-0.1722, -1.0722, -0.4241,  0.4497, -0.3856))
+               c(-0.5933, -1.1100,  0.9823,  0.9583,  0.0760))
   expect_equal(round(as.numeric(pROC::auc(response = pred_bag$bag_label, predictor = pred_bag$.pred)), 4),
-               0.7912)
+               0.6703)
 
 })
 
