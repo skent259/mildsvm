@@ -553,3 +553,36 @@ test_that("`misvm.formula()` handles identical columns correctly.", {
 
 })
 
+test_that("Extra factor levels don't cause problems for `misvm()`", {
+  df2 <- df1
+  df2$bag_name <- as.factor(as.numeric(factor(df2$bag_name)))
+  # all sorts of factor mutilations
+  levels(df2$bag_name) <- c(levels(df2$bag_name), "bag1001")
+  df2$bag_name <- relevel(df2$bag_name, 10)
+  df2$bag_name
+
+  method <- "qp-heuristic"
+  mdl1 <- misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean, data = df2, method = method)
+  mdl2 <- misvm(df2[, 3:10], df2$bag_label, df2$bag_name, method = method)
+
+  pred <- predict(mdl1, new_data = df1)
+  pred <- predict(mdl2, new_data = df1)
+
+  expect_true(TRUE)
+})
+
+test_that("Formulas with spaces in names work for `misvm()`", {
+  df2 <- df1[, 1:10]
+
+  colnames(df2)[3] <- "space name"
+
+  method = "qp-heuristic"
+  mdl1 <- misvm(mi(bag_label, bag_name) ~ ., data = df2, method = method)
+  mdl2 <- misvm(mi(bag_label, bag_name) ~ `space name` + X1_0.15, data = df2, method = method)
+
+  mdl2$features
+  predict(mdl1, df2)
+  predict(mdl2, df2)
+
+  expect_true(TRUE)
+})
