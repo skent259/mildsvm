@@ -23,6 +23,18 @@
        order = data_order)
 }
 
+#' Version of `base::max()` that keeps the names attribute
+#' @noRd
+.max <- function(x) {
+  x[which.max(x)]
+}
+
+#' Version of `base::min()` that keeps the names attribute
+#' @noRd
+.min <- function(x) {
+  x[which.min(x)]
+}
+
 #' Classify y from bags
 #'
 #' Formally, this function applies `max()` on `y` for each level of `bags`.
