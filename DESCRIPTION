@@ -1,7 +1,7 @@
 Package: mildsvm
 Type: Package
 Title: Multiple-instance Learning in R
-Version: 0.3.1.9002
+Version: 0.3.1.9003
 Authors@R: 
     c(person("Sean", "Kent",
              email = "skent259@gmail.com",
