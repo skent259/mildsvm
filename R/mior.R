@@ -314,11 +314,11 @@ predict.mior <- function(object,
     for (b in unique(bags)) {
       ind <- which(bags == b)
       by_row <- 2
-      instance_min <- apply(dist_from_mp[ind, ], by_row, min)
+      instance_min <- apply(dist_from_mp[ind, , drop = FALSE], by_row, min)
       class_[ind] <- which.min(instance_min)
 
       by_col <- 1
-      mp_min <- apply(dist_from_mp[ind, ], by_col, min)
+      mp_min <- apply(dist_from_mp[ind, , drop = FALSE], by_col, min)
       repr_inst <- ind[which.min(mp_min)]
       scores[ind] <- scores[repr_inst]
     }
@@ -512,7 +512,7 @@ mior_dual_model <- function(x, y, bags, delta, c0, c1, option = "xiao") {
 
   # Quadratic objective matrix
   ind <- delta != 0
-  kernel <- x[ind, ] %*% t(x[ind, ])
+  kernel <- x[ind, , drop = FALSE] %*% t(x[ind, , drop = FALSE])
   alpha_Q <- - 0.5 * (delta[ind] %*% t(delta[ind])) * kernel
   mu_rho_Q <- matrix(0, n_mu + n_rho, n_mu + n_rho)
   Q <- Matrix::bdiag(alpha_Q, mu_rho_Q)
@@ -566,7 +566,7 @@ compute_b <- function(gurobi_result, model, delta, y, bags, c0, c1, option = "xi
   support_bags <- unique(bags)[ind]
   y_support <- classify_bags(y, bags)[ind]
 
-  Q_tilde <- -2 * model$Q[1:length(a), 1:length(a)] # recovers delta * kernel
+  Q_tilde <- -2 * model$Q[1:length(a), 1:length(a), drop = FALSE] # recovers delta * kernel
   if (option == "xiao") {
     b_q <- - 0.5 * sapply(unique(bags)[ind], function(bag) sum(delta[bags == bag] + 1))
     b_q1 <- - 0.5 * sapply(unique(bags)[ind], function(bag) sum(delta[bags == bag] - 1))
@@ -575,7 +575,7 @@ compute_b <- function(gurobi_result, model, delta, y, bags, c0, c1, option = "xi
     b_q1 <- - 0.5 * sapply(unique(bags)[ind], function(bag) sum(delta[bags == bag]) - 1)
   }
   # linear model using complementary slackness constraints: resp ~ pred_matrix
-  resp <- as.numeric(- a %*% Q_tilde[, ind] ) + 1
+  resp <- as.numeric(- a %*% Q_tilde[, ind, drop = FALSE] ) + 1
   # resp <- as.numeric(- a %*% Q_tilde ) + 1
   resp <- c(resp, rep(0, length(mu) + 1))
   pred_matrix <- matrix(0, nrow = length(ind) + length(mu) + 1, ncol = n_b)
