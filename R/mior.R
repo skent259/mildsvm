@@ -375,6 +375,7 @@ mior_dual_fit <- function(y, bags, x, c0, c1, rescale = TRUE, weights = NULL,
   params$IntFeasTol = min(1e-5, 1e-5*c0, 1e-5*c1)
   params$IntFeasTol = max(params$IntFeasTol, 1e-9) # 1e-9 is smallest gurobi will accept
   params$BarQCPConvTol = 1e-9
+  params$PSDTol = 1e-4
   if (time_limit) params$TimeLimit = time_limit
 
   # initialize parameters
