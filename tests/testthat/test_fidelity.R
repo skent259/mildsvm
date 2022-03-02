@@ -1,12 +1,13 @@
 context("Fidelity to MilDistribution package")
 suppressWarnings({
   # library(mildsvm)
-  library(MilDistribution)
+  # library(MilDistribution)
   library(dplyr)
 })
 
 
 test_that("GenerateData.R functions have identical output", {
+  skip_if_no_MilDistrubution()
   mil_data <- mildsvm::generate_mild_df(positive_dist = "mvt",
                                         negative_dist = "mvnormal",
                                         remainder_dist = "mvnormal",
@@ -35,6 +36,7 @@ test_that("GenerateData.R functions have identical output", {
 })
 
 test_that("kme.R functions have identical output", {
+  skip_if_no_MilDistrubution()
   mil_data <- mildsvm::generate_mild_df(positive_dist = "mvt",
                                         negative_dist = "mvnormal",
                                         remainder_dist = "mvnormal",
@@ -67,6 +69,8 @@ test_that("kme.R functions have identical output", {
 })
 
 test_that("mildsvm.R functions have identical output", {
+  skip_if_no_gurobi()
+  skip_if_no_MilDistrubution()
   set.seed(8)
   mil_data <- mildsvm::generate_mild_df(positive_dist = "mvt",
                                         negative_dist = "mvnormal",
@@ -146,6 +150,8 @@ test_that("mildsvm.R functions have identical output", {
 })
 
 test_that("misvm.R functions have identical output.", {
+  skip_if_no_gurobi()
+  skip_if_no_MilDistrubution()
   set.seed(8)
   mil_data <- mildsvm::generate_mild_df(positive_dist = 'mvt',
                                         negative_dist = 'mvnormal',
@@ -198,6 +204,8 @@ test_that("misvm.R functions have identical output.", {
 })
 
 test_that("cv_misvm.R functions have identical output.", {
+  skip_if_no_gurobi()
+  skip_if_no_MilDistrubution()
   set.seed(8)
   mil_data <- mildsvm::generate_mild_df(positive_dist = 'mvt',
                                         negative_dist = 'mvnormal',
@@ -251,6 +259,8 @@ test_that("cv_misvm.R functions have identical output.", {
 })
 
 test_that("smm.R functions have identical output", {
+  skip_if_no_gurobi()
+  skip_if_no_MilDistrubution()
   set.seed(8)
   n_instances <- 10
   n_samples <- 20
@@ -287,6 +297,8 @@ test_that("smm.R functions have identical output", {
 })
 
 test_that("misvm.R functions have identical output on MilData object.", {
+  skip_if_no_gurobi()
+  skip_if_no_MilDistrubution()
   set.seed(8)
   mil_data <- mildsvm::generate_mild_df(positive_dist = 'mvt',
                                         negative_dist = 'mvnormal',

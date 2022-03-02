@@ -36,12 +36,11 @@ test_that("mildsvm example works", {
   mdl1 <- mildsvm(mil_data)
   mdl2 <- mildsvm(mild(bag_label, bag_name, instance_name) ~ X1 + X2 + X3, data = mil_data)
 
-  expect_warning({
-    if (require(gurobi)) {
-      foo <- mildsvm(mil_data, method = "mip", control = list(nystrom_args = list(m = 10, r = 10)))
-      predict(foo, mil_data)
-    }
-  })
+
+  if (suppressWarnings(require(gurobi)) ) {
+    foo <- mildsvm(mil_data, method = "mip", control = list(nystrom_args = list(m = 10, r = 10)))
+    predict(foo, mil_data)
+  }
 
 
   predict(mdl1, new_data = mil_data, type = "raw", layer = "bag")
@@ -110,7 +109,7 @@ test_that("misvm.R examples work", {
                c(1.0000,  0.0654,  1.0000,  0.9245, -0.1346, -0.1346, -0.1346,
                  -0.1346, -0.1346, -0.1346))
 
-  if (require(gurobi)) {
+  if (suppressWarnings(require(gurobi)) ) {
     # solve using the MIP method
     mdl3 <- misvm(x = df[, 4:123], y = df$bag_label,
                   bags = df$bag_name, method = "mip")

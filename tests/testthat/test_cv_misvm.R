@@ -2,6 +2,7 @@ context("Testing the functions in cv_misvm.R")
 suppressWarnings(library(dplyr))
 
 test_that("cv_misvm() works for data-frame-like inputs", {
+  skip_if_no_gurobi()
   set.seed(8)
   mil_data <- mildsvm::generate_mild_df(positive_dist = 'mvt',
                                         negative_dist = 'mvnormal',
@@ -112,6 +113,7 @@ test_that("cv_misvm() works for data-frame-like inputs", {
 
 
 test_that("cv_misvm() works with formula method", {
+  skip_if_no_gurobi()
   set.seed(8)
   mil_data <- generate_mild_df(positive_dist = 'mvt',
                                negative_dist = 'mvnormal',
@@ -176,6 +178,7 @@ test_that("cv_misvm() works with formula method", {
 
 
 test_that("predict.cv_misvm returns labels that match the input labels", {
+  skip_if_no_gurobi()
   test_prediction_levels_equal <- function(df, method, class = "default") {
     mdl <- switch(class,
                   "default" = cv_misvm(x = df[, 4:123],
@@ -241,6 +244,7 @@ test_that("predict.cv_misvm returns labels that match the input labels", {
 
 
 test_that("Dots work in cv_misvm() formula", {
+  skip_if_no_gurobi()
   set.seed(8)
   mil_data <- generate_mild_df(positive_dist = 'mvt',
                                negative_dist = 'mvnormal',
