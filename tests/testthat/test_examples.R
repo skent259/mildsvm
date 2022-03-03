@@ -51,6 +51,7 @@ test_that("mildsvm example works", {
     bind_cols(predict(mdl2, mil_data, type = "raw")) %>%
     distinct(bag_name, bag_label, .pred_class, .pred)
 
+  expect_true(TRUE)
 })
 
 test_that("predict.mildsvm examples work", {
