@@ -1,4 +1,3 @@
-context("Testing the functions in smm.R")
 suppressWarnings(library(dplyr))
 
 ## Generic data set to work with
@@ -18,21 +17,19 @@ new_x <- data.frame(x1 = rnorm(length(new_inst), mean = 1*(new_inst=="11")),
                     x3 = rnorm(length(new_inst), mean = 3*(new_inst=="11")))
 
 ## mild_df set to work with
-mil_df <- generate_mild_df(positive_dist = 'mvnormal',
-                           negative_dist = 'mvnormal',
-                           remainder_dist = 'mvnormal',
-                           nbag = 10,
+mil_df <- generate_mild_df(nbag = 10,
                            nsample = 20,
+                           nimp_pos = 1:5, nimp_neg = 1:5,
                            positive_prob = 0.15,
-                           positive_mean = rep(2, 5))
+                           dist = rep("mvnormal", 3),
+                           mean = list(rep(2, 5), rep(0, 5), 0))
 
-mil_df_test <- generate_mild_df(positive_dist = 'mvnormal',
-                                negative_dist = 'mvnormal',
-                                remainder_dist = 'mvnormal',
-                                nbag = 20,
+mil_df_test <- generate_mild_df(nbag = 20,
                                 nsample = 20,
+                                nimp_pos = 1:5, nimp_neg = 1:5,
                                 positive_prob = 0.15,
-                                positive_mean = rep(2, 5))
+                                dist = rep("mvnormal", 3),
+                                mean = list(rep(2, 5), rep(0, 5), 0))
 
 test_that("smm() works for data-frame-like inputs", {
 
@@ -170,14 +167,9 @@ test_that("smm() has correct argument handling", {
     smm(y ~ x1 + x2 + x3, data = df, control = list(sigma = 1/3))
   )
 
-  df <- generate_mild_df(positive_dist = 'mvt',
-                         negative_dist = 'mvnormal',
-                         remainder_dist = 'mvnormal',
-                         nbag = 10,
+  df <- generate_mild_df(nbag = 10,
                          nsample = 20,
-                         positive_degree = 3,
-                         positive_prob = 0.15,
-                         positive_mean = rep(0, 5))
+                         positive_prob = 0.15)
   expect_equal(
     smm(df),
     smm(df, control = list(sigma = 1/10))

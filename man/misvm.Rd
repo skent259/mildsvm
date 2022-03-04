@@ -141,7 +141,9 @@ instance level data.
 
 \examples{
 set.seed(8)
-mil_data <- generate_mild_df(nbag = 15, nsample = 20, positive_degree = 3)
+mil_data <- generate_mild_df(nbag = 20,
+                             positive_prob = 0.15,
+                             sd_of_mean = rep(0.1, 3))
 df <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
 
 # Heuristic method

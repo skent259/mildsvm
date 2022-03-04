@@ -1,5 +1,3 @@
-context("Testing the functions in bkfm_functions.R")
-
 test_that("Nystrom method approximates the true kernel on a dataframe.", {
   check_nystrom_approximation <- function(fit, df, max_thresh, mean_thresh) {
     fm <- build_fm(fit, df)
@@ -46,15 +44,10 @@ test_that("Nystrom method approximates the true kernel on a MilData object", {
   }
 
   set.seed(8)
-  df <- mildsvm::generate_mild_df(positive_dist = "mvt",
-                                  negative_dist = "mvnormal",
-                                  remainder_dist = "mvnormal",
-                                  ncov = 5,
+  df <- mildsvm::generate_mild_df(ncov = 5,
                                   nbag = 7,
                                   nsample = 7,
-                                  positive_degree = 3,
-                                  positive_prob = 0.15,
-                                  positive_mean = rep(0, 5))
+                                  positive_prob = 0.15)
 
   set.seed(8)
   ## RBF kernel, full feature map
@@ -96,15 +89,10 @@ test_that("Nystrom methods have correct output dimensions", {
   expect_equal(dim(fm), c(7,3))
 
   ## test Nystrom on MilData
-  mil_data <- mildsvm::generate_mild_df(positive_dist = "mvt",
-                                        negative_dist = "mvnormal",
-                                        remainder_dist = "mvnormal",
-                                        ncov = 5,
+  mil_data <- mildsvm::generate_mild_df(ncov = 5,
                                         nbag = 7,
                                         nsample = 7,
-                                        positive_degree = 3,
-                                        positive_prob = 0.15,
-                                        positive_mean = rep(0, 5))
+                                        positive_prob = 0.15)
 
   fit <- kfm_nystrom(mil_data, m = nrow(mil_data), r = nrow(mil_data), kernel = "radial", sigma = 0.05)
   fm <- build_fm(fit, mil_data)
@@ -140,15 +128,10 @@ test_that("Nystrom method works with various sampling parameters", {
   })
 
   ## test Nystrom on MilData
-  mil_data <- mildsvm::generate_mild_df(positive_dist = "mvt",
-                                        negative_dist = "mvnormal",
-                                        remainder_dist = "mvnormal",
-                                        ncov = 5,
+  mil_data <- mildsvm::generate_mild_df(ncov = 5,
                                         nbag = 7,
                                         nsample = 7,
-                                        positive_degree = 3,
-                                        positive_prob = 0.15,
-                                        positive_mean = rep(0, 5))
+                                        positive_prob = 0.15)
 
 
   fit <- kfm_nystrom(mil_data, m = 50, r = 50,
@@ -174,15 +157,10 @@ test_that("Nystrom method works with various sampling parameters", {
 
 test_that("Stratified sampling works with bag structure", {
   set.seed(8)
-  df <- mildsvm::generate_mild_df(positive_dist = "mvt",
-                                  negative_dist = "mvnormal",
-                                  remainder_dist = "mvnormal",
-                                  ncov = 5,
+  df <- mildsvm::generate_mild_df(ncov = 5,
                                   nbag = 7,
                                   nsample = 7,
-                                  positive_degree = 3,
-                                  positive_prob = 0.15,
-                                  positive_mean = rep(0, 5))
+                                  positive_prob = 0.15)
 
 
   rows <- bag_instance_sampling(df, size = 10)

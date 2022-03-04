@@ -1,23 +1,20 @@
-context("Testing the functions in mildsvm.R")
 suppressWarnings(library(dplyr))
 
 
 set.seed(8)
-mil_data <- generate_mild_df(positive_dist = "mvnormal",
-                             negative_dist = "mvnormal",
-                             remainder_dist = "mvnormal",
-                             nbag = 10,
+mil_data <- generate_mild_df(nbag = 10,
                              nsample = 5,
                              ninst = 3,
-                             positive_mean = rep(15, 5))
+                             nimp_pos = 1:5, nimp_neg = 1:5,
+                             dist = rep("mvnormal", 3),
+                             mean = list(rep(15, 5), rep(0, 5), 0))
 
-mil_data_test <- generate_mild_df(positive_dist = "mvnormal",
-                                  negative_dist = "mvnormal",
-                                  remainder_dist = "mvnormal",
-                                  nbag = 20,
+mil_data_test <- generate_mild_df(nbag = 20,
                                   nsample = 5,
                                   ninst = 3,
-                                  positive_mean = rep(15, 5))
+                                  nimp_pos = 1:5, nimp_neg = 1:5,
+                                  dist = rep("mvnormal", 3),
+                                  mean = list(rep(15, 5), rep(0, 5), 0))
 
 test_that("mildsvm() works for data-frame-like inputs", {
   skip_if_no_gurobi()
@@ -368,7 +365,7 @@ test_that("mildsvm mip can warm start", {
 
   pred1 <- predict(mdl1, new_data = mil_data, type = "raw", layer = "instance")
   pred2 <- predict(mdl2, new_data = mil_data, type = "raw", layer = "instance")
-  expect_equal(pred1, pred2)
+  expect_equal(pred1, pred2, tolerance = 1e-7)
 
   # Hard to test whether the warm start improves the time to reach a solution without testing large problems
 

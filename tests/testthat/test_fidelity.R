@@ -1,51 +1,50 @@
-context("Fidelity to MilDistribution package")
 suppressWarnings({
   # library(mildsvm)
   # library(MilDistribution)
   library(dplyr)
 })
 
+#' Skip test when MilDistribution package not present
+#'
+#' @noRd
+skip_if_no_MilDistrubution <- function() {
+  if (!requireNamespace("MilDistribution", quietly = TRUE)) {
+    testthat::skip("The package MilDistribution is not available.")
+  }
+}
+
 
 test_that("GenerateData.R functions have identical output", {
   skip_if_no_MilDistrubution()
-  mil_data <- mildsvm::generate_mild_df(positive_dist = "mvt",
-                                        negative_dist = "mvnormal",
-                                        remainder_dist = "mvnormal",
-                                        ncov = 5,
-                                        nbag = 7,
-                                        nsample = 7,
-                                        positive_degree = 3,
-                                        positive_prob = 0.15,
-                                        positive_mean = rep(0, 5))
+  # Note: as of updates to 0.3.2 of mildsvm, no longer expect fidelity of
+  # `generate_mild_df()`.  Just check for similarity here
 
   set.seed(8)
-  mildsvm_data <-
-    mildsvm::generate_mild_df(positive_dist = "mvt",
-                              negative_dist = "mvnormal",
-                              remainder_dist = "mvnormal",
-                              positive_degree = 3)
+  mildsvm_data <- mildsvm::generate_mild_df(nimp_pos = 1:5,
+                                            nimp_neg = 1:5,
+                                            mean = list(rep(1, 5), rep(2, 5), 0),
+                                            sd_of_mean = rep(0, 3))
   set.seed(8)
   MilDistribution_data <-
     MilDistribution::GenerateMilData(positive_dist = "mvt",
                                      negative_dist = "mvnormal",
                                      remainder_dist = "mvnormal",
+                                     positive_mean = rep(1, 5),
+                                     negative_mean = rep(2, 5),
                                      positive_degree = 3)
 
   class(MilDistribution_data) <- c("mild_df", "data.frame")
-  expect_equal(mildsvm_data, MilDistribution_data)
+  cols <- 4:13
+  diff <- colMeans(mildsvm_data[, cols]) - colMeans(MilDistribution_data[, cols])
+  expect_lte(mean(diff), 0.05)
+  expect_equal(dim(mildsvm_data), dim(MilDistribution_data))
+
 })
 
 test_that("kme.R functions have identical output", {
   skip_if_no_MilDistrubution()
-  mil_data <- mildsvm::generate_mild_df(positive_dist = "mvt",
-                                        negative_dist = "mvnormal",
-                                        remainder_dist = "mvnormal",
-                                        ncov = 5,
-                                        nbag = 7,
-                                        nsample = 7,
-                                        positive_degree = 3,
-                                        positive_prob = 0.3,
-                                        positive_mean = rep(0, 5))
+  set.seed(8)
+  mil_data <- mildsvm::generate_mild_df(ncov = 5, nbag = 7, nsample = 7)
 
   # remove one instance, and one observation to ensure unequal lengths
   ind1 <- which(mil_data$instance_name == unique(mil_data$instance_name)[1])
@@ -72,15 +71,9 @@ test_that("mildsvm.R functions have identical output", {
   skip_if_no_gurobi()
   skip_if_no_MilDistrubution()
   set.seed(8)
-  mil_data <- mildsvm::generate_mild_df(positive_dist = "mvt",
-                                        negative_dist = "mvnormal",
-                                        remainder_dist = "mvnormal",
-                                        ncov = 5,
-                                        nbag = 10,
-                                        nsample = 7,
-                                        positive_degree = 3,
+  mil_data <- mildsvm::generate_mild_df(ncov = 5, nbag = 10, nsample = 7,
                                         positive_prob = 0.15,
-                                        positive_mean = rep(0, 5))
+                                        sd_of_mean = rep(0.1, 3))
 
   # remove one instance, and one observation to create unequal lengths
   ind1 <- which(mil_data$instance_name == unique(mil_data$instance_name)[1])
@@ -95,7 +88,7 @@ test_that("mildsvm.R functions have identical output", {
 
   set.seed(8)
   mdl1 <- mildsvm::mildsvm(mil_data, cost = 1,
-                           weights = c("0" = 0.375, "1" = 1),
+                           weights = c("0" = 5 / 19, "1" = 1), # set to n_neg_inst / n_pos_bag
                            control = list(scale = FALSE,
                                           sigma = 0.05))
   mdl2 <- MilDistribution::mil_distribution(mil_data2, cost = 1)
@@ -153,14 +146,9 @@ test_that("misvm.R functions have identical output.", {
   skip_if_no_gurobi()
   skip_if_no_MilDistrubution()
   set.seed(8)
-  mil_data <- mildsvm::generate_mild_df(positive_dist = 'mvt',
-                                        negative_dist = 'mvnormal',
-                                        remainder_dist = 'mvnormal',
-                                        nbag = 10,
-                                        nsample = 7,
-                                        positive_degree = 3,
+  mil_data <- mildsvm::generate_mild_df(nbag = 10, nsample = 7,
                                         positive_prob = 0.15,
-                                        positive_mean = rep(0, 5))
+                                        sd_of_mean = rep(0.1, 3))
   df1 <- mildsvm::build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10)) %>%
     arrange(desc(bag_label), bag_name, instance_name)
 
@@ -207,15 +195,11 @@ test_that("cv_misvm.R functions have identical output.", {
   skip_if_no_gurobi()
   skip_if_no_MilDistrubution()
   set.seed(8)
-  mil_data <- mildsvm::generate_mild_df(positive_dist = 'mvt',
-                                        negative_dist = 'mvnormal',
-                                        remainder_dist = 'mvnormal',
-                                        nbag = 10,
-                                        nsample = 7,
-                                        positive_degree = 3,
+  mil_data <- mildsvm::generate_mild_df(nbag = 10, nsample = 7,
                                         positive_prob = 0.15,
-                                        positive_mean = rep(0, 5))
-  df1 <- mildsvm::build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
+                                        sd_of_mean = rep(0.1, 3))
+  df1 <- mildsvm::build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10)) %>%
+    arrange(desc(bag_label), bag_name, instance_name)
 
 
   set.seed(8)
@@ -224,6 +208,7 @@ test_that("cv_misvm.R functions have identical output.", {
                                          bags = df1$bag_name,
                                          cost_seq = 2^(-2:2),
                                          n_fold = 3,
+                                         # weights = c("0" = 5 / 19, "1" = 1), # set to n_neg_inst / n_pos_bag
                                          method = "heuristic",
                                          control = list(kernel = "radial",
                                                         sigma = 1 / length(4:123)))
@@ -300,14 +285,10 @@ test_that("misvm.R functions have identical output on MilData object.", {
   skip_if_no_gurobi()
   skip_if_no_MilDistrubution()
   set.seed(8)
-  mil_data <- mildsvm::generate_mild_df(positive_dist = 'mvt',
-                                        negative_dist = 'mvnormal',
-                                        remainder_dist = 'mvnormal',
-                                        nbag = 10,
-                                        nsample = 7,
-                                        positive_degree = 3,
+  mil_data <- mildsvm::generate_mild_df(nbag = 10, nsample = 7,
                                         positive_prob = 0.15,
-                                        positive_mean = rep(0, 5))
+                                        sd_of_mean = rep(0.1, 3)) %>%
+    arrange(desc(bag_label), bag_name, instance_name)
 
   # make the quantile functions
   qtls <- seq(0.05, 0.95, length.out = 10)
@@ -318,7 +299,7 @@ test_that("misvm.R functions have identical output on MilData object.", {
 
   set.seed(8)
   mdl1 <- mildsvm::misvm(mil_data, cost = 1,
-                         .fns = c(list(mean = mean, sd = sd), q_funs),
+                         .fns = c(list(mean = base::mean, sd = stats::sd), q_funs),
                          method = "heuristic",
                          control = list(kernel = "radial",
                                         sigma = 1 / 120))

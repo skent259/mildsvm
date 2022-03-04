@@ -58,12 +58,8 @@ When the object was fitted using the \code{formula} method, then the parameters
 the original function call.
 }
 \examples{
-mil_data <- generate_mild_df(
-    nbag = 20,
-    ncov = 5,
-    positive_degree = 3,
-    positive_mean = rep(5, 5)
-)
+mil_data <- generate_mild_df(nbag = 15, nsample = 20, positive_prob = 0.15,
+                             sd_of_mean = rep(0.1, 3))
 
 mdl1 <- mildsvm(mil_data, control = list(sigma = 1/5))
 

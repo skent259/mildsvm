@@ -1,28 +1,18 @@
-context("Testing the functions in cv_misvm.R")
 suppressWarnings(library(dplyr))
 
 test_that("cv_misvm() works for data-frame-like inputs", {
   skip_if_no_gurobi()
   set.seed(8)
-  mil_data <- mildsvm::generate_mild_df(positive_dist = 'mvt',
-                                        negative_dist = 'mvnormal',
-                                        remainder_dist = 'mvnormal',
-                                        nbag = 20,
-                                        nsample = 50,
-                                        positive_degree = 3,
+  mil_data <- mildsvm::generate_mild_df(nbag = 20,
                                         positive_prob = 0.15,
-                                        positive_mean = rep(0, 5))
+                                        sd_of_mean = rep(0.15, 3))
   df1 <- mildsvm::build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
 
   set.seed(9)
-  mil_data_test <- mildsvm::generate_mild_df(positive_dist = 'mvt',
-                                             negative_dist = 'mvnormal',
-                                             remainder_dist = 'mvnormal',
-                                             nbag = 20,
-                                             nsample = 50,
-                                             positive_degree = 3,
-                                             positive_prob = 0.15,
-                                             positive_mean = rep(0, 5))
+  mil_data_test <- mildsvm::generate_mild_df(nbag = 20,
+                                        positive_prob = 0.15,
+                                        sd_of_mean = rep(0.15, 3))
+
   df_test <- mildsvm::build_instance_feature(mil_data_test, seq(0.05, 0.95, length.out = 10))
 
 
@@ -51,10 +41,8 @@ test_that("cv_misvm() works for data-frame-like inputs", {
     group_by(bag_name) %>%
     distinct(bag_label, .pred, .pred_class)
   expect_equal(dim(pred_bag), c(20, 4))
-  expect_equal(round(pred_bag$.pred[1:5], 4),
-               c(0.7899, 0.6934, 0.7366, 0.7662, 0.7914))
   expect_equal(round(as.numeric(pROC::auc(response = pred_bag$bag_label, predictor = pred_bag$.pred)), 4),
-               0.8791)
+               0.7033)
 
   set.seed(8)
   model <- cv_misvm(x = df1[, 4:123],
@@ -76,8 +64,6 @@ test_that("cv_misvm() works for data-frame-like inputs", {
 
   pROC::auc(response = pred_bag$bag_label, predictor = pred_bag$.pred)
   expect_equal(dim(pred_bag), c(20, 4))
-  expect_equal(round(pred_bag$.pred[1:5], 3),
-               c( 0.631, -0.665, -0.616,  1.858,  0.446))
   expect_equal(round(as.numeric(pROC::auc(response = pred_bag$bag_label, predictor = pred_bag$.pred)), 4),
                1.000)
 
@@ -102,10 +88,8 @@ test_that("cv_misvm() works for data-frame-like inputs", {
 
   pROC::auc(response = pred_bag$bag_label, predictor = pred_bag$.pred)
   expect_equal(dim(pred_bag), c(20, 4))
-  expect_equal(round(pred_bag$.pred[1:5], 4),
-               c(-0.1722, -1.0722, -0.4241,  0.4497, -0.3856))
   expect_equal(round(as.numeric(pROC::auc(response = pred_bag$bag_label, predictor = pred_bag$.pred)), 4),
-               0.7912)
+               0.3956)
 
 })
 
@@ -115,14 +99,10 @@ test_that("cv_misvm() works for data-frame-like inputs", {
 test_that("cv_misvm() works with formula method", {
   skip_if_no_gurobi()
   set.seed(8)
-  mil_data <- generate_mild_df(positive_dist = 'mvt',
-                               negative_dist = 'mvnormal',
-                               remainder_dist = 'mvnormal',
-                               nbag = 20,
-                               nsample = 20,
-                               positive_degree = 3,
-                               positive_prob = 0.15,
-                               positive_mean = rep(0, 5))
+  mil_data <- mildsvm::generate_mild_df(nbag = 20,
+                                        nsample = 20,
+                                        positive_prob = 0.15,
+                                        sd_of_mean = rep(0.15, 3))
 
   df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
 
@@ -197,14 +177,9 @@ test_that("predict.cv_misvm returns labels that match the input labels", {
   }
 
   set.seed(8)
-  mil_data <- generate_mild_df(positive_dist = 'mvt',
-                               negative_dist = 'mvnormal',
-                               remainder_dist = 'mvnormal',
-                               nbag = 7,
-                               nsample = 20,
-                               positive_degree = 3,
-                               positive_prob = 0.15,
-                               positive_mean = rep(0, 5))
+  mil_data <- mildsvm::generate_mild_df(nbag = 7,
+                                        positive_prob = 0.15,
+                                        sd_of_mean = rep(0.15, 3))
 
   df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
 
@@ -246,14 +221,9 @@ test_that("predict.cv_misvm returns labels that match the input labels", {
 test_that("Dots work in cv_misvm() formula", {
   skip_if_no_gurobi()
   set.seed(8)
-  mil_data <- generate_mild_df(positive_dist = 'mvt',
-                               negative_dist = 'mvnormal',
-                               remainder_dist = 'mvnormal',
-                               nbag = 7,
-                               nsample = 20,
-                               positive_degree = 3,
+  mil_data <- generate_mild_df(nbag = 7,
                                positive_prob = 0.15,
-                               positive_mean = rep(0, 5))
+                               sd_of_mean = rep(0.15, 3))
 
   df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10)) %>%
     select(bag_label, bag_name, X1_mean, X2_mean, X3_mean)

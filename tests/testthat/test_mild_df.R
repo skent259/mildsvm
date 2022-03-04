@@ -1,4 +1,3 @@
-context("Testing the functions in mild_df.R")
 
 test_that("`as_mild_df()` works for several data.frames.", {
 

@@ -46,11 +46,11 @@ validate_cv_misvm <- function(x) {
 #'
 #' @examples
 #' set.seed(8)
-#' mil_data <- generate_mild_df(
-#'   nbag = 10,
-#'   nsample = 20,
-#'   positive_degree = 3
-#' )
+#' mil_data <- generate_mild_df(nbag = 20,
+#'                              positive_prob = 0.15,
+#'                              dist = rep("mvnormal", 3),
+#'                              mean = list(rep(1, 10), rep(2, 10)),
+#'                              sd_of_mean = rep(0.1, 3))
 #' df <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
 #' cost_seq <- 2^seq(-5, 7, length.out = 3)
 #'

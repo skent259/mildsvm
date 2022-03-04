@@ -1,22 +1,21 @@
-context("Testing the functions in misvm.R")
 suppressWarnings(library(dplyr))
 
 set.seed(8)
-mil_data <- generate_mild_df(positive_dist = 'mvnormal',
-                             negative_dist = 'mvnormal',
-                             remainder_dist = 'mvnormal',
-                             nbag = 20,
+mil_data <- generate_mild_df(nbag = 20,
                              nsample = 20,
+                             nimp_pos = 1:5, nimp_neg = 1:5,
                              positive_prob = 0.15,
-                             positive_mean = rep(2, 5))
+                             dist = rep("mvnormal", 3),
+                             mean = list(rep(2, 5), rep(0, 5), 0),
+                             sd_of_mean = rep(0.1, 3))
 
-mil_data_test <- generate_mild_df(positive_dist = 'mvnormal',
-                                  negative_dist = 'mvnormal',
-                                  remainder_dist = 'mvnormal',
-                                  nbag = 40,
+mil_data_test <- generate_mild_df(nbag = 40,
                                   nsample = 20,
+                                  nimp_pos = 1:5, nimp_neg = 1:5,
                                   positive_prob = 0.15,
-                                  positive_mean = rep(2, 5))
+                                  dist = rep("mvnormal", 3),
+                                  mean = list(rep(2, 5), rep(0, 5), 0),
+                                  sd_of_mean = rep(0.1, 3))
 
 df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10)) %>%
   select(-instance_name)
@@ -295,14 +294,9 @@ test_that("misvm mip can warm start", {
 test_that("misvm mip works with radial kernel", {
   skip_if_no_gurobi()
   set.seed(8)
-  mil_data <- generate_mild_df(positive_dist = 'mvt',
-                               negative_dist = 'mvnormal',
-                               remainder_dist = 'mvnormal',
-                               nbag = 10,
+  mil_data <- generate_mild_df(nbag = 10,
                                nsample = 20,
-                               positive_degree = 3,
-                               positive_prob = 0.15,
-                               positive_mean = rep(0, 5))
+                               positive_prob = 0.15)
 
   df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
 

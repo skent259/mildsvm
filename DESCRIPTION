@@ -35,5 +35,5 @@ Suggests:
     Matrix,
     testthat,
     utils
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
 Roxygen: list(markdown = TRUE)
