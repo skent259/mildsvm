@@ -253,7 +253,8 @@ generate_mild_df <- function(
                     bag_name,
                     instance_name = inst_name,
                     X,
-                    instance_label = inst_label)
+                    instance_label = inst_label,
+                    stringsAsFactors = FALSE)
 
   return(as_mild_df(out))
 }
