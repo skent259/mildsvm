@@ -126,8 +126,8 @@ select_cv_folds <- function(data, n_fold, fold_id) {
 
     positive_bag_idx <- which(bag_info$bag_label == 1)
     negative_bag_idx <- which(bag_info$bag_label == 0)
-    positive_fold_id <- .resample((1:length(positive_bag_idx))%%n_fold + 1)
-    negative_fold_id <- .resample((1:length(negative_bag_idx))%%n_fold + 1)
+    positive_fold_id <- .resample(seq_along(positive_bag_idx) %% n_fold + 1)
+    negative_fold_id <- .resample(seq_along(negative_bag_idx) %% n_fold + 1)
 
     bag_id <- numeric(nrow(bag_info))
     bag_id[positive_bag_idx] <- positive_fold_id
@@ -163,8 +163,8 @@ select_cv_folds2 <- function(y, bags, n_fold, fold_id) {
 
     positive_bag_idx <- which(info_bag_layer$y == 1)
     negative_bag_idx <- which(info_bag_layer$y == 0)
-    positive_fold_id <- .resample((1:length(positive_bag_idx))%%n_fold + 1)
-    negative_fold_id <- .resample((1:length(negative_bag_idx))%%n_fold + 1)
+    positive_fold_id <- .resample(seq_along(positive_bag_idx) %% n_fold + 1)
+    negative_fold_id <- .resample(seq_along(negative_bag_idx) %% n_fold + 1)
 
     bag_id <- numeric(nrow(info_bag_layer))
     bag_id[positive_bag_idx] <- positive_fold_id
@@ -175,7 +175,6 @@ select_cv_folds2 <- function(y, bags, n_fold, fold_id) {
       dplyr::left_join(info_bag_layer, by = c("bags", "y"))
 
     fold_id <- tmp$bag_id
-    # fold_id <- temp_data$bag_id  ## now fold_id is of length(unique(data$instance_name))
   } else {
     n_fold <- max(fold_id)
     if (!is.null(setdiff(fold_id, 1:n_fold)))

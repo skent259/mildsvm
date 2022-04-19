@@ -526,9 +526,9 @@ kernel_mil <- function(kernel_full, data_info, max.step, cost, weights,
     yy_inst <- yy[useful_inst_idx]
     step <- 1
     while (step < max.step) {
-        smm_model <- smm(x = 1:length(yy_inst),
+        smm_model <- smm(x = seq_along(yy_inst),
                          y = yy_inst,
-                         instances = 1:length(yy_inst),
+                         instances = seq_along(yy_inst),
                          cost = cost,
                          weights = weights,
                          control = list(kernel = kernel_full[useful_inst_idx, useful_inst_idx, drop = FALSE],
@@ -538,7 +538,7 @@ kernel_mil <- function(kernel_full, data_info, max.step, cost, weights,
         pred_all_score <- predict(smm_model,
                                   type = "raw",
                                   new_data = NULL,
-                                  new_instances = 1:nrow(kernel_full),
+                                  new_instances = seq_len(nrow(kernel_full)),
                                   kernel = kernel_full[, useful_inst_idx, drop = FALSE])
         pred_all_score <- pred_all_score$.pred
 
@@ -567,7 +567,7 @@ kernel_mil <- function(kernel_full, data_info, max.step, cost, weights,
         }
 
         # if the selection is not changed, break.
-        difference = sum(past_selection[, step] != selection)
+        difference <- sum(past_selection[, step] != selection)
         repeat_selection <- 0
         if (difference == 0)
             break

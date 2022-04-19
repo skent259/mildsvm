@@ -13,7 +13,7 @@
 #' @noRd
 .reorder <- function(y, b, X, i = NULL) {
   b <- as.numeric(as.factor(b))
-  if (is.null(i)) i <- seq_len(y)
+  if (is.null(i)) i <- seq_along(y)
   i <- as.numeric(as.factor(i))
   ## order by bag label (negative first), and then order data by bag
   data_order <- order(y, b, i, X[, 1])

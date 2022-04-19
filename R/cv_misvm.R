@@ -131,7 +131,7 @@ cv_misvm.default <- function(x, y, bags, cost_seq, n_fold, fold_id,
   n_fold <- fold_info$n_fold
 
   aucs <- matrix(NA, nrow = length(cost_seq), ncol = n_fold)
-  for (i in 1:length(cost_seq)) {
+  for (i in seq_along(cost_seq)) {
     # auc_sum <- 0
     for (fold in 1:n_fold) {
       train <- fold_id != fold
