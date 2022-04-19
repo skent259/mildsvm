@@ -46,11 +46,11 @@ validate_cv_misvm <- function(x) {
 #'
 #' @examples
 #' set.seed(8)
-#' mil_data <- generate_mild_df(
-#'   nbag = 10,
-#'   nsample = 20,
-#'   positive_degree = 3
-#' )
+#' mil_data <- generate_mild_df(nbag = 20,
+#'                              positive_prob = 0.15,
+#'                              dist = rep("mvnormal", 3),
+#'                              mean = list(rep(1, 10), rep(2, 10)),
+#'                              sd_of_mean = rep(0.1, 3))
 #' df <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
 #' cost_seq <- 2^seq(-5, 7, length.out = 3)
 #'
@@ -131,7 +131,7 @@ cv_misvm.default <- function(x, y, bags, cost_seq, n_fold, fold_id,
   n_fold <- fold_info$n_fold
 
   aucs <- matrix(NA, nrow = length(cost_seq), ncol = n_fold)
-  for (i in 1:length(cost_seq)) {
+  for (i in seq_along(cost_seq)) {
     # auc_sum <- 0
     for (fold in 1:n_fold) {
       train <- fold_id != fold

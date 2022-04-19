@@ -87,8 +87,11 @@ smm.default <- function(x, y, instances,
                                        scale = TRUE),
                         ...)
 {
-    if ("kernel" %ni% names(control)) control$kernel <- "radial"
-    if ("sigma" %ni% names(control)) control$sigma <- if (is.vector(x)) 1 else 1 / ncol(x)
+    defaults <- list(
+      kernel = "radial",
+      sigma = if (is.vector(x)) 1 else 1 / ncol(x)
+    )
+    control <- .set_default(control, defaults)
     if ("scale" %ni% names(control) && is.matrix(control$kernel)) {
         message("Since `kernel` was passed as a matrix, defaulting to `scale` = FALSE.")
         control$scale <- FALSE

@@ -1,13 +1,11 @@
-context("Testing the functions in summarize_samples.R")
 
 ## MilData set to work with
-mil_df <- generate_mild_df(positive_dist = 'mvnormal',
-                           negative_dist = 'mvnormal',
-                           remainder_dist = 'mvnormal',
-                           nbag = 10,
+mil_df <- generate_mild_df(nbag = 10,
                            nsample = 20,
                            positive_prob = 0.15,
-                           positive_mean = rep(4, 5))
+                           nimp_pos = 1:5, nimp_neg = 1:5,
+                           dist = rep("mvnormal", 3),
+                           mean = list(rep(4, 5), rep(0, 5), 0))
 k <- ncol(mil_df) - 3 # number of features in mil_df
 
 test_that("summarize_samples() works with various `.fns` inputs", {

@@ -139,7 +139,8 @@ using the gurobi package optimization back-end.
 
 \examples{
 set.seed(8)
-mil_data <- generate_mild_df(nbag = 15, nsample = 20, positive_degree = 3)
+mil_data <- generate_mild_df(nbag = 15, nsample = 20, positive_prob = 0.15,
+                             sd_of_mean = rep(0.1, 3))
 
 # Heuristic method
 mdl1 <- mildsvm(mil_data)

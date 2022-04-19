@@ -65,7 +65,7 @@ build_instance_feature <- function(data, qtls = seq(0.05, 0.95, length.out = 10)
 
   instance_name <- unique(data$instance_name)
   df <- NULL
-  for (i in 1:length(instance_name)) {
+  for (i in seq_along(instance_name)) {
     data_i <- data[data$instance_name == instance_name[i], -(1:3), drop = FALSE]
     qtls_i <- as.vector(apply(data_i, 2, function(x) stats::quantile(x,
                                                                      probs = qtls)))

@@ -1,25 +1,23 @@
-context("Testing the functions in mildsvm.R")
 suppressWarnings(library(dplyr))
 
+
 set.seed(8)
-mil_data <- generate_mild_df(positive_dist = "mvnormal",
-                             negative_dist = "mvnormal",
-                             remainder_dist = "mvnormal",
-                             nbag = 10,
+mil_data <- generate_mild_df(nbag = 10,
                              nsample = 5,
                              ninst = 3,
-                             positive_mean = rep(15, 5))
+                             nimp_pos = 1:5, nimp_neg = 1:5,
+                             dist = rep("mvnormal", 3),
+                             mean = list(rep(15, 5), rep(0, 5), 0))
 
-mil_data_test <- generate_mild_df(positive_dist = "mvnormal",
-                                  negative_dist = "mvnormal",
-                                  remainder_dist = "mvnormal",
-                                  nbag = 20,
+mil_data_test <- generate_mild_df(nbag = 20,
                                   nsample = 5,
                                   ninst = 3,
-                                  positive_mean = rep(15, 5))
+                                  nimp_pos = 1:5, nimp_neg = 1:5,
+                                  dist = rep("mvnormal", 3),
+                                  mean = list(rep(15, 5), rep(0, 5), 0))
 
 test_that("mildsvm() works for data-frame-like inputs", {
-
+  skip_if_no_gurobi()
   # mip method
   # df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
   mdl1 <- mildsvm.default(x = mil_data[, 4:13],
@@ -114,7 +112,7 @@ test_that("mildsvm() works for data-frame-like inputs", {
 
 
 test_that("mildsvm() works with formula method", {
-
+  skip_if_no_gurobi()
   mdl1 <- mildsvm(mild(bag_label, bag_name, instance_name) ~ X1 + X2 + X3, data = mil_data)
   mdl2 <- mildsvm.default(x = mil_data[, c("X1", "X2", "X3")],
                           y = mil_data$bag_label,
@@ -152,7 +150,7 @@ test_that("mildsvm() works with formula method", {
 })
 
 test_that("mildsvm() works with mild_df method", {
-
+  skip_if_no_gurobi()
   mdl1 <- mildsvm(mil_data)
   mdl2 <- mildsvm.default(x = mil_data[, 4:13],
                           y = mil_data$bag_label,
@@ -174,6 +172,7 @@ test_that("mildsvm() works with mild_df method", {
 })
 
 test_that("predict.mildsvm returns labels that match the input labels", {
+  skip_if_no_gurobi()
   test_prediction_levels_equal <- function(df, method, class = "default") {
     mdl <- switch(class,
                   "default" = mildsvm(x = df[, 4:13],
@@ -227,6 +226,7 @@ test_that("predict.mildsvm returns labels that match the input labels", {
 })
 
 test_that("Dots work in mildsvm() formula", {
+  skip_if_no_gurobi()
   mil_data2 <- mil_data %>% select(bag_label, bag_name, instance_name, X1, X2, X3)
 
   mildsvm_dot <- mildsvm(mild(bag_label, bag_name, instance_name) ~ ., data = mil_data2)
@@ -240,8 +240,8 @@ test_that("Dots work in mildsvm() formula", {
 
 })
 
-test_that("misvm() has correct argument handling", {
-
+test_that("mildsvm() has correct argument handling", {
+  skip_if_no_gurobi()
   ## weights
   mildsvm(mil_data, weights = TRUE)
   mdl1 <- mildsvm(mil_data, weights = c("0" = 1, "1" = 1))
@@ -340,7 +340,7 @@ test_that("misvm() has correct argument handling", {
 
 
 test_that("mildsvm mip can warm start", {
-  set.seed(8)
+  skip_if_no_gurobi()
   verbose <- interactive()
 
   # manually check that the output says "User MIP start produced solution with objective ..."
@@ -365,7 +365,7 @@ test_that("mildsvm mip can warm start", {
 
   pred1 <- predict(mdl1, new_data = mil_data, type = "raw", layer = "instance")
   pred2 <- predict(mdl2, new_data = mil_data, type = "raw", layer = "instance")
-  expect_equal(pred1, pred2)
+  expect_equal(pred1, pred2, tolerance = 1e-7)
 
   # Hard to test whether the warm start improves the time to reach a solution without testing large problems
 
@@ -373,7 +373,7 @@ test_that("mildsvm mip can warm start", {
 
 
 test_that("mildsvm mip works with radial kernel", {
-
+  skip_if_no_gurobi()
   mdl1 <- mildsvm.default(x = mil_data[, 4:12],
                           y = mil_data$bag_label,
                           bags = mil_data$bag_name,
@@ -423,7 +423,7 @@ test_that("mildsvm mip works with radial kernel", {
 })
 
 test_that("Passing kernel matrix into mildsvm works", {
-
+  skip_if_no_gurobi()
   set.seed(8)
   mil_data_shuf <- mil_data[sample(1:nrow(mil_data)), ]
 
@@ -445,7 +445,7 @@ test_that("Passing kernel matrix into mildsvm works", {
 })
 
 test_that("Re-ordering data doesn't reduce performance", {
-
+  skip_if_no_gurobi()
   check_auc_after_reordering <- function(method) {
     set.seed(8)
     mdl1 <- mildsvm(mil_data, method = method, control = list(sigma = 0.1))
@@ -477,7 +477,7 @@ test_that("Re-ordering data doesn't reduce performance", {
 })
 
 test_that("`mildsvm()` value returns make sense", {
-
+  skip_if_no_gurobi()
   # different methods
   names(mildsvm(mil_data, method = "heuristic"))
   names(mildsvm(mil_data, method = "mip", control = list(nystrom_args = list(m = 10))))
@@ -502,7 +502,7 @@ test_that("`mildsvm()` value returns make sense", {
 })
 
 test_that("`predict.mildsvm()` works without new_data", {
-
+  skip_if_no_gurobi()
   check_prediction_no_data <- function(method) {
     mdl1 <- mildsvm(mil_data, method = method,
                     control = list(scale = FALSE, sigma = 1/10))

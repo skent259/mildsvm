@@ -106,7 +106,9 @@ validate_misvm <- function(x) {
 #'
 #' @examples
 #' set.seed(8)
-#' mil_data <- generate_mild_df(nbag = 15, nsample = 20, positive_degree = 3)
+#' mil_data <- generate_mild_df(nbag = 20,
+#'                              positive_prob = 0.15,
+#'                              sd_of_mean = rep(0.1, 3))
 #' df <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
 #'
 #' # Heuristic method
@@ -147,7 +149,7 @@ misvm.default <- function(x, y, bags,
                           weights = TRUE,
                           control = list(kernel = "linear",
                                          sigma = if (is.vector(x)) 1 else 1 / ncol(x),
-                                         nystrom_args = list(m = nrow(x), r = nrow(x), sampling = 'random'),
+                                         nystrom_args = list(m = nrow(x), r = nrow(x), sampling = "random"),
                                          max_step = 500,
                                          type = "C-classification",
                                          scale = TRUE,
@@ -157,17 +159,25 @@ misvm.default <- function(x, y, bags,
                           ...)
 {
 
-  method <- match.arg(method)
-  if ("kernel" %ni% names(control)) control$kernel <- "linear"
-  if ("sigma" %ni% names(control)) control$sigma <- 1
-  if ("nystrom_args" %ni% names(control)) control$nystrom_args = list(m = nrow(x), r = nrow(x), sampling = 'random')
-  if ("max_step" %ni% names(control)) control$max_step <- 500
-  if ("type" %ni% names(control)) control$type <- "C-classification"
-  if ("scale" %ni% names(control)) control$scale <- TRUE
-  if ("verbose" %ni% names(control)) control$verbose <- FALSE
-  if ("time_limit" %ni% names(control)) control$time_limit <- 60
-  if ("start" %ni% names(control)) control$start <- FALSE
+  method <- match.arg(method, c("heuristic", "mip", "qp-heuristic"))
 
+  defaults <- list(
+    kernel = "linear",
+    sigma = if (is.vector(x)) 1 else 1 / ncol(x),
+    nystrom_args = list(m = nrow(x), r = nrow(x), sampling = "random"),
+    max_step = 500,
+    type = "C-classification",
+    verbose = FALSE,
+    time_limit = 60,
+    start = FALSE
+  )
+  control <- .set_default(control, defaults)
+  if ("scale" %ni% names(control) && inherits(control$kernel, "matrix")) {
+        # if kernel matrix is passed in, then really no re-scaling was done.
+        control$scale <- FALSE
+    } else if ("scale" %ni% names(control)) {
+        control$scale <- TRUE
+    }
   if (control$start && control$kernel != "linear") {
     control$start <- FALSE
     rlang::inform(c(
@@ -181,6 +191,7 @@ misvm.default <- function(x, y, bags,
   lev <- y_info$lev
 
   # store colnames of x
+  x <- as.data.frame(x)
   col_x <- colnames(x)
 
   # remove NaN columns and columns with no variance
@@ -352,12 +363,9 @@ misvm.mild_df <- function(data, .fns = list(mean = mean, sd = stats::sd), cor = 
 #' * [cv_misvm()] for fitting the `misvm` object with cross-validation.
 #'
 #' @examples
-#' mil_data <- generate_mild_df(
-#'     nbag = 20,
-#'     ncov = 5,
-#'     positive_degree = 3,
-#'     positive_mean = rep(5, 5)
-#' )
+#' mil_data <- generate_mild_df(nbag = 20,
+#'                              positive_prob = 0.15,
+#'                              sd_of_mean = rep(0.1, 3))
 #' df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
 #' mdl1 <- misvm(x = df1[, 4:63], y = df1$bag_label,
 #'               bags = df1$bag_name, method = "heuristic")
@@ -395,6 +403,7 @@ predict.misvm <- function(object,
 
   if (object$call_type == "misvm.formula") {
     new_x <- x_from_mi_formula(object$formula, new_data)
+    new_x <- new_x[, object$features, drop = FALSE]
   } else {
     new_x <- new_data[, object$features, drop = FALSE]
   }
@@ -912,8 +921,9 @@ misvm_dualqpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = N
 
   # randomly select initial representative instances
   pos_bags <- unique(bags[y==1])
-  resample <- function(x, ...) x[sample.int(length(x), ...)] # safer version of sample
-  selected <- sapply(pos_bags, function(bag) {resample(which(bags == bag), size = 1)})
+  selected <- sapply(pos_bags, function(bag) {
+    .resample(which(bags == bag), size = 1)
+  })
 
   if (!is.matrix(kernel)) {
     K <- compute_kernel(X, type = kernel, sigma = sigma)

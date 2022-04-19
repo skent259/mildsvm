@@ -86,7 +86,8 @@ validate_mildsvm <- function(x) {
 #'
 #' @examples
 #' set.seed(8)
-#' mil_data <- generate_mild_df(nbag = 15, nsample = 20, positive_degree = 3)
+#' mil_data <- generate_mild_df(nbag = 15, nsample = 20, positive_prob = 0.15,
+#'                              sd_of_mean = rep(0.1, 3))
 #'
 #' # Heuristic method
 #' mdl1 <- mildsvm(mil_data)
@@ -124,7 +125,7 @@ mildsvm.default <- function(x, y, bags, instances, cost = 1,
                             weights = TRUE,
                             control = list(kernel = "radial",
                                            sigma = if (is.vector(x)) 1 else 1 / ncol(x),
-                                           nystrom_args = list(m = nrow(x), r = nrow(x), sampling = 'random'),
+                                           nystrom_args = list(m = nrow(x), r = nrow(x), sampling = "random"),
                                            max_step = 500,
                                            scale = TRUE,
                                            verbose = FALSE,
@@ -132,20 +133,24 @@ mildsvm.default <- function(x, y, bags, instances, cost = 1,
                                            start = FALSE),
                             ...)
 {
-    method <- match.arg(method)
-    if ("kernel" %ni% names(control)) control$kernel <- "radial"
-    if ("sigma" %ni% names(control)) control$sigma <- 1
-    if ("nystrom_args" %ni% names(control)) control$nystrom_args = list(m = nrow(x), r = nrow(x), sampling = 'random')
-    if ("max_step" %ni% names(control)) control$max_step <- 500
+    method <- match.arg(method, c("heuristic", "mip", "qp-heuristic"))
+
+    defaults <- list(
+      kernel = "radial",
+      sigma = if (is.vector(x)) 1 else 1 / ncol(x),
+      nystrom_args = list(m = nrow(x), r = nrow(x), sampling = "random"),
+      max_step = 500,
+      verbose = FALSE,
+      time_limit = 60,
+      start = FALSE
+    )
+    control <- .set_default(control, defaults)
     if ("scale" %ni% names(control) && inherits(control$kernel, "matrix")) {
         # if kernel matrix is passed in, then really no re-scaling was done.
         control$scale <- FALSE
     } else if ("scale" %ni% names(control)) {
         control$scale <- TRUE
     }
-    if ("verbose" %ni% names(control)) control$verbose <- FALSE
-    if ("time_limit" %ni% names(control)) control$time_limit <- 60
-    if ("start" %ni% names(control)) control$start <- FALSE
 
     # store the levels of y and convert to 0,1 numeric format.
     y_info <- convert_y(y)
@@ -369,12 +374,8 @@ mildsvm.mild_df <- function(data, ...) {
 #' @seealso [mildsvm()] for fitting the `mildsvm` object.
 #'
 #' @examples
-#' mil_data <- generate_mild_df(
-#'     nbag = 20,
-#'     ncov = 5,
-#'     positive_degree = 3,
-#'     positive_mean = rep(5, 5)
-#' )
+#' mil_data <- generate_mild_df(nbag = 15, nsample = 20, positive_prob = 0.15,
+#'                              sd_of_mean = rep(0.1, 3))
 #'
 #' mdl1 <- mildsvm(mil_data, control = list(sigma = 1/5))
 #'
@@ -529,9 +530,9 @@ kernel_mil <- function(kernel_full, data_info, max.step, cost, weights,
     yy_inst <- yy[useful_inst_idx]
     step <- 1
     while (step < max.step) {
-        smm_model <- smm(x = 1:length(yy_inst),
+        smm_model <- smm(x = seq_along(yy_inst),
                          y = yy_inst,
-                         instances = 1:length(yy_inst),
+                         instances = seq_along(yy_inst),
                          cost = cost,
                          weights = weights,
                          control = list(kernel = kernel_full[useful_inst_idx, useful_inst_idx, drop = FALSE],
@@ -541,7 +542,7 @@ kernel_mil <- function(kernel_full, data_info, max.step, cost, weights,
         pred_all_score <- predict(smm_model,
                                   type = "raw",
                                   new_data = NULL,
-                                  new_instances = 1:nrow(kernel_full),
+                                  new_instances = seq_len(nrow(kernel_full)),
                                   kernel = kernel_full[, useful_inst_idx, drop = FALSE])
         pred_all_score <- pred_all_score$.pred
 
@@ -570,7 +571,7 @@ kernel_mil <- function(kernel_full, data_info, max.step, cost, weights,
         }
 
         # if the selection is not changed, break.
-        difference = sum(past_selection[, step] != selection)
+        difference <- sum(past_selection[, step] != selection)
         repeat_selection <- 0
         if (difference == 0)
             break

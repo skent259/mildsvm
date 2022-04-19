@@ -1,4 +1,3 @@
-context("Check that examples in mildsvm package work.")
 suppressWarnings({
   library(mildsvm)
   library(dplyr)
@@ -23,25 +22,20 @@ suppressWarnings({
 #
 # })
 
-test_that("mildsvm example works", {
+test_that("`mildsvm()` example works", {
   set.seed(8)
-  mil_data <- generate_mild_df(positive_dist = 'mvt',
-                              negative_dist = 'mvnormal',
-                              remainder_dist = 'mvnormal',
-                              nbag = 15,
-                              positive_degree = 3,
-                              nsample = 20
-  )
+  mil_data <- generate_mild_df(nbag = 15, nsample = 20, positive_prob = 0.15,
+                               sd_of_mean = rep(0.1, 3))
+
   # Heuristic method
   mdl1 <- mildsvm(mil_data)
   mdl2 <- mildsvm(mild(bag_label, bag_name, instance_name) ~ X1 + X2 + X3, data = mil_data)
 
-  expect_warning({
-    if (require(gurobi)) {
-      foo <- mildsvm(mil_data, method = "mip", control = list(nystrom_args = list(m = 10, r = 10)))
-      predict(foo, mil_data)
-    }
-  })
+
+  if (suppressWarnings(require(gurobi)) ) {
+    mdl3 <- mildsvm(mil_data, method = "mip", control = list(nystrom_args = list(m = 10, r = 10)))
+    predict(mdl3, mil_data)
+  }
 
 
   predict(mdl1, new_data = mil_data, type = "raw", layer = "bag")
@@ -52,19 +46,14 @@ test_that("mildsvm example works", {
     bind_cols(predict(mdl2, mil_data, type = "raw")) %>%
     distinct(bag_name, bag_label, .pred_class, .pred)
 
+  expect_true(TRUE)
 })
 
-test_that("predict.mildsvm examples work", {
-  mil_data <- generate_mild_df(
-    positive_dist = 'mvt',
-    negative_dist = 'mvnormal',
-    remainder_dist = 'mvnormal',
-    nbag = 20,
-    ncov = 5,
-    nsample = 50,
-    positive_degree = 3,
-    positive_mean = rep(5, 5)
-  )
+test_that("`predict.mildsvm()` examples work", {
+  mil_data <- generate_mild_df(nbag = 20, ncov = 5,
+                               positive_prob = 0.15,
+                               mean = list(rep(5, 5), rep(0, 5), 0),
+                               sd_of_mean = rep(0.5, 3))
 
   mdl1 <- mildsvm(mil_data, control = list(sigma = 0.05))
 
@@ -83,18 +72,12 @@ test_that("predict.mildsvm examples work", {
   expect_s3_class(mdl1, "mildsvm")
 })
 
-test_that("misvm.R examples work", {
+test_that("`misvm()` examples work", {
   set.seed(8)
-  mil_data <- generate_mild_df(
-    positive_dist = 'mvt',
-    negative_dist = 'mvnormal',
-    remainder_dist = 'mvnormal',
-    nbag = 20,
-    nsample = 20,
-    positive_degree = 3,
-    positive_prob = 0.15,
-    positive_mean = rep(0, 5)
-  )
+  mil_data <- generate_mild_df(nbag = 20,
+                               positive_prob = 0.15,
+                               sd_of_mean = rep(0.1, 3))
+
   df <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
 
   # Heuristic method
@@ -102,19 +85,20 @@ test_that("misvm.R examples work", {
                 bags = df$bag_name, method = "heuristic",
                 control = list(kernel = "radial", sigma = 1 / 120))
   expect_equal(round(mdl1$svm_fit$coefs[8:10], 4),
-               c(-0.1346, -0.1346, -0.1346))
+               c(1.0000, 1.0000, 0.7628))
 
 
   mdl2 <- misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean + X3_mean, data = df)
   expect_equal(round(mdl2$svm_fit$coefs[1:10],4),
-               c(1.0000,  0.0654,  1.0000,  0.9245, -0.1346, -0.1346, -0.1346,
-                 -0.1346, -0.1346, -0.1346))
+               c(1.0000,  0.2655,  1.0000,  1.0000,  1.0000,  1.0000,  0.0714,
+                 1.0000, 0.5243, -0.3750))
 
-  if (require(gurobi)) {
+  if (suppressWarnings(require(gurobi)) ) {
     # solve using the MIP method
     mdl3 <- misvm(x = df[, 4:123], y = df$bag_label,
                   bags = df$bag_name, method = "mip")
-    expect_equivalent(round(mdl3$gurobi_fit$w[1:5], 4), c(0.0318, 0.1657, 0.1020, 0.0558, -0.0933))
+    expect_equivalent(round(mdl3$gurobi_fit$w[1:5], 4),
+                      c(0.1989,  0.1571,  0.1223,  0.0138,  0.0341 ))
   }
 
   predict(mdl1, new_data = df, type = "raw", layer = "bag")
@@ -126,22 +110,18 @@ test_that("misvm.R examples work", {
     bind_cols(predict(mdl2, df, type = "raw")) %>%
     distinct(bag_name, bag_label, .pred_class, .pred)
 
-  expect_equal(round(preds$.pred[1:5], 4), c(0.9669,  1.3092, -0.0781, 1.2562, 1.3084))
+  expect_equal(round(preds$.pred[1:5], 4), c(-0.1181,  1.0173, -0.2454,  1.0005,  0.1546))
   expect_equal(dim(preds), c(20, 4))
 })
 
-test_that("cv_misvm.R examples work", {
+test_that("`cv_misvm()` examples work", {
   set.seed(8)
-  mil_data <- generate_mild_df(
-    positive_dist = 'mvt',
-    negative_dist = 'mvnormal',
-    remainder_dist = 'mvnormal',
-    nbag = 20,
-    nsample = 20,
-    positive_degree = 3,
-    positive_prob = 0.15,
-    positive_mean = rep(0, 5)
-  )
+  mil_data <- generate_mild_df(nbag = 20,
+                               positive_prob = 0.15,
+                               dist = rep("mvnormal", 3),
+                               mean = list(rep(1, 10), rep(2, 10)),
+                               sd_of_mean = rep(0.1, 3))
+
   df <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
   cost_seq <- 2^seq(-5, 7, length.out = 5)
 
@@ -170,7 +150,7 @@ test_that("cv_misvm.R examples work", {
   expect_s3_class(mdl1, "cv_misvm")
 })
 
-test_that("smm() examples work", {
+test_that("`smm()` examples work", {
   set.seed(8)
   n_instances <- 10
   n_samples <- 20
@@ -192,6 +172,28 @@ test_that("smm() examples work", {
     distinct(instance_name, y, .pred, .pred_class)
 
   expect_s3_class(mdl, "smm")
+})
+
+test_that("`generate_mild_df()` examples work", {
+  set.seed(8)
+  mild_data <- generate_mild_df(nbag = 7, ninst = 3, nsample = 20,
+                                ncov = 2,
+                                nimp_pos = 1,
+                                dist = rep("mvnormal", 3),
+                                mean = list(
+                                  rep(5, 1),
+                                  rep(15, 2),
+                                  0
+                                ))
+
+  expect_s3_class(mild_data, "mild_df")
+
+  library(dplyr)
+  distinct(mild_data, bag_label, bag_name, instance_name)
+  split(mild_data[, 4:5], mild_data$instance_name) %>%
+    sapply(colMeans) %>%
+    round(2) %>%
+    t()
 })
 
 # test_that("build_poly_instance_feature works", {

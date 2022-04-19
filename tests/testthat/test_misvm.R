@@ -1,22 +1,21 @@
-context("Testing the functions in misvm.R")
 suppressWarnings(library(dplyr))
 
 set.seed(8)
-mil_data <- generate_mild_df(positive_dist = 'mvnormal',
-                             negative_dist = 'mvnormal',
-                             remainder_dist = 'mvnormal',
-                             nbag = 20,
+mil_data <- generate_mild_df(nbag = 20,
                              nsample = 20,
+                             nimp_pos = 1:5, nimp_neg = 1:5,
                              positive_prob = 0.15,
-                             positive_mean = rep(2, 5))
+                             dist = rep("mvnormal", 3),
+                             mean = list(rep(2, 5), rep(0, 5), 0),
+                             sd_of_mean = rep(0.1, 3))
 
-mil_data_test <- generate_mild_df(positive_dist = 'mvnormal',
-                                  negative_dist = 'mvnormal',
-                                  remainder_dist = 'mvnormal',
-                                  nbag = 40,
+mil_data_test <- generate_mild_df(nbag = 40,
                                   nsample = 20,
+                                  nimp_pos = 1:5, nimp_neg = 1:5,
                                   positive_prob = 0.15,
-                                  positive_mean = rep(2, 5))
+                                  dist = rep("mvnormal", 3),
+                                  mean = list(rep(2, 5), rep(0, 5), 0),
+                                  sd_of_mean = rep(0.1, 3))
 
 df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10)) %>%
   select(-instance_name)
@@ -25,6 +24,7 @@ df1_test <- build_instance_feature(mil_data_test, seq(0.05, 0.95, length.out = 1
   select(-instance_name)
 
 test_that("misvm() works for data-frame-like inputs", {
+  skip_if_no_gurobi()
   mdl1 <- misvm.default(x = df1[, 3:122],
                         y = df1$bag_label,
                         bags = df1$bag_name,
@@ -90,6 +90,7 @@ test_that("misvm() works for data-frame-like inputs", {
 })
 
 test_that("misvm() works with formula method", {
+  skip_if_no_gurobi()
   mdl1 <- misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean + X3_mean, data = df1)
   mdl2 <- misvm(x = df1[, c("X1_mean", "X2_mean", "X3_mean")],
                 y = df1$bag_label,
@@ -126,6 +127,7 @@ test_that("misvm() works with formula method", {
 })
 
 test_that("predict.misvm returns labels that match the input labels", {
+  skip_if_no_gurobi()
   test_prediction_levels_equal <- function(df, method, class = "default") {
     mdl <- switch(class,
                   "default" = misvm(x = df[, 3:122],
@@ -178,6 +180,7 @@ test_that("predict.misvm returns labels that match the input labels", {
 })
 
 test_that("Dots work in misvm() formula", {
+  skip_if_no_gurobi()
   df2 <- df1 %>% select(bag_label, bag_name, X1_mean, X2_mean, X3_mean)
 
   misvm_dot <- misvm(mi(bag_label, bag_name) ~ ., data = df2)
@@ -192,6 +195,7 @@ test_that("Dots work in misvm() formula", {
 })
 
 test_that("misvm() has correct argument handling", {
+  skip_if_no_gurobi()
   ## weights
   misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = TRUE)
   mdl1 <- misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 1, "1" = 1))
@@ -264,6 +268,7 @@ test_that("misvm() has correct argument handling", {
 })
 
 test_that("misvm mip can warm start", {
+  skip_if_no_gurobi()
   verbose <- interactive()
 
   # manually check that the output says "User MIP start produced solution with objective ..."
@@ -287,15 +292,11 @@ test_that("misvm mip can warm start", {
 })
 
 test_that("misvm mip works with radial kernel", {
+  skip_if_no_gurobi()
   set.seed(8)
-  mil_data <- generate_mild_df(positive_dist = 'mvt',
-                               negative_dist = 'mvnormal',
-                               remainder_dist = 'mvnormal',
-                               nbag = 10,
+  mil_data <- generate_mild_df(nbag = 10,
                                nsample = 20,
-                               positive_degree = 3,
-                               positive_prob = 0.15,
-                               positive_mean = rep(0, 5))
+                               positive_prob = 0.15)
 
   df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
 
@@ -342,6 +343,7 @@ test_that("misvm mip works with radial kernel", {
 })
 
 test_that("misvm() works on 'mild_df' objects", {
+  skip_if_no_gurobi()
   # minimal arguments
   mdl <- misvm(mil_data)
   expect_equal(mdl$call_type, "misvm.mild_df")
@@ -403,6 +405,7 @@ test_that("misvm() works on 'mild_df' objects", {
 })
 
 test_that("`misvm()` value returns make sense", {
+  skip_if_no_gurobi()
 
   # different methods
   names(misvm(x = df1[, 3:122], y = df1$bag_label, bags = df1$bag_name, method = "heuristic"))
@@ -432,6 +435,7 @@ test_that("`misvm()` value returns make sense", {
 })
 
 test_that("Ordering of data doesn't change `misvm()` results", {
+  skip_if_no_gurobi()
   expect_predictions_equal <- function(model1, model2, data) {
     # If predictions match for `type = 'raw` and `layer = 'instance'`, they will
     # match for all other options.
@@ -479,7 +483,7 @@ test_that("Ordering of data doesn't change `misvm()` results", {
 })
 
 test_that("`misvm()` works even when there are Nan columns or idential columns", {
-
+  skip_if_no_gurobi()
   df2 <- df1
   df2$nan_feature <- NaN
 
@@ -513,4 +517,93 @@ test_that("`misvm()` works even when there are Nan columns or idential columns",
 
 })
 
+test_that("`misvm()` works with a few bags with only one instance", {
+  skip_if_no_gurobi()
+  df2 <- df1[-(2:4), ]
+  table(df2$bag_name)
 
+  mdl <- misvm(x = df2[, 3:10],
+               y = df2$bag_label,
+               bags = df2$bag_name,
+               method = "qp-heuristic")
+
+  expect_s3_class(mdl, "misvm")
+})
+
+test_that("`misvm()` works fine with matrices", {
+  skip_if_no_gurobi()
+  for (method in c("heuristic", "mip", "qp-heuristic")) {
+    mdl <- misvm(x = as.matrix(df1[, 3:10]),
+                 y = df1$bag_label,
+                 bags = df1$bag_name,
+                 method = method)
+    expect_s3_class(mdl, "misvm")
+  }
+})
+
+
+test_that("`misvm.formula()` handles identical columns correctly.", {
+  skip_if_no_gurobi()
+  df2 <- df1
+  df2$constant <- 1
+
+  for (method in c("heuristic", "qp-heuristic", "mip")) {
+    expect_warning({
+      mdl1 <- misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean + constant,
+                    data = df2,
+                    method = method)
+    }, "Cannot use columns"  )
+
+    expect_warning({
+      mdl2 <- misvm(x = df2[, c("X1_mean", "X2_mean", "constant")],
+                    y = df2$bag_label,
+                    bags = df2$bag_name,
+                    method = method)
+    })
+
+    expect_equal(mdl1$features, c("X1_mean", "X2_mean"))
+
+    expect_equal(
+      predict(mdl1, new_data = df2),
+      predict(mdl2, new_data = df2)
+    )
+  }
+
+
+})
+
+test_that("Extra factor levels don't cause problems for `misvm()`", {
+  skip_if_no_gurobi()
+  df2 <- df1
+  df2$bag_name <- as.factor(as.numeric(factor(df2$bag_name)))
+  # all sorts of factor mutilations
+  levels(df2$bag_name) <- c(levels(df2$bag_name), "bag1001")
+  df2$bag_name <- relevel(df2$bag_name, 10)
+  df2$bag_name
+
+  method <- "qp-heuristic"
+  mdl1 <- misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean, data = df2, method = method)
+  mdl2 <- misvm(df2[, 3:10], df2$bag_label, df2$bag_name, method = method)
+
+  pred <- predict(mdl1, new_data = df1)
+  pred <- predict(mdl2, new_data = df1)
+
+  expect_true(TRUE)
+})
+
+test_that("Formulas with spaces in names work for `misvm()`", {
+  skip_if_no_gurobi()
+  df2 <- df1[, 1:10]
+
+  colnames(df2)[3] <- "space name"
+
+  method = "qp-heuristic"
+  mdl1 <- misvm(mi(bag_label, bag_name) ~ ., data = df2, method = method)
+  mdl2 <- misvm(mi(bag_label, bag_name) ~ `space name` + X1_0.15, data = df2, method = method)
+
+  mdl2$features
+  predict(mdl1, df2)
+  predict(mdl2, df2)
+
+  expect_true(TRUE)
+})

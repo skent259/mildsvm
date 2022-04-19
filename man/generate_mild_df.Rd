@@ -2,110 +2,154 @@
 % Please edit documentation in R/generate_mild_df.R
 \name{generate_mild_df}
 \alias{generate_mild_df}
-\title{Function to generate mild_df using multivariate t and normal distributions.}
+\title{Generate mild_df using multivariate t and normal distributions.}
 \usage{
 generate_mild_df(
-  positive_dist = c("mvt", "mvnormal"),
-  negative_dist = c("mvnormal", "mvt"),
-  remainder_dist = c("mvnormal", "mvt"),
-  ncov = 10,
-  nimp_pos = 1:5,
-  nimp_neg = 1:5,
-  nsample = 50,
-  ninst = 4,
   nbag = 50,
-  positive_mean = rep(0, length(nimp_pos)),
-  positive_cov = diag(1, nrow = length(nimp_pos)),
-  negative_mean = rep(0, length(nimp_neg)),
-  negative_cov = diag(1, nrow = length(nimp_neg)),
+  ninst = 4,
+  nsample = 50,
+  ncov = 10,
+  nimp_pos = 1:ncov,
+  nimp_neg = 1:ncov,
   positive_prob = 0.2,
+  dist = c("mvt", "mvnormal", "mvnormal"),
+  mean = list(rep(0, length(nimp_pos)), rep(0, length(nimp_neg)), 0),
+  sd_of_mean = c(0.5, 0.5, 0.5),
+  cov = list(diag(1, nrow = length(nimp_pos)), diag(1, nrow = length(nimp_neg)), 1),
+  sample_cov = FALSE,
+  df_wishart_cov = c(length(nimp_pos), length(nimp_neg), ncov - length(nimp_pos)),
+  degree = c(3, NA, NA),
+  positive_bag_prob = NULL,
+  n_noise_inst = NULL,
   ...
 )
 }
 \arguments{
-\item{positive_dist}{The distribution to be generated for important
-covariates of positive instances (default 'mvt').}
-
-\item{negative_dist}{The distribution to be generated for important
-covariates of negative instances (default 'mvnormal').}
-
-\item{remainder_dist}{The distribution to be generated for unimportant
-covariates (default 'mvnormal').}
-
-\item{ncov}{The number of total covariates (default 10).}
-
-\item{nimp_pos}{An index of important covariates for positve covariates
-(default \code{1:5}).}
-
-\item{nimp_neg}{An index of important covariates for negative covariates
-(default \code{1:5}).}
-
-\item{nsample}{The number of observations for each instance (default 50).}
+\item{nbag}{The number of bags (default 50).}
 
 \item{ninst}{The number of instances for each bag (default 4).}
 
-\item{nbag}{The number of bags (default 50).}
+\item{nsample}{The number of samples for each instance (default 50).}
 
-\item{positive_mean}{The mean vector of important covariates for positive
-instances. This should be of same length as \code{nimp_pos}}
+\item{ncov}{The number of total covariates (default 10).}
 
-\item{positive_cov}{The covariance matrix of important covariates for
-positive instances.}
+\item{nimp_pos}{An index of important covariates for positve instances
+(default \code{1:ncov}).}
 
-\item{negative_mean}{The mean vector of important covariates for negative
-instances, should be of same length as \code{nimp_neg}}
+\item{nimp_neg}{An index of important covariates for negative instances
+(default \code{1:ncov}).
+(default \code{1:ncov}).}
 
-\item{negative_cov}{The covariance matrix of important covariates for
-negative instances.}
+\item{positive_prob}{A numeric value between 0 and 1 indicating the
+probability of an instance being positive (default 0.2).}
 
-\item{positive_prob}{A numberic number between 0 and 1 indicating the
-probability of an instance being positive.}
+\item{dist}{A vector (length 3) of distributions for the positive, negative, and
+remaining instances, respectively.  Distributions can be one of
+\code{'mvnormal'} for multivariate normal or \code{'mvt'} for multivariate
+student's t.}
 
-\item{...}{Other covariates when using t distribution or using a different
-bag labeling scheme, such as:
-\itemize{
-\item \code{positive_degree} The distribution degree, if \code{positive_dist = 'mvt'}.
-\item \code{negative_degree} The distribution degree, if \code{negative_dist = 'mvt'}.
-\item \code{remainder_degree} The distribution degree, if \code{remainder_dist = 'mvt'}.
-\item \code{positive_bag_prob} The Bernoulli success probability of a bag being a
-positive bag. Specify this argument jointly with \code{n_noise_inst} to generate
-the label of each bag first.
-\item \code{n_noise_inst} The number of negative instances in a positive bag.  This
-should be strictly less that \code{ninst}.
-}}
+\item{mean}{A list (length 3) of mean vectors for the positive, negative, and
+remaining distributions.  \code{mean[[1]]} should match \code{nimp_pos} in length;
+\code{mean[[2]]} should match \code{nimp_neg} in length.}
+
+\item{sd_of_mean}{A vector (length 3) of standard deviations in sampling the
+mean for positive, negative, and remaining distributions, where the prior
+is given by \code{mean}.  Use \code{sd_of_mean = c(0, 0, 0)} to keep the mean
+consistent across all instances.}
+
+\item{cov}{A list (length 3) of covariance matrices for the positive,
+negative, and remaining distributions.  \code{cov[[3]]} should be an integer
+since the dimension of remaining features can vary depending on if the
+important distribution is positive or negative.}
+
+\item{sample_cov}{A logical value for whether to sample the covariance for
+each distribution.  If \code{FALSE} (the default), each covariance is fixed at
+\code{cov}. If \code{TRUE}, the prior is given by \code{cov} and sampled from a Wishart
+distribution with \code{df_wishart_cov} degrees of freedom to have an
+expectation of \code{cov}.}
+
+\item{df_wishart_cov}{A vector (length 3) of degrees-of-freedom to use in the
+Wishart covariance matrix sampling.}
+
+\item{degree}{A vector (length 3) of degrees-of-freedom used when any of
+\code{dist} is \code{'mvt'}.  This parameter is ignored when \code{dist[i] == 'mvnormal'},
+in which case \code{NA} can be specified.}
+
+\item{positive_bag_prob}{A numeric value between 0 and 1 indicating the
+probability of a bag being positive. Must be specified jointly with
+\code{n_noise_inst}, in which case \code{positive_prob} is ignored.  If \code{NULL} (the
+default), instance labels are sampled first according to \code{positive_prob}.}
+
+\item{n_noise_inst}{An integer indicating the number of negative instances in
+a positive bag. Must be specifid jointly with \code{positive_bag_prob}.
+\code{n_noise_inst} should be less than \code{ninst}.}
+
+\item{...}{Arguments passed to or from other methods.}
 }
 \value{
-A mild_df object.
+A \code{mild_df} object.
 }
 \description{
-This function generates multiple instance data (a \code{mild_df} object) where
-each row corresponds to a sample from a given instance distribution.
-Instances are grouped into bags and the bag labels follow the standard MI
-assumption.
+This function samples multiple instance distributional data (a \code{mild_df}
+object) where each row corresponds to a sample from a given instance
+distribution.  Instance distributions can be multivariate t and normal, with
+mean and variance parameters that can be fixed or sampled based on prior
+parameters.  These instances are grouped into bags and the bag labels
+follow the standard MI assumption.
 }
 \details{
-To use the function, one needs to provide the total number of covariates
-\code{ncov}, to generate, and the index of the important covariates for positive
-and negative instances, \code{nimp_pos} and \code{nimp_neg}, respectively. The
-distribution of these important covariates will be a multivariate t or
-multivariate normal distribution, specified by \code{positive_dist},
-\code{negative_dist}. The \code{remainder_dist} specifies the distribution of the
-unimportant covariates where their distributions do not differ in positive or
-negative instances. \code{nsample} i.i.d draws will be taken from the respective
-distributions for each instance. The \code{ninst} parameter specifies the number
-of instances in each bag and \code{nbag} gives how many bags in total will be
-generated. Hence in total the number of observations is \code{nsample} * \code{nbag} *
-\code{ninst}.
+The first consideration to use this function is to determine the number of
+bags, instances per bag, and samples per instance using the \code{nbag}, \code{ninst},
+and \code{nsample} arguments. Next, one must consider the number of covariates
+\code{ncov}, and how those covariates will differ between instances with positive
+and negative labels.  Some covariates can be common between the positive and
+negative instances, which we call the remainder distribution.  Use \code{nimp_pos}
+and \code{nimp_neg} to specify the index of the important (non-remainder)
+covariates in the distributions with positive and negative instance labels.
 
-The default parameters for the remainder distribution is zero mean and
-identity covariance matrix.
+The structure of how many instances/bags are positive and negative is
+determined by \code{positive_prob} or the joint specification of
+\code{positive_bag_prob} and \code{n_noise_inst}. In the first case, instances labels
+have independent Bernoulli draws based on \code{positive_prob} and bag labels are
+determined by the standard MI assumption (i.e. positive if any instance in
+the bag is positive).  In the second case, bag labels are drawn independently
+as Bernoilli with \code{positive_bag_prob} chance of success.  Each positive bag
+will be given \code{n_noise_inst} values with instance label of 0, and the
+remaining with instance label of 1.
+
+The remaining arguments are used to determine the distributions used for the
+positive, negative, and remaining features.  Each argument will be a vector
+of list of length 3 corresponding to these 3 different groups.  To create
+different distributions, the strategy is to first draw the mean parameter
+from Normal(\code{mean}, \code{sd_of_mean} * I) and the covariance parameter from
+Wishart(\code{df_wishart_cov}, \code{cov}), with expectation equal to \code{cov}.  Then we
+can sample i.i.d. draws from the specified distribution (either multivariate
+normal or student's t). To ensure that each instance distribution has the
+same mean, set \code{sd_of_mean} to 0. To ensure that each instance distribution
+has the same covariance, set \code{sample_cov = FALSE}.
+
+The final data.frame will have \code{nsample} * \code{nbag} * \code{ninst} rows and \code{ncov + 3} columns including the bag_label, bag_name, instance_name, and \code{ncov}
+sampled covariates.
 }
 \examples{
-mild_df1 <- generate_mild_df(positive_dist = 'mvt',
-                             negative_dist = 'mvnormal',
-                             remainder_dist = 'mvnormal',
-                             positive_degree = 3)
+set.seed(8)
+mild_data <- generate_mild_df(nbag = 7, ninst = 3, nsample = 20,
+                              ncov = 2,
+                              nimp_pos = 1,
+                              dist = rep("mvnormal", 3),
+                              mean = list(
+                                rep(5, 1),
+                                rep(15, 2),
+                                0
+                              ))
+
+library(dplyr)
+distinct(mild_data, bag_label, bag_name, instance_name)
+split(mild_data[, 4:5], mild_data$instance_name) \%>\%
+  sapply(colMeans) \%>\%
+  round(2) \%>\%
+  t()
 }
 \author{
-Yifei Liu
+Yifei Liu, Sean Kent
 }
