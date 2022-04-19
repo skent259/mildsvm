@@ -934,6 +934,7 @@ misvm_dualqpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = N
   params <- list()
   params$OutputFlag = 1*verbose
   params$IntFeasTol = 1e-5
+  params$PSDTol = 1e-4
   if (time_limit) params$TimeLimit = time_limit
 
   selection_changed <- TRUE
@@ -946,7 +947,17 @@ misvm_dualqpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = N
     K_ind <- K[ind, ind, drop = FALSE]
 
     opt_model <- misvm_dualqpheuristic_model(y[ind], bags[ind], K_ind, c, weights)
-    gurobi_result <- gurobi::gurobi(opt_model, params = params)
+
+    gurobi_result <-
+      tryCatch({
+        gurobi::gurobi(opt_model, params = params)
+      },
+      error = function(e) {
+        rlang::warn(paste0("Warning from gurobi: ", conditionMessage(e)))
+        rlang::inform("Trying NonConvex version")
+        params$NonConvex <- 2
+        return(gurobi::gurobi(opt_model, params = params))
+      })
 
     a <- gurobi_result$x
     # TODO: need a better way to figure out which a to compute b_ over
