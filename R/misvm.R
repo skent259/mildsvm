@@ -149,7 +149,7 @@ misvm.default <- function(x, y, bags,
                           weights = TRUE,
                           control = list(kernel = "linear",
                                          sigma = if (is.vector(x)) 1 else 1 / ncol(x),
-                                         nystrom_args = list(m = nrow(x), r = nrow(x), sampling = 'random'),
+                                         nystrom_args = list(m = nrow(x), r = nrow(x), sampling = "random"),
                                          max_step = 500,
                                          type = "C-classification",
                                          scale = TRUE,
@@ -159,17 +159,25 @@ misvm.default <- function(x, y, bags,
                           ...)
 {
 
-  method <- match.arg(method)
-  if ("kernel" %ni% names(control)) control$kernel <- "linear"
-  if ("sigma" %ni% names(control)) control$sigma <- 1
-  if ("nystrom_args" %ni% names(control)) control$nystrom_args = list(m = nrow(x), r = nrow(x), sampling = 'random')
-  if ("max_step" %ni% names(control)) control$max_step <- 500
-  if ("type" %ni% names(control)) control$type <- "C-classification"
-  if ("scale" %ni% names(control)) control$scale <- TRUE
-  if ("verbose" %ni% names(control)) control$verbose <- FALSE
-  if ("time_limit" %ni% names(control)) control$time_limit <- 60
-  if ("start" %ni% names(control)) control$start <- FALSE
+  method <- match.arg(method, c("heuristic", "mip", "qp-heuristic"))
 
+  defaults <- list(
+    kernel = "linear",
+    sigma = if (is.vector(x)) 1 else 1 / ncol(x),
+    nystrom_args = list(m = nrow(x), r = nrow(x), sampling = "random"),
+    max_step = 500,
+    type = "C-classification",
+    verbose = FALSE,
+    time_limit = 60,
+    start = FALSE
+  )
+  control <- .set_default(control, defaults)
+  if ("scale" %ni% names(control) && inherits(control$kernel, "matrix")) {
+        # if kernel matrix is passed in, then really no re-scaling was done.
+        control$scale <- FALSE
+    } else if ("scale" %ni% names(control)) {
+        control$scale <- TRUE
+    }
   if (control$start && control$kernel != "linear") {
     control$start <- FALSE
     rlang::inform(c(
