@@ -4,7 +4,7 @@ suppressMessages(suppressWarnings({
 }))
 
 
-test_that("`mildsvm()` example works", {
+test_that("`mismm()` example works", {
 
   expect_snapshot({
     set.seed(8)
@@ -12,12 +12,12 @@ test_that("`mildsvm()` example works", {
                                  sd_of_mean = rep(0.1, 3))
 
     # Heuristic method
-    mdl1 <- mildsvm(mil_data)
-    mdl2 <- mildsvm(mild(bag_label, bag_name, instance_name) ~ X1 + X2 + X3, data = mil_data)
+    mdl1 <- mismm(mil_data)
+    mdl2 <- mismm(mild(bag_label, bag_name, instance_name) ~ X1 + X2 + X3, data = mil_data)
 
     # MIP method
     if (require(gurobi)) {
-      mdl3 <- mildsvm(mil_data, method = "mip", control = list(nystrom_args = list(m = 10, r = 10)))
+      mdl3 <- mismm(mil_data, method = "mip", control = list(nystrom_args = list(m = 10, r = 10)))
       predict(mdl3, mil_data)
     }
 
@@ -30,17 +30,17 @@ test_that("`mildsvm()` example works", {
       distinct(bag_name, bag_label, .pred_class, .pred)
   })
 
-  expect_s3_class(mdl1, "mildsvm")
-  expect_s3_class(mdl2, "mildsvm")
+  expect_s3_class(mdl1, "mismm")
+  expect_s3_class(mdl2, "mismm")
 })
 
-test_that("`predict.mildsvm()` examples work", {
+test_that("`predict.mismm()` examples work", {
   set.seed(8)
   expect_snapshot({
     mil_data <- generate_mild_df(nbag = 15, nsample = 20, positive_prob = 0.15,
                                  sd_of_mean = rep(0.1, 3))
 
-    mdl1 <- mildsvm(mil_data, control = list(sigma = 1/5))
+    mdl1 <- mismm(mil_data, control = list(sigma = 1/5))
 
     # bag level predictions
     mil_data %>%
@@ -55,7 +55,7 @@ test_that("`predict.mildsvm()` examples work", {
       distinct(bag_name, instance_name, bag_label, .pred_class, .pred)
   })
 
-  expect_s3_class(mdl1, "mildsvm")
+  expect_s3_class(mdl1, "mismm")
 })
 
 test_that("`misvm()` examples work", {

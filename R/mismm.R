@@ -1,15 +1,15 @@
-new_mildsvm <- function(x = list(), method = c("heuristic", "mip", "qp-heuristic")) {
+new_mismm <- function(x = list(), method = c("heuristic", "mip", "qp-heuristic")) {
     stopifnot(is.list(x))
     method <- match.arg(method)
     structure(
         x,
-        class = "mildsvm",
+        class = "mismm",
         method = method
     )
 }
 
-validate_mildsvm <- function(x) {
-    message("No validations currently in place for object of class 'mildsvm'.")
+validate_mismm <- function(x) {
+    message("No validations currently in place for object of class 'mismm'.")
     x
 }
 
@@ -58,7 +58,7 @@ validate_mildsvm <- function(x) {
 #'   will be warm_started with the solution from `method = 'qp-heuristic'` to
 #'   potentially improve speed.
 #'
-#' @return An object of class `mildsvm`  The object contains at least the
+#' @return An object of class `mismm`  The object contains at least the
 #'   following components:
 #'   * `*_fit`: A fit object depending on the `method` parameter.  If `method =
 #'   'heuristic'`, this will be a `ksvm` fit from the kernlab package.  If
@@ -82,7 +82,7 @@ validate_mildsvm <- function(x) {
 #'   input data.
 #'   * `x_scale`: If `scale = TRUE`, the scaling parameters for new predictions.
 #'
-#' @seealso [predict.mildsvm()] for prediction on new data.
+#' @seealso [predict.mismm()] for prediction on new data.
 #'
 #' @examples
 #' set.seed(8)
@@ -90,12 +90,12 @@ validate_mildsvm <- function(x) {
 #'                              sd_of_mean = rep(0.1, 3))
 #'
 #' # Heuristic method
-#' mdl1 <- mildsvm(mil_data)
-#' mdl2 <- mildsvm(mild(bag_label, bag_name, instance_name) ~ X1 + X2 + X3, data = mil_data)
+#' mdl1 <- mismm(mil_data)
+#' mdl2 <- mismm(mild(bag_label, bag_name, instance_name) ~ X1 + X2 + X3, data = mil_data)
 #'
 #' # MIP method
 #' if (require(gurobi)) {
-#'   mdl3 <- mildsvm(mil_data, method = "mip", control = list(nystrom_args = list(m = 10, r = 10)))
+#'   mdl3 <- mismm(mil_data, method = "mip", control = list(nystrom_args = list(m = 10, r = 10)))
 #'   predict(mdl3, mil_data)
 #' }
 #'
@@ -110,17 +110,17 @@ validate_mildsvm <- function(x) {
 #'
 #'
 #' @author Sean Kent, Yifei Liu
-#' @name mildsvm
+#' @name mismm
 NULL
 
 #' @export
-mildsvm <- function(x, ...) {
-    UseMethod("mildsvm")
+mismm <- function(x, ...) {
+    UseMethod("mismm")
 }
 
-#' @describeIn mildsvm Method for data.frame-like objects
+#' @describeIn mismm Method for data.frame-like objects
 #' @export
-mildsvm.default <- function(x, y, bags, instances, cost = 1,
+mismm.default <- function(x, y, bags, instances, cost = 1,
                             method = c("heuristic", "mip", "qp-heuristic"),
                             weights = TRUE,
                             control = list(kernel = "radial",
@@ -281,7 +281,7 @@ mildsvm.default <- function(x, y, bags, instances, cost = 1,
     if (method %in% c("mip") && all(control$kernel == "radial")) {
         out$kfm_fit <- kfm_fit
     }
-    out$call_type <- "mildsvm.default"
+    out$call_type <- "mismm.default"
     out$x <- res$x
     out$features <- col_x
     out$levels <- lev
@@ -299,12 +299,12 @@ mildsvm.default <- function(x, y, bags, instances, cost = 1,
     } else {
         out$x_scale <- res$x_scale
     }
-    new_mildsvm(out, method = method)
+    new_mismm(out, method = method)
 }
 
-#' @describeIn mildsvm Method for passing formula
+#' @describeIn mismm Method for passing formula
 #' @export
-mildsvm.formula <- function(formula, data, ...) {
+mismm.formula <- function(formula, data, ...) {
     # NOTE: other 'professional' functions use a different type of call that I
     #   couldn't get to work. See https://github.com/therneau/survival/blob/master/R/survfit.R
     #   or https://github.com/cran/e1071/blob/master/R/svm.R
@@ -320,9 +320,9 @@ mildsvm.formula <- function(formula, data, ...) {
     bags <- response[, 2]
     instances <- response[, 3]
 
-    res <- mildsvm.default(x, y, bags, instances, ...)
+    res <- mismm.default(x, y, bags, instances, ...)
 
-    res$call_type <- "mildsvm.formula"
+    res$call_type <- "mismm.formula"
     res$formula <- formula
     res$bag_name <- bag_name
     res$instance_name <- instance_name
@@ -330,9 +330,9 @@ mildsvm.formula <- function(formula, data, ...) {
 }
 
 
-#' @describeIn mildsvm Method for `mild_df` objects
+#' @describeIn mismm Method for `mild_df` objects
 #' @export
-mildsvm.mild_df <- function(data, ...) {
+mismm.mild_df <- function(data, ...) {
 
     # x <- as.data.frame(subset(data, select = -c(bag_label, bag_name, instance_name)))
     x <- data
@@ -341,15 +341,15 @@ mildsvm.mild_df <- function(data, ...) {
     bags <- data$bag_name
     instances <- data$instance_name
 
-    res <- mildsvm.default(x, y, bags, instances, ...)
-    res$call_type <- "mildsvm.mild_df"
+    res <- mismm.default(x, y, bags, instances, ...)
+    res$call_type <- "mismm.mild_df"
     # res$formula <- formula
     res$bag_name <- "bag_name"
     res$instance_name <- "instance_name"
     return(res)
 }
 
-#' Predict method for `mildsvm` object
+#' Predict method for `mismm` object
 #'
 #' @details
 #' When the object was fitted using the `formula` method, then the parameters
@@ -357,7 +357,7 @@ mildsvm.mild_df <- function(data, ...) {
 #' the original function call.
 #'
 #' @inheritParams predict.misvm
-#' @param object An object of class `mildsvm`.
+#' @param object An object of class `mismm`.
 #' @param new_instances A character or character vector.  Can specify a singular
 #'   character that provides the column name for the instance names in
 #'   `new_data` (default `'instance_name'`).  Can also specify a vector of length
@@ -371,13 +371,13 @@ mildsvm.mild_df <- function(data, ...) {
 #'   will have a column `.pred_class`.  If `type = 'raw'`, the tibble will have
 #'   a column `.pred`.
 #'
-#' @seealso [mildsvm()] for fitting the `mildsvm` object.
+#' @seealso [mismm()] for fitting the `mismm` object.
 #'
 #' @examples
 #' mil_data <- generate_mild_df(nbag = 15, nsample = 20, positive_prob = 0.15,
 #'                              sd_of_mean = rep(0.1, 3))
 #'
-#' mdl1 <- mildsvm(mil_data, control = list(sigma = 1/5))
+#' mdl1 <- mismm(mil_data, control = list(sigma = 1/5))
 #'
 #' # bag level predictions
 #' library(dplyr)
@@ -394,7 +394,7 @@ mildsvm.mild_df <- function(data, ...) {
 #'
 #' @export
 #' @author Sean Kent
-predict.mildsvm <- function(object, new_data,
+predict.mismm <- function(object, new_data,
                             type = c("class", "raw"),
                             layer = c("bag", "instance"),
                             new_bags = "bag_name",
@@ -408,7 +408,7 @@ predict.mildsvm <- function(object, new_data,
 
     if (method == "heuristic") {
         # pass on to the predict.smm method
-        object$call_type <- gsub("mildsvm", "smm", object$call_type)
+        object$call_type <- gsub("mismm", "smm", object$call_type)
         if (!is.null(kernel)) {
             kernel <- kernel[, object$inst_order, drop = FALSE]
             kernel <- kernel[, object$useful_inst_idx, drop = FALSE]
@@ -417,7 +417,7 @@ predict.mildsvm <- function(object, new_data,
     }
 
     # Find the instance information
-    if (object$call_type == "mildsvm.formula" & new_instances[1] == "instance_name" & length(new_instances) == 1) {
+    if (object$call_type == "mismm.formula" & new_instances[1] == "instance_name" & length(new_instances) == 1) {
         new_instances <- object$instance_name
     }
     if (length(new_instances) == 1 & new_instances[1] %in% colnames(new_data)) {
@@ -426,7 +426,7 @@ predict.mildsvm <- function(object, new_data,
         instances <- new_instances
     }
 
-    if (object$call_type == "mildsvm.formula") {
+    if (object$call_type == "mismm.formula") {
         new_x <- x_from_mild_formula(object$formula, new_data)
     } else {
         new_x <- new_data[, object$features, drop = FALSE]
@@ -463,12 +463,12 @@ predict.mildsvm <- function(object, new_data,
         names(scores) <- unique(instances)
         scores <- scores[instances]
     } else {
-        stop("predict.mildsvm requires method = 'heuristic', 'mip', 'qp-heuristic'.")
+        stop("predict.mismm requires method = 'heuristic', 'mip', 'qp-heuristic'.")
     }
     pos <- 2*(scores > 0) - 1
 
     if (layer == "bag") {
-        if (object$call_type == "mildsvm.formula" & new_bags[1] == "bag_name" & length(new_bags) == 1) {
+        if (object$call_type == "mismm.formula" & new_bags[1] == "bag_name" & length(new_bags) == 1) {
             new_bags <- object$bag_name
         }
         if (length(new_bags) == 1 & new_bags[1] %in% colnames(new_data)) {

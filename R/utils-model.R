@@ -67,7 +67,7 @@ x_from_mi_formula <- function(formula, data) {
 }
 
 #' Calculate x-matrix from a formula with `mild()` in it
-#' @inheritParams mildsvm
+#' @inheritParams mismm
 #' @noRd
 x_from_mild_formula <- function(formula, data) {
   mild_names <- as.character(stats::terms(formula, data = data)[[2]])
@@ -166,7 +166,7 @@ select_cv_folds <- function(data, n_fold, fold_id) {
 }
 
 #' Function that will eventually supercede select_cv_folds because it supports
-#' the same variables as `misvm()`, `mildsvm()` and `smm()`.
+#' the same variables as `misvm()`, `mismm()` and `smm()`.
 #' @inheritParams classify_bags
 #' @inheritParams select_cv_folds
 #' @noRd

@@ -1,16 +1,16 @@
-# `mildsvm()` value returns make sense
+# `mismm()` value returns make sense
 
     Code
-      models <- list(`mildata-heur` = mildsvm(mil_data, method = "heuristic"),
-      `mildata-mip` = mildsvm(mil_data, method = "mip", control = list(nystrom_args = list(
-        m = 10))), `mildata-qp` = mildsvm(mil_data, method = "qp-heuristic"), xy = mildsvm(
+      models <- list(`mildata-heur` = mismm(mil_data, method = "heuristic"),
+      `mildata-mip` = mismm(mil_data, method = "mip", control = list(nystrom_args = list(
+        m = 10))), `mildata-qp` = mismm(mil_data, method = "qp-heuristic"), xy = mismm(
         x = as.data.frame(mil_data[, 4:13]), y = mil_data$bag_label, bags = mil_data$
-          bag_name, instances = mil_data$instance_name), formula = mildsvm(mild(
-        bag_label, bag_name, instance_name) ~ ., data = mil_data), `no-scale-heur` = mildsvm(
+          bag_name, instances = mil_data$instance_name), formula = mismm(mild(
+        bag_label, bag_name, instance_name) ~ ., data = mil_data), `no-scale-heur` = mismm(
         mil_data, method = "heuristic", control = list(scale = FALSE)),
-      `no-scale-mip` = mildsvm(mil_data, method = "mip", control = list(scale = FALSE,
-        nystrom_args = list(m = 10))), `no-scale-qp` = mildsvm(mil_data, method = "qp-heuristic",
-        control = list(scale = FALSE)), `no-weights` = mildsvm(mil_data, method = "heuristic",
+      `no-scale-mip` = mismm(mil_data, method = "mip", control = list(scale = FALSE,
+        nystrom_args = list(m = 10))), `no-scale-qp` = mismm(mil_data, method = "qp-heuristic",
+        control = list(scale = FALSE)), `no-weights` = mismm(mil_data, method = "heuristic",
         weights = FALSE)) %>% suppressWarnings() %>% suppressMessages()
       print(lapply(models, names))
     Output

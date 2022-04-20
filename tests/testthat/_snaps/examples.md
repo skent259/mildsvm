@@ -1,14 +1,14 @@
-# `mildsvm()` example works
+# `mismm()` example works
 
     Code
       set.seed(8)
       mil_data <- generate_mild_df(nbag = 15, nsample = 20, positive_prob = 0.15,
         sd_of_mean = rep(0.1, 3))
-      mdl1 <- mildsvm(mil_data)
-      mdl2 <- mildsvm(mild(bag_label, bag_name, instance_name) ~ X1 + X2 + X3, data = mil_data)
+      mdl1 <- mismm(mil_data)
+      mdl2 <- mismm(mild(bag_label, bag_name, instance_name) ~ X1 + X2 + X3, data = mil_data)
       if (require(gurobi)) {
-        mdl3 <- mildsvm(mil_data, method = "mip", control = list(nystrom_args = list(
-          m = 10, r = 10)))
+        mdl3 <- mismm(mil_data, method = "mip", control = list(nystrom_args = list(m = 10,
+          r = 10)))
         predict(mdl3, mil_data)
       }
     Message <packageStartupMessage>
@@ -68,12 +68,12 @@
       14         1    bag14           1  0.14325177
       15         1    bag15           1  0.32877489
 
-# `predict.mildsvm()` examples work
+# `predict.mismm()` examples work
 
     Code
       mil_data <- generate_mild_df(nbag = 15, nsample = 20, positive_prob = 0.15,
         sd_of_mean = rep(0.1, 3))
-      mdl1 <- mildsvm(mil_data, control = list(sigma = 1 / 5))
+      mdl1 <- mismm(mil_data, control = list(sigma = 1 / 5))
       mil_data %>% bind_cols(predict(mdl1, mil_data, type = "class")) %>% bind_cols(
         predict(mdl1, mil_data, type = "raw")) %>% distinct(bag_name, bag_label,
         .pred_class, .pred)

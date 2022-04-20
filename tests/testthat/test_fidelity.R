@@ -63,7 +63,7 @@ test_that("kme.R functions have identical output", {
                MilDistribution::kme(mil_data2[split_ind, ], mil_data2[!split_ind, ]))
 })
 
-test_that("mildsvm.R functions have identical output", {
+test_that("mismm.R functions have identical output", {
   skip_if_no_gurobi()
   skip_if_no_MilDistrubution()
   set.seed(8)
@@ -83,7 +83,7 @@ test_that("mildsvm.R functions have identical output", {
 
 
   set.seed(8)
-  mdl1 <- mildsvm::mildsvm(mil_data, cost = 1,
+  mdl1 <- mildsvm::mismm(mil_data, cost = 1,
                            weights = c("0" = 5 / 19, "1" = 1), # set to n_neg_inst / n_pos_bag
                            control = list(scale = FALSE,
                                           sigma = 0.05))

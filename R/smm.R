@@ -17,7 +17,7 @@ validate_smm <- function(x) {
 #' will compute a kernel on the instances and pass that to `kernlab::ksvm()` to
 #' train the appropriate SVM model.
 #'
-#' @inheritParams mildsvm
+#' @inheritParams mismm
 #' @param formula A formula that defines the outcome `y` and covariates `x`.
 #'   This argument is an alternative to the `x, y, bags, instances ` arguments,
 #'   but requires the `data` argument. See examples.
@@ -212,7 +212,7 @@ smm.mild_df <- function(data, ...)
 #' `new_bags` and `new_instances` are not necessary, as long as the names match
 #' the original function call.
 #'
-#' @inheritParams predict.mildsvm
+#' @inheritParams predict.mismm
 #' @param object an object of class `smm`
 #' @param layer If `'instance'`, return predictions at the instance level.
 #'   Option `'bag'` returns predictions at the bag level, but only if the model

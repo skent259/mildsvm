@@ -23,7 +23,7 @@ mildsvm contains popular methods for training classifiers on multiple-instance l
 In particular, mildsvm implements
 
 - `misvm()`: The MI-SVM approach from [Andrews et al. (2003)](https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.86.8281&rep=rep1&type=pdf) "Support Vector Machines for Multiple-Instance Learning"
-- `mildsvm()`: Novel research code for training a MILD-SVM classifier.
+- `mismm()`: Novel research code for training a MI-SVM classifier.
 - `smm()`: Support Measure Machines (for supervised data) based on [Muandet et al. (2012)](https://papers.nips.cc/paper/2012/file/9bf31c7ff062936a96d3c8bd1f8f2ff3-Paper.pdf) "Learning from Distributions via Support Measure Machines"
 
 ## Installation
@@ -86,10 +86,10 @@ mil_df %>%
 ```
 
 
-Similarly, you can train a MILD-SVM classifier using `mildsvm()` on the MILD data:
+Similarly, you can train a MILD-SVM classifier using `mismm()` on the MILD data:
 
 ```{r message = FALSE}
-fit2 <- mildsvm(mild(bag_label, bag_name, instance_name) ~ X1, data = mild_df, cost = 100)
+fit2 <- mismm(mild(bag_label, bag_name, instance_name) ~ X1, data = mild_df, cost = 100)
 
 # predict
 mild_df %>% 

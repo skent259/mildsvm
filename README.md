@@ -4,7 +4,6 @@
 # mildsvm
 
 <!-- badges: start -->
-
 <!-- badges: end -->
 
 mildsvm contains popular methods for training classifiers on
@@ -15,11 +14,11 @@ instance label).
 
 In particular, mildsvm implements
 
-  - `misvm()`: The MI-SVM approach from [Andrews et
+-   `misvm()`: The MI-SVM approach from [Andrews et
     al. (2003)](https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.86.8281&rep=rep1&type=pdf)
     “Support Vector Machines for Multiple-Instance Learning”
-  - `mildsvm()`: Novel research code for training a MILD-SVM classifier.
-  - `smm()`: Support Measure Machines (for supervised data) based on
+-   `mismm()`: Novel research code for training a MI-SVM classifier.
+-   `smm()`: Support Measure Machines (for supervised data) based on
     [Muandet et
     al. (2012)](https://papers.nips.cc/paper/2012/file/9bf31c7ff062936a96d3c8bd1f8f2ff3-Paper.pdf)
     “Learning from Distributions via Support Measure Machines”
@@ -30,9 +29,7 @@ mildsvm is not currently on CRAN.
 <!-- You can install the released version of mildsvm from [CRAN](https://CRAN.R-project.org) with: -->
 
 <!-- ``` r -->
-
 <!-- install.packages("mildsvm") -->
-
 <!-- ``` -->
 
 You can install the development version from
@@ -67,22 +64,22 @@ set.seed(4)
   nsample = 2
 ))
 #>    bag_label bag_name instance_name          X1
-#> 1          0     bag1     bag1inst1 -2.36785409
-#> 2          0     bag1     bag1inst1 -0.59065752
-#> 3          0     bag1     bag1inst2  0.59598058
-#> 4          0     bag1     bag1inst2  1.63561800
-#> 5          0     bag2     bag2inst1 -0.56510664
-#> 6          0     bag2     bag2inst1  1.68565407
-#> 7          0     bag2     bag2inst2  1.89653987
-#> 8          0     bag2     bag2inst2  1.77686321
-#> 9          1     bag3     bag3inst1  2.70774114
-#> 10         1     bag3     bag3inst1 -0.02521123
-#> 11         1     bag3     bag3inst2  2.95486288
-#> 12         1     bag3     bag3inst2  3.03435191
-#> 13         1     bag4     bag4inst1 -0.70968780
-#> 14         1     bag4     bag4inst1  0.39755809
-#> 15         1     bag4     bag4inst2  2.89963156
-#> 16         1     bag4     bag4inst2  2.71655543
+#> 1          0     bag1     bag1inst1  1.50708444
+#> 2          0     bag1     bag1inst1 -0.46343763
+#> 3          0     bag1     bag1inst2  1.78996761
+#> 4          0     bag1     bag1inst2  1.67029095
+#> 5          0     bag2     bag2inst1  0.29902170
+#> 6          0     bag2     bag2inst1  0.66635959
+#> 7          0     bag2     bag2inst2  0.01178335
+#> 8          0     bag2     bag2inst2  0.14645822
+#> 9          1     bag3     bag3inst1  0.54609520
+#> 10         1     bag3     bag3inst1  0.47338270
+#> 11         1     bag3     bag3inst2  1.94206806
+#> 12         1     bag3     bag3inst2  1.24670812
+#> 13         1     bag4     bag4inst1  1.11441218
+#> 14         1     bag4     bag4inst1  0.76836731
+#> 15         1     bag4     bag4inst2  0.11066462
+#> 16         1     bag4     bag4inst2 -0.28980224
 ```
 
 If you summarize a MILD data set (for example, by taking the mean of
@@ -91,17 +88,17 @@ each covariate), you can recover a MIL data set. Use
 
 ``` r
 ( mil_df <- summarize_samples(mild_df, .fns = list(mean = mean)) )
-#> # A tibble: 8 x 4
-#>   bag_label bag_name instance_name   mean
-#>       <dbl> <chr>    <chr>          <dbl>
-#> 1         0 bag1     bag1inst1     -1.48 
-#> 2         0 bag1     bag1inst2      1.12 
-#> 3         0 bag2     bag2inst1      0.560
-#> 4         0 bag2     bag2inst2      1.84 
-#> 5         1 bag3     bag3inst1      1.34 
-#> 6         1 bag3     bag3inst2      2.99 
-#> 7         1 bag4     bag4inst1     -0.156
-#> 8         1 bag4     bag4inst2      2.81
+#> # A tibble: 8 × 4
+#>   bag_label bag_name instance_name    mean
+#>       <dbl> <chr>    <chr>           <dbl>
+#> 1         0 bag1     bag1inst1      0.522 
+#> 2         0 bag1     bag1inst2      1.73  
+#> 3         0 bag2     bag2inst1      0.483 
+#> 4         0 bag2     bag2inst2      0.0791
+#> 5         1 bag3     bag3inst1      0.510 
+#> 6         1 bag3     bag3inst2      1.59  
+#> 7         1 bag4     bag4inst1      0.941 
+#> 8         1 bag4     bag4inst2     -0.0896
 ```
 
 You can train an MI-SVM classifier using `misvm()` on MIL data with the
@@ -116,31 +113,31 @@ mil_df %>%
   dplyr::bind_cols(predict(fit1, mil_df, type = "raw")) %>% 
   dplyr::bind_cols(predict(fit1, mil_df, type = "class")) %>% 
   dplyr::distinct(bag_label, bag_name, .pred, .pred_class)
-#> # A tibble: 4 x 4
-#>   bag_label bag_name .pred .pred_class
-#>       <dbl> <chr>    <dbl> <fct>      
-#> 1         0 bag1     -2.48 0          
-#> 2         0 bag2     -1.00 0          
-#> 3         1 bag3      1.38 1          
-#> 4         1 bag4      1.00 1
+#> # A tibble: 4 × 4
+#>   bag_label bag_name  .pred .pred_class
+#>       <dbl> <chr>     <dbl> <fct>      
+#> 1         0 bag1      1.24  1          
+#> 2         0 bag2     -1.00  0          
+#> 3         1 bag3      1.00  1          
+#> 4         1 bag4     -0.175 0
 ```
 
-Similarly, you can train a MILD-SVM classifier using `mildsvm()` on the
+Similarly, you can train a MILD-SVM classifier using `mismm()` on the
 MILD data:
 
 ``` r
-fit2 <- mildsvm(mild(bag_label, bag_name, instance_name) ~ X1, data = mild_df, cost = 100)
+fit2 <- mismm(mild(bag_label, bag_name, instance_name) ~ X1, data = mild_df, cost = 100)
 
 # predict
 mild_df %>% 
   dplyr::bind_cols(predict(fit2, mild_df, type = "raw")) %>% 
   dplyr::bind_cols(predict(fit2, mild_df, type = "class")) %>% 
   dplyr::distinct(bag_label, bag_name, .pred, .pred_class)
-#>   bag_label bag_name     .pred .pred_class
-#> 1         0     bag1 -4.170729           0
-#> 2         0     bag2 -1.525978           0
-#> 3         1     bag3  8.595222           1
-#> 4         1     bag4  7.344284           1
+#>   bag_label bag_name      .pred .pred_class
+#> 1         0     bag1 -1.1802769           0
+#> 2         0     bag2  0.4819931           1
+#> 3         1     bag3  1.0000008           1
+#> 4         1     bag4  1.0000017           1
 ```
 
 <!-- TODO: create a vignette and link -->
