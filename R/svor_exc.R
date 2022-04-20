@@ -74,23 +74,27 @@ svor_exc <- function(x, ...) {
 #' @describeIn svor_exc Method for data.frame-like objects
 #' @export
 svor_exc.default <- function(x, y,
-                                  cost = 1,
-                                  method = c("smo"),
-                                  weights = NULL,
-                                  control = list(kernel = "linear",
-                                                 sigma = if (is.vector(x)) 1 else 1 / ncol(x),
-                                                 max_step = 500,
-                                                 scale = TRUE,
-                                                 verbose = FALSE
-                                  ),
-                                  ...)
+                             cost = 1,
+                             method = c("smo"),
+                             weights = NULL,
+                             control = list(kernel = "linear",
+                                            sigma = if (is.vector(x)) 1 else 1 / ncol(x),
+                                            max_step = 500,
+                                            scale = TRUE,
+                                            verbose = FALSE
+                             ),
+                             ...)
 {
   method <- match.arg(method, c("smo"))
-  if ("kernel" %ni% names(control)) control$kernel <- "linear"
-  if ("sigma" %ni% names(control)) control$sigma <- if (is.vector(x)) 1 else 1 / ncol(x)
-  if ("max_step" %ni% names(control)) control$max_step <- 500
-  if ("scale" %ni% names(control)) control$scale <- TRUE
-  if ("verbose" %ni% names(control)) control$verbose <- FALSE
+
+  defaults <- list(
+    kernel = "linear",
+    sigma = if (is.vector(x)) 1 else 1 / ncol(x),
+    max_step = 500,
+    scale = TRUE,
+    verbose = FALSE
+  )
+  control <- .set_default(control, defaults)
 
   # store the levels of y and convert to 0,1 numeric format.
   y_info <- .convert_y_ordinal(y)
@@ -229,7 +233,7 @@ predict.svor_exc <- function(object,
     scores <- classify_bags(scores, bags, condense = FALSE)
     class_ <- classify_bags(class_, bags, condense = FALSE)
   }
-  class_ <- factor(class_, levels = 1:length(object$levels), labels = object$levels)
+  class_ <- factor(class_, levels = seq_along(object$levels), labels = object$levels)
 
   res <- switch(type,
                 "raw" = tibble::tibble(.pred = as.numeric(scores)),
@@ -254,7 +258,7 @@ svor_exc_fit <- function(y, X, c, rescale = TRUE, weights = NULL,
   y <- r$y
   X <- r$X
   if (rescale) X <- scale(X)
-  unorder <- match(1:length(r$order), r$order)
+  unorder <- match(seq_along(r$order), r$order)
 
   if (!is.matrix(kernel)) {
     K <- compute_kernel(X, type = kernel, sigma = sigma)
@@ -330,8 +334,8 @@ smo <- function(y, K, c, max_step) {
     "reg" = rep(0, length(y)),
     "star" = rep(0, length(y))
   )
-  names(alpha$reg) <- 1:length(alpha$reg)
-  names(alpha$star) <- -1*(1:length(alpha$star))
+  names(alpha$reg) <- seq_along(alpha$reg)
+  names(alpha$star) <- -1*(seq_along(alpha$star))
 
   mu <- rep(1, j_max)
 

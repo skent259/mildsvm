@@ -81,35 +81,28 @@ omisvm.default <- function(x, y, bags,
                            weights = TRUE,
                            control = list(kernel = "linear",
                                           sigma = if (is.vector(x)) 1 else 1 / ncol(x),
-                                          # nystrom_args = list(m = nrow(x), r = nrow(x), sampling = 'random'),
                                           max_step = 500,
                                           type = "C-classification",
                                           scale = TRUE,
                                           verbose = FALSE,
                                           time_limit = 60
-                                          # start = FALSE
                            ),
                            ...)
 {
 
-  method <- match.arg(method)
-  if ("kernel" %ni% names(control)) control$kernel <- "linear"
-  if ("sigma" %ni% names(control)) control$sigma <- if (is.vector(x)) 1 else 1 / ncol(x)
-  # if ("nystrom_args" %ni% names(control)) control$nystrom_args = list(m = nrow(x), r = nrow(x), sampling = 'random')
-  if ("max_step" %ni% names(control)) control$max_step <- 500
-  if ("type" %ni% names(control)) control$type <- "C-classification"
-  if ("scale" %ni% names(control)) control$scale <- TRUE
-  if ("verbose" %ni% names(control)) control$verbose <- FALSE
-  if ("time_limit" %ni% names(control)) control$time_limit <- 60
-  # if ("start" %ni% names(control)) control$start <- FALSE
-  #
-  # if (control$start && control$kernel != "linear") {
-  #   control$start <- FALSE
-  #   rlang::inform(c(
-  #     "Warm start is not available when `kernel` is not equal to 'linear'.",
-  #     i = "Setting `start` = FALSE. "
-  #   ))
-  # }
+  method <- match.arg(method, c("qp-heuristic"))
+
+  defaults <- list(
+    kernel = "linear",
+    sigma = if (is.vector(x)) 1 else 1 / ncol(x),
+    max_step = 500,
+    type = "C-classification",
+    scale = TRUE,
+    verbose = FALSE,
+    time_limit = 60
+  )
+  control <- .set_default(control, defaults)
+
   # store the levels of y and convert to 0,1 numeric format.
   y_info <- .convert_y_ordinal(y)
   y <- y_info$y
@@ -123,54 +116,7 @@ omisvm.default <- function(x, y, bags,
     weights <- NULL
     warning("Weights are not currently implemented for `omisvm()`.")
   }
-  # if (is.numeric(weights)) {
-  #   stopifnot(names(weights) == lev | names(weights) == rev(lev))
-  #   weights <- weights[lev]
-  #   names(weights) <- c("-1", "1")
-  # } else if (weights) {
-  #   bag_labels <- sapply(split(y, factor(bags)), unique)
-  #   weights <- c("-1" = sum(bag_labels == 1) / sum(y == 0), "1" = 1)
-  # } else {
-  #   weights <- NULL
-  # }
 
-  # Nystrom approximation to x for mip and qp-heuristic methods
-  # NOTE: this isn't strictly necessary for qp-heuristic, but it's the easiest way to implement
-  # if (method %in% c("mip") & control$kernel == "radial") {
-  #   control$nystrom_args$df <- as.matrix(x)
-  #   control$nystrom_args$kernel <- control$kernel
-  #   control$nystrom_args$sigma <- control$sigma
-  #   kfm_fit <- do.call(kfm_nystrom, args = control$nystrom_args)
-  #
-  #   x <- build_fm(kfm_fit, x)
-  # }
-
-  # if (method == "heuristic") {
-  #   data <- cbind(bag_label = y,
-  #                 bag_name = bags,
-  #                 instance_name = as.character(1:length(y)),
-  #                 x)
-  #   y = 2*y - 1 # convert {0,1} to {-1, 1}
-  #   res <- misvm_heuristic_fit(y, bags, x,
-  #                              c = cost,
-  #                              rescale = control$scale,
-  #                              weights = weights,
-  #                              kernel = control$kernel,
-  #                              sigma = control$sigma,
-  #                              max_step = control$max_step,
-  #                              type = control$type,
-  #                              scale = control$scale)
-  # } else if (method == "mip") {
-  #   y = 2*y - 1 # convert {0,1} to {-1, 1}
-  #   res <- misvm_mip_fit(y, bags, x,
-  #                        c = cost,
-  #                        rescale = control$scale,
-  #                        weights = weights,
-  #                        verbose = control$verbose,
-  #                        time_limit = control$time_limit,
-  #                        start = control$start)
-  # } else
-  #
   if (method == "qp-heuristic") {
     # y = 2*y - 1 # convert {0,1} to {-1, 1}
     res <- omisvm_qpheuristic_fit(y, bags, x,
@@ -279,47 +225,12 @@ predict.omisvm <- function(object,
   layer <- match.arg(layer, c("bag", "instance"))
   method <- attr(object, "method")
 
-  # if (object$call_type == "misvm.mild_df") {
-  #   mil_cols <- c("bag_label", "bag_name", "instance_name")
-  #   mil_info <- new_data[, mil_cols, drop = FALSE]
-  #   new_data <- summarize_samples(new_data,
-  #                                 group_cols = mil_cols,
-  #                                 .fns = object$summary_fns,
-  #                                 cor = object$summary_cor)
-  # }
-
   if (object$call_type == "omisvm.formula") {
     new_x <- x_from_mi_formula(object$formula, new_data)
   } else {
     new_x <- new_data[, object$features, drop = FALSE]
   }
-  # if ("kfm_fit" %in% names(object)) {
-  #   new_x <- build_fm(object$kfm_fit, as.matrix(new_x))
-  # }
-  # if (method == "qp-heuristic" & "x_scale" %in% names(object)) {
-  #   new_x <- as.data.frame(scale(new_x, center = object$x_scale$center, scale = object$x_scale$scale))
-  # }
-
-  # kernel
-  # if (method == "qp-heuristic") {
-  #   kernel <- compute_kernel(as.matrix(new_x),
-  #                            object$gurobi_fit$xmatrix,
-  #                            type = object$gurobi_fit$kernel,
-  #                            sigma = object$gurobi_fit$sigma)
-  # }
-
-  # if (method == "heuristic") {
-  #   pos <- predict(object = object$svm_fit, newdata = new_x, decision.values = TRUE)
-  #   scores <- attr(pos, "decision.values")
-  #   pos <- as.numeric(as.character(pos))
-  #
-  # } else if (method == "mip") {
-  #   scores <- as.matrix(new_x) %*% object$gurobi_fit$w + object$gurobi_fit$b
-  #   pos <- 2*(scores > 0) - 1
-  #
-  # } else if (method == "qp-heuristic") {
-  #   scores <- kernel %*% object$gurobi_fit$ay + object$gurobi_fit$b
-  #   pos <- 2*(scores > 0) - 1
+  
   if (method == "qp-heuristic") {
     scores <- as.matrix(new_x) %*% object$gurobi_fit$w
     scores_matrix <- outer(as.vector(scores), object$gurobi_fit$b, `+`)
@@ -342,17 +253,12 @@ predict.omisvm <- function(object,
     # colnames(scores_matrix) <- paste0(".pred_", )
     class_ <- classify_bags(class_, bags, condense = FALSE)
   }
-  class_ <- factor(class_, levels = 1:length(object$levels), labels = object$levels)
+  class_ <- factor(class_, levels = seq_along(object$levels), labels = object$levels)
 
   res <- switch(type,
                 "raw" = tibble::tibble(.pred = as.numeric(scores)),
                 "class" = tibble::tibble(.pred_class = class_))
 
-  # if (object$call_type == "misvm.mild_df") {
-  #   # bring back the predictions from instance level to the sample level
-  #   ind <- match(mil_info$instance_name, new_data$instance_name)
-  #   res <- res[ind, , drop = FALSE]
-  # }
   # TODO: consider returning the AUC here as an attribute.  Can only do if we have the true bag labels
   # attr(res, "AUC") <- calculated_auc
   attr(res, "layer") <- layer

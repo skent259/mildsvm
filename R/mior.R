@@ -115,26 +115,26 @@ mior.default <- function(x, y, bags,
                          weights = NULL,
                          control = list(kernel = "linear",
                                         sigma = if (is.vector(x)) 1 else 1 / ncol(x),
-                                        # nystrom_args = list(m = nrow(x), r = nrow(x), sampling = 'random'),
                                         max_step = 500,
-                                        # type = "C-classification",
                                         scale = TRUE,
                                         verbose = FALSE,
                                         time_limit = 60,
                                         option = c("corrected", "xiao")
-                                        # start = FALSE
                          ),
                          ...)
 {
   method <- match.arg(method, c("qp-heuristic"))
-  if ("kernel" %ni% names(control)) control$kernel <- "linear"
-  if ("sigma" %ni% names(control)) control$sigma <- if (is.vector(x)) 1 else 1 / ncol(x)
-  if ("max_step" %ni% names(control)) control$max_step <- 500
-  # if ("type" %ni% names(control)) control$type <- "C-classification"
-  if ("scale" %ni% names(control)) control$scale <- TRUE
-  if ("verbose" %ni% names(control)) control$verbose <- FALSE
-  if ("time_limit" %ni% names(control)) control$time_limit <- 60
-  if ("option" %ni% names(control)) control$option <- "corrected"
+
+  defaults <- list(
+    kernel = "linear",
+    sigma = if (is.vector(x)) 1 else 1 / ncol(x),
+    max_step = 500,
+    scale = TRUE,
+    verbose = FALSE,
+    time_limit = 60,
+    option = "corrected"
+  )
+  control <- .set_default(control, defaults)
   control$option <- match.arg(control$option, c("corrected", "xiao"))
 
   # store the levels of y and convert to 0,1 numeric format.
@@ -273,26 +273,6 @@ predict.mior <- function(object,
     new_x <- new_data[, object$features, drop = FALSE]
   }
 
-  # kernel
-  # if (method == "qp-heuristic") {
-  #   kernel <- compute_kernel(as.matrix(new_x),
-  #                            object$gurobi_fit$xmatrix,
-  #                            type = object$gurobi_fit$kernel,
-  #                            sigma = object$gurobi_fit$sigma)
-  # }
-
-  # if (method == "heuristic") {
-  #   pos <- predict(object = object$svm_fit, newdata = new_x, decision.values = TRUE)
-  #   scores <- attr(pos, "decision.values")
-  #   pos <- as.numeric(as.character(pos))
-  #
-  # } else if (method == "mip") {
-  #   scores <- as.matrix(new_x) %*% object$gurobi_fit$w + object$gurobi_fit$b
-  #   pos <- 2*(scores > 0) - 1
-  #
-  # } else if (method == "qp-heuristic") {
-  #   scores <- kernel %*% object$gurobi_fit$ay + object$gurobi_fit$b
-  #   pos <- 2*(scores > 0) - 1
   scores <- as.matrix(new_x) %*% object$gurobi_fit$w
   b_ <- object$gurobi_fit$b
   ind <- 2:length(b_)
@@ -328,7 +308,7 @@ predict.mior <- function(object,
     class_ <- apply(dist_from_mp, by_col, which.min)
   }
 
-  class_ <- factor(class_, levels = 1:length(object$levels), labels = object$levels)
+  class_ <- factor(class_, levels = seq_along(object$levels), labels = object$levels)
 
   res <- switch(type,
                 "raw" = tibble::tibble(.pred = as.numeric(scores)),
@@ -567,7 +547,7 @@ compute_b <- function(gurobi_result, model, delta, y, bags, c0, c1, option = "xi
   support_bags <- unique(bags)[ind]
   y_support <- classify_bags(y, bags)[ind]
 
-  Q_tilde <- -2 * model$Q[1:length(a), 1:length(a), drop = FALSE] # recovers delta * kernel
+  Q_tilde <- -2 * model$Q[seq_along(a), seq_along(a), drop = FALSE] # recovers delta * kernel
   if (option == "xiao") {
     b_q <- - 0.5 * sapply(unique(bags)[ind], function(bag) sum(delta[bags == bag] + 1))
     b_q1 <- - 0.5 * sapply(unique(bags)[ind], function(bag) sum(delta[bags == bag] - 1))
@@ -581,13 +561,13 @@ compute_b <- function(gurobi_result, model, delta, y, bags, c0, c1, option = "xi
   resp <- c(resp, rep(0, length(mu) + 1))
   pred_matrix <- matrix(0, nrow = length(ind) + length(mu) + 1, ncol = n_b)
   # information from alpha
-  for (i in 1:length(ind)) {
+  for (i in seq_along(ind)) {
     pred_matrix[i, y_support[i]+1] <- b_q[i]
     pred_matrix[i, y_support[i]] <- b_q1[i]
   }
 
   # information from mu; b_q = b_{q-1} if \mu_q > 0
-  for (q in 1:length(mu)) {
+  for (q in seq_along(mu)) {
     if (mu[q] > 0 + eps) {
       rlang::inform(c(
         paste0("[Step ", t, "] The optimization solution suggests that two intercepts are equal: b[", q-1, "] == b[", q, "].")
