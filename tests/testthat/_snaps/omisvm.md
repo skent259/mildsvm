@@ -1,4 +1,4 @@
-# misvm_ordinal() internal functions work on simple examples
+# omisvm() internal functions work on simple examples
 
     Code
       pROC::multiclass.roc(response = classify_bags(y, bags), predictor = classify_bags(
@@ -35,7 +35,7 @@
        [9,]  5.6321565  3.354538  1.0000000 -1.172076
       [10,]  4.2658762  1.988257 -0.3662803 -2.538356
 
-# misvm_ordinal() has reasonable performance
+# omisvm() has reasonable performance
 
     Code
       print(roc$auc)
@@ -65,15 +65,15 @@
     Output
       [1] 0.05
 
-# `misvm_ordinal()` value returns make sense
+# `omisvm()` value returns make sense
 
     Code
-      models <- list(xy = misvm_ordinal(x = df1[, 3:7], y = df1$bag_label, bags = df1$
-        bag_name, method = "qp-heuristic", weights = NULL), formula = misvm_ordinal(
-        mi(bag_label, bag_name) ~ V1 + V2, method = "qp-heuristic", data = df1,
-        weights = NULL), `no-scale` = misvm_ordinal(x = df1[, 3:7], y = df1$bag_label,
-      bags = df1$bag_name, method = "qp-heuristic", weights = NULL, control = list(
-        scale = FALSE))) %>% suppressWarnings() %>% suppressMessages()
+      models <- list(xy = omisvm(x = df1[, 3:7], y = df1$bag_label, bags = df1$
+        bag_name, method = "qp-heuristic", weights = NULL), formula = omisvm(mi(
+        bag_label, bag_name) ~ V1 + V2, method = "qp-heuristic", data = df1, weights = NULL),
+      `no-scale` = omisvm(x = df1[, 3:7], y = df1$bag_label, bags = df1$bag_name,
+      method = "qp-heuristic", weights = NULL, control = list(scale = FALSE))) %>%
+        suppressWarnings() %>% suppressMessages()
       print(lapply(models, names))
     Output
       $xy
@@ -89,7 +89,7 @@
       [6] "h"          "repr_inst" 
       
 
-# Ordering of data doesn't change `misvm_ordinal()` results
+# Ordering of data doesn't change `omisvm()` results
 
     Code
       with(df1_test, suppressWarnings({

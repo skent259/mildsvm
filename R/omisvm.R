@@ -1,15 +1,15 @@
-new_misvm_ordinal <- function(x = list(), method = c("qp-heuristic")) {
+new_omisvm <- function(x = list(), method = c("qp-heuristic")) {
   stopifnot(is.list(x))
   method <- match.arg(method)
   structure(
     x,
-    class = "misvm_ordinal",
+    class = "omisvm",
     method = method
   )
 }
 
-validate_misvm_ordinal <- function(x) {
-  message("No validations currently in place for object of class 'misvm_ordinal'.")
+validate_omisvm <- function(x) {
+  message("No validations currently in place for object of class 'omisvm'.")
   x
 }
 
@@ -28,11 +28,11 @@ validate_misvm_ordinal <- function(x) {
 #'   formula elements will be extracted
 #' @param ... Arguments passed to or from other methods.
 #'
-#' @return An object of class `misvm_ordinal.`  The object contains at least the
+#' @return An object of class `omisvm.`  The object contains at least the
 #'   following components:
 #'   * `*_fit`: A fit object depending on the `method` parameter.  If `method =
 #'   'qp-heuristic'` this will be `gurobi_fit` from a model optimization.
-#'   * `call_type`: A character indicating which method `misvm_ordinal()` was
+#'   * `call_type`: A character indicating which method `omisvm()` was
 #'   called with.
 #'   * `features`: The names of features used in training.
 #'   * `levels`: The levels of `y` that are recorded for future prediction.
@@ -44,7 +44,7 @@ validate_misvm_ordinal <- function(x) {
 #'   heuristic algorithm.
 #'   * `x_scale`: If `scale = TRUE`, the scaling parameters for new predictions.
 #'
-#' @seealso [predict.misvm_ordinal()] for prediction on new data.
+#' @seealso [predict.omisvm()] for prediction on new data.
 #'
 #' @examples
 #' set.seed(8)
@@ -60,36 +60,36 @@ validate_misvm_ordinal <- function(x) {
 #' colnames(X) <- paste0("V", 1:ncol(X))
 #' y <- classify_bags(y, bags, condense = FALSE)
 #'
-#' mdl1 <- misvm_ordinal(X, y, bags, weights = NULL)
+#' mdl1 <- omisvm(X, y, bags, weights = NULL)
 #' predict(mdl1, X, new_bags = bags)
 #'
 #' @author Sean Kent
-#' @name misvm_ordinal
+#' @name omisvm
 NULL
 
 #' @export
-misvm_ordinal <- function(x, ...) {
-  UseMethod("misvm_ordinal")
+omisvm <- function(x, ...) {
+  UseMethod("omisvm")
 }
 
-#' @describeIn misvm_ordinal Method for data.frame-like objects
+#' @describeIn omisvm Method for data.frame-like objects
 #' @export
-misvm_ordinal.default <- function(x, y, bags,
-                                  cost = 1,
-                                  h = 1,
-                                  method = c("qp-heuristic"),
-                                  weights = TRUE,
-                                  control = list(kernel = "linear",
-                                                 sigma = if (is.vector(x)) 1 else 1 / ncol(x),
-                                                 # nystrom_args = list(m = nrow(x), r = nrow(x), sampling = 'random'),
-                                                 max_step = 500,
-                                                 type = "C-classification",
-                                                 scale = TRUE,
-                                                 verbose = FALSE,
-                                                 time_limit = 60
-                                                 # start = FALSE
-                                                 ),
-                                  ...)
+omisvm.default <- function(x, y, bags,
+                           cost = 1,
+                           h = 1,
+                           method = c("qp-heuristic"),
+                           weights = TRUE,
+                           control = list(kernel = "linear",
+                                          sigma = if (is.vector(x)) 1 else 1 / ncol(x),
+                                          # nystrom_args = list(m = nrow(x), r = nrow(x), sampling = 'random'),
+                                          max_step = 500,
+                                          type = "C-classification",
+                                          scale = TRUE,
+                                          verbose = FALSE,
+                                          time_limit = 60
+                                          # start = FALSE
+                           ),
+                           ...)
 {
 
   method <- match.arg(method)
@@ -121,7 +121,7 @@ misvm_ordinal.default <- function(x, y, bags,
   # weights
   if (!is.null(weights)) {
     weights <- NULL
-    warning("Weights are not currently implemented for `misvm_ordinal()`.")
+    warning("Weights are not currently implemented for `omisvm()`.")
   }
   # if (is.numeric(weights)) {
   #   stopifnot(names(weights) == lev | names(weights) == rev(lev))
@@ -173,16 +173,16 @@ misvm_ordinal.default <- function(x, y, bags,
   #
   if (method == "qp-heuristic") {
     # y = 2*y - 1 # convert {0,1} to {-1, 1}
-    res <- misvm_ordinal_qpheuristic_fit(y, bags, x,
-                                         c = cost,
-                                         h = h,
-                                         rescale = control$scale,
-                                         weights = weights,
-                                         verbose = control$verbose,
-                                         time_limit = control$time_limit,
-                                         max_step = control$max_step)
+    res <- omisvm_qpheuristic_fit(y, bags, x,
+                                  c = cost,
+                                  h = h,
+                                  rescale = control$scale,
+                                  weights = weights,
+                                  verbose = control$verbose,
+                                  time_limit = control$time_limit,
+                                  max_step = control$max_step)
   } else {
-    stop("misvm_ordinal requires method = 'qp-heuristic'.")
+    stop("omisvm requires method = 'qp-heuristic'.")
   }
 
   out <- res[1]
@@ -199,12 +199,12 @@ misvm_ordinal.default <- function(x, y, bags,
   out$repr_inst <- res$repr_inst
   out$n_step <- res$n_step
   out$x_scale <- res$x_scale
-  new_misvm_ordinal(out, method = method)
+  new_omisvm(out, method = method)
 }
 
-#' @describeIn misvm_ordinal Method for passing formula
+#' @describeIn omisvm Method for passing formula
 #' @export
-misvm_ordinal.formula <- function(formula, data, ...) {
+omisvm.formula <- function(formula, data, ...) {
   # NOTE: other 'professional' functions use a different type of call that I
   #   couldn't get to work. See https://github.com/therneau/survival/blob/master/R/survfit.R
   #   or https://github.com/cran/e1071/blob/master/R/svm.R
@@ -218,29 +218,29 @@ misvm_ordinal.formula <- function(formula, data, ...) {
   y <- response[, 1]
   bags <- response[, 2]
 
-  res <- misvm_ordinal.default(x, y, bags, ...)
+  res <- omisvm.default(x, y, bags, ...)
 
-  res$call_type <- "misvm_ordinal.formula"
+  res$call_type <- "omisvm.formula"
   res$formula <- formula
   res$bag_name <- bag_name
   return(res)
 }
 
-#' Predict method for `misvm_ordinal` object
+#' Predict method for `omisvm` object
 #'
 #' @details
 #' When the object was fitted using the `formula` method, then the parameters
 #' `new_bags` and `new_instances` are not necessary, as long as the names match
 #' the original function call.
 #'
-#' @param object An object of class `misvm_ordinal`
+#' @param object An object of class `omisvm`
 #' @inheritParams predict.misvm
 #'
 #' @return A tibble with `nrow(new_data)` rows.  If `type = 'class'`, the tibble
 #'   will have a column `.pred_class`.  If `type = 'raw'`, the tibble will have
 #'   a column `.pred`.
 #'
-#' @seealso [misvm_ordinal()] for fitting the `misvm_ordinal` object.
+#' @seealso [omisvm()] for fitting the `omisvm` object.
 #'
 #' @examples
 #' set.seed(8)
@@ -256,7 +256,7 @@ misvm_ordinal.formula <- function(formula, data, ...) {
 #' colnames(X) <- paste0("V", 1:ncol(X))
 #' y <- classify_bags(y, bags, condense = FALSE)
 #'
-#' mdl1 <- misvm_ordinal(X, y, bags, weights = NULL)
+#' mdl1 <- omisvm(X, y, bags, weights = NULL)
 #'
 #' # summarize predictions at the bag layer
 #' library(dplyr)
@@ -268,12 +268,12 @@ misvm_ordinal.formula <- function(formula, data, ...) {
 #'
 #' @export
 #' @author Sean Kent
-predict.misvm_ordinal <- function(object,
-                                  new_data,
-                                  type = c("class", "raw"),
-                                  layer = c("bag", "instance"),
-                                  new_bags = "bag_name",
-                                  ...)
+predict.omisvm <- function(object,
+                           new_data,
+                           type = c("class", "raw"),
+                           layer = c("bag", "instance"),
+                           new_bags = "bag_name",
+                           ...)
 {
   type <- match.arg(type, c("class", "raw"))
   layer <- match.arg(layer, c("bag", "instance"))
@@ -288,7 +288,7 @@ predict.misvm_ordinal <- function(object,
   #                                 cor = object$summary_cor)
   # }
 
-  if (object$call_type == "misvm_ordinal.formula") {
+  if (object$call_type == "omisvm.formula") {
     new_x <- x_from_mi_formula(object$formula, new_data)
   } else {
     new_x <- new_data[, object$features, drop = FALSE]
@@ -329,7 +329,7 @@ predict.misvm_ordinal <- function(object,
   }
 
   if (layer == "bag") {
-    if (object$call_type == "misvm_ordinal.formula" & new_bags[1] == "bag_name" & length(new_bags) == 1) {
+    if (object$call_type == "omisvm.formula" & new_bags[1] == "bag_name" & length(new_bags) == 1) {
       new_bags <- object$bag_name
     }
     if (length(new_bags) == 1 & new_bags[1] %in% colnames(new_data)) {
@@ -362,7 +362,7 @@ predict.misvm_ordinal <- function(object,
 
 # Specific implementation methods below ----------------------------------------
 
-misvm_ordinal_qpheuristic_model <- function(y, bags, X, Xs, c, h, weights = NULL) {
+omisvm_qpheuristic_model <- function(y, bags, X, Xs, c, h, weights = NULL) {
 
   K <- max(y) # assumes that y contains values from 1, ... K
   n_bags <- length(unique(bags))
@@ -442,8 +442,8 @@ misvm_ordinal_qpheuristic_model <- function(y, bags, X, Xs, c, h, weights = NULL
   return(model)
 }
 
-misvm_ordinal_qpheuristic_fit <- function(y, bags, X, c, h, rescale = TRUE, weights = NULL,
-                                  verbose = FALSE, time_limit = FALSE, max_step = 500) {
+omisvm_qpheuristic_fit <- function(y, bags, X, c, h, rescale = TRUE, weights = NULL,
+                                   verbose = FALSE, time_limit = FALSE, max_step = 500) {
   r <- .reorder(y, bags, X)
   y <- r$y
   bags <- r$b
@@ -475,7 +475,7 @@ misvm_ordinal_qpheuristic_fit <- function(y, bags, X, c, h, rescale = TRUE, weig
   n_selections = 0
 
   while (selection_changed & n_selections < max_step) {
-    model <- misvm_ordinal_qpheuristic_model(y, bags, X, X_selected, c, h, weights)
+    model <- omisvm_qpheuristic_model(y, bags, X, X_selected, c, h, weights)
     gurobi_result <- gurobi::gurobi(model, params = params)
 
     w <- gurobi_result$x[grepl("w", model$varnames)]

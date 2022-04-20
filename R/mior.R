@@ -149,7 +149,7 @@ mior.default <- function(x, y, bags,
   # weights
   if (!is.null(weights)) {
     weights <- NULL
-    warning("Weights are not currently implemented for `misvm_ordinal()`.")
+    warning("Weights are not currently implemented for `mior()`.")
   }
 
   if (method == "qp-heuristic") {
@@ -165,7 +165,7 @@ mior.default <- function(x, y, bags,
                          max_step = control$max_step,
                          option = control$option)
   } else {
-    stop("misvm_ordinal requires method = 'qp-heuristic'.")
+    stop("`mior()` requires method = 'qp-heuristic'.")
   }
 
   out <- res[1]
