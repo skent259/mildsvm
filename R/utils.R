@@ -1,5 +1,17 @@
 `%ni%` <- Negate(`%in%`)
 
+#' Version of `base::max()` that keeps the names attribute
+#' @noRd
+.max <- function(x) {
+  x[which.max(x)]
+}
+
+#' Version of `base::min()` that keeps the names attribute
+#' @noRd
+.min <- function(x) {
+  x[which.min(x)]
+}
+
 #' Safer version of sample
 #' @noRd
 .resample <- function(x, ...) x[sample.int(length(x), ...)]
@@ -13,10 +25,14 @@
 #' @noRd
 .reorder <- function(y, b, X, i = NULL) {
   b <- as.numeric(as.factor(b))
-  if (is.null(i)) i <- seq_along(y)
-  i <- as.numeric(as.factor(i))
-  ## order by bag label (negative first), and then order data by bag
-  data_order <- order(y, b, i, X[, 1])
+  X <- as.data.frame(X)
+  # order by bag label (negative first), and then order data by bag
+  if (is.null(i)) {
+    data_order <- order(y, b, X[,1])
+  } else {
+    i <- as.numeric(as.factor(i))
+    data_order <- order(y, b, i, X[,1])
+  }
 
   list(y = y[data_order],
        b = b[data_order],

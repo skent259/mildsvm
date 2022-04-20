@@ -19,6 +19,24 @@ convert_y <- function(y) {
   list(y = y, lev = lev)
 }
 
+#' Store the levels of y and convert to integer format.
+#' @inheritParams .reorder
+#' @noRd
+.convert_y_ordinal <- function(y) {
+  y <- ordered(y)
+  lev <- levels(y)
+  if (length(lev) == 1) {
+    stop(paste0("Response y has only one level, ", lev, ", cannot perform misvm fitting."))
+  } else if (length(lev) == 2) {
+    warning(paste0("Only 2 levels detected.  Consider using a non-ordinal method."))
+  }
+  if (lev[1] != 1 & lev[1] != "1") {
+    message(paste0("Setting level ", lev[1], " to be the lowest ordinal level"))
+  }
+  y <- as.numeric(y)
+  list(y = y, lev = lev)
+}
+
 #' Calculate x-matrix from a standard formula
 #' @inheritParams smm
 #' @param skip a vector of variable names to skip, or `NULL` to keep all

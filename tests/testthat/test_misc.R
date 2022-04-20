@@ -49,16 +49,20 @@ test_that("`classify_bags()` works on integer bag input", {
   bags <- rep(c(1, 4, 6, 9, 2), each = 4)
   correct <- seq(4, 20, length.out = 5)
 
-  expect_equivalent(classify_bags(scores, bags),
-                    correct)
-  expect_equivalent(classify_bags(scores, bags, condense = FALSE),
-                    rep(correct, each = 4))
+  expect_equal(classify_bags(scores, bags),
+               correct,
+               ignore_attr = TRUE)
+  expect_equal(classify_bags(scores, bags, condense = FALSE),
+               rep(correct, each = 4),
+               ignore_attr = TRUE)
 
   bags <- rep(c("a", "b", "d", "c", "e"), each = 4)
-  expect_equivalent(classify_bags(scores, bags),
-                    correct)
-  expect_equivalent(classify_bags(scores, bags, condense = FALSE),
-                    rep(correct, each = 4))
+  expect_equal(classify_bags(scores, bags),
+               correct,
+               ignore_attr = TRUE)
+  expect_equal(classify_bags(scores, bags, condense = FALSE),
+               rep(correct, each = 4),
+               ignore_attr = TRUE)
 
 })
 

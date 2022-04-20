@@ -1,14 +1,10 @@
-suppressWarnings({
-  # library(mildsvm)
-  # library(MilDistribution)
-  library(dplyr)
-})
+suppressMessages(suppressWarnings({library(dplyr)}))
 
 #' Skip test when MilDistribution package not present
 #'
 #' @noRd
 skip_if_no_MilDistrubution <- function() {
-  if (!requireNamespace("MilDistribution", quietly = TRUE)) {
+  if (!suppressMessages(requireNamespace("MilDistribution", quietly = TRUE))) {
     testthat::skip("The package MilDistribution is not available.")
   }
 }
@@ -98,35 +94,42 @@ test_that("mildsvm.R functions have identical output", {
   expect_equal(mdl1$ksvm_fit@b, mdl2$model$ksvm_res@b)
   expect_equal(mdl1$n_step, mdl2$total_step)
   expect_equal(mdl1$repr_inst, mdl2$representative_inst)
-  expect_equivalent(mdl1$x, mdl2$traindata)
-  expect_equivalent(mdl1$useful_inst_idx, mdl2$useful_inst_idx)
+  expect_equal(mdl1$x, mdl2$traindata, ignore_attr = TRUE)
+  expect_equal(mdl1$useful_inst_idx, mdl2$useful_inst_idx, ignore_attr = TRUE)
 
   # predictions should match
-  expect_equivalent(
-    predict(mdl1, new_data = mil_data, type = "raw", layer = "instance")$.pred %>% setNames(NULL),
+  expect_equal(
+    predict(mdl1, new_data = mil_data, type = "raw", layer = "instance")$.pred %>%
+      setNames(NULL) %>%
+      suppressMessages(),
     # factor(predict(mdl2, newdata = mil_data_)$final_pred$bag_label)
-    predict(mdl2, newdata = mil_data2)$final_pred$instance_score
+    predict(mdl2, newdata = mil_data2)$final_pred$instance_score %>%
+      suppressMessages(),
+    ignore_attr = TRUE
   )
 
-  expect_equivalent(
+  expect_equal(
     mil_data %>%
       bind_cols(predict(mdl1, new_data = mil_data, type = "raw", layer = "bag")) %>%
-      distinct(bag_name, .pred),
+      distinct(bag_name, .pred) ,
     predict(mdl2, newdata = mil_data2)$final_pred %>%
-      distinct(bag_name, bag_score)
+      distinct(bag_name, bag_score) %>%
+      suppressMessages(),
+    ignore_attr = TRUE
   )
 
   # it seems that there may have been a bug in Yifei's predict.mild code.  An
   # instance with a bag score of 0.14 gets labels as negative, when it should be
   # positive
-  # expect_equivalent(
+  # expect_equal(
   #   mil_data_ %>%
   #     bind_cols(predict(mdl1, new_data = mil_data_, type = "raw", layer = "bag")) %>%
   #     bind_cols(predict(mdl1, new_data = mil_data_, type = "class", layer = "bag")) %>%
   #     distinct(bag_name, .pred, .pred_class),
   #   predict(mdl2, newdata = mil_data_)$final_pred %>%
   #     distinct(bag_name, bag_score, bag_label) %>%
-  #     dplyr::mutate(bag_label = as.factor(bag_label))
+  #     dplyr::mutate(bag_label = as.factor(bag_label)),
+  #     ignore_attr = TRUE
   # )
 
   # there is another bug in the mil_distribution code where it will not work
@@ -179,13 +182,15 @@ test_that("misvm.R functions have identical output.", {
 
   MilDistribution_pred <- predict(MilDistribution_output, newdata = df1)
 
-  expect_equivalent(
+  expect_equal(
     mildsvm_inst_pred,
-    MilDistribution_pred$instance_level_prediction
+    MilDistribution_pred$instance_level_prediction,
+    ignore_attr = TRUE
   )
-  expect_equivalent(
+  expect_equal(
     mildsvm_bag_pred %>% arrange(.pred) %>% pull(.pred),
-    MilDistribution_pred$bag_level_prediction %>% arrange(bag_score_pred) %>% pull(bag_score_pred)
+    MilDistribution_pred$bag_level_prediction %>% arrange(bag_score_pred) %>% pull(bag_score_pred),
+    ignore_attr = TRUE
   )
 
 
@@ -213,7 +218,9 @@ test_that("cv_misvm.R functions have identical output.", {
                                          control = list(kernel = "radial",
                                                         sigma = 1 / length(4:123)))
   set.seed(8)
-  MilDistribution_cv_output <- MilDistribution::cv_MI_SVM(df1, n_fold = 3, cost_seq = 2^(-2:2))
+  MilDistribution_cv_output <-
+    MilDistribution::cv_MI_SVM(df1, n_fold = 3, cost_seq = 2^(-2:2)) %>%
+    suppressMessages()
 
   mildsvm_cv_output$model$model$call <- NULL
   MilDistribution_cv_output$BestMdl$svm_mdl$call <- NULL
@@ -230,15 +237,18 @@ test_that("cv_misvm.R functions have identical output.", {
     bind_cols(predict(mildsvm_cv_output, new_data = df1, layer = "bag")) %>%
     distinct()
 
-  MilDistribution_pred <- predict(MilDistribution_cv_output$BestMdl, newdata = df1)
+  MilDistribution_pred <- predict(MilDistribution_cv_output$BestMdl, newdata = df1) %>%
+    suppressMessages()
 
-  expect_equivalent(
+  expect_equal(
     mildsvm_inst_pred,
-    MilDistribution_pred$instance_level_prediction
+    MilDistribution_pred$instance_level_prediction,
+    ignore_attr = TRUE
   )
-  expect_equivalent(
+  expect_equal(
     mildsvm_bag_pred %>% arrange(.pred) %>% pull(.pred),
-    MilDistribution_pred$bag_level_prediction %>% arrange(bag_score_pred) %>% pull(bag_score_pred)
+    MilDistribution_pred$bag_level_prediction %>% arrange(bag_score_pred) %>% pull(bag_score_pred),
+    ignore_attr = TRUE
   )
 
 })
@@ -276,8 +286,9 @@ test_that("smm.R functions have identical output", {
   expect_equal(mdl1$ksvm_fit, mdl2$ksvm_res)
   common_components <- c("sigma", "cost")
   expect_equal(mdl1[common_components], mdl2[common_components])
-  expect_equivalent(mdl1$x,
-                    mdl2$traindata %>% select(-instance_label))
+  expect_equal(mdl1$x,
+               mdl2$traindata %>% select(-instance_label),
+               ignore_attr = TRUE)
 
 })
 
@@ -319,9 +330,10 @@ test_that("misvm.R functions have identical output on MilData object.", {
   # Note prediction doesn't work in MilDistribution, but this is what it should do
   MilDistribution_pred <- predict(mdl2, newdata = MilDistribution::build_instance_feature(mil_data))
 
-  expect_equivalent(
+  expect_equal(
     mildsvm_bag_pred %>% arrange(.pred) %>% pull(.pred),
-    MilDistribution_pred$bag_level_prediction %>% arrange(bag_score_pred) %>% pull(bag_score_pred)
+    MilDistribution_pred$bag_level_prediction %>% arrange(bag_score_pred) %>% pull(bag_score_pred),
+    ignore_attr = TRUE
   )
 
 })

@@ -1,4 +1,4 @@
-suppressWarnings(library(dplyr))
+suppressMessages(suppressWarnings(library(dplyr)))
 
 test_that("cv_misvm() works for data-frame-like inputs", {
   skip_if_no_gurobi()
@@ -41,8 +41,10 @@ test_that("cv_misvm() works for data-frame-like inputs", {
     group_by(bag_name) %>%
     distinct(bag_label, .pred, .pred_class)
   expect_equal(dim(pred_bag), c(20, 4))
-  expect_equal(round(as.numeric(pROC::auc(response = pred_bag$bag_label, predictor = pred_bag$.pred)), 4),
-               0.7033)
+  expect_snapshot({
+    pROC::auc(response = pred_bag$bag_label, predictor = pred_bag$.pred) %>%
+      suppressMessages()
+  })
 
   set.seed(8)
   model <- cv_misvm(x = df1[, 4:123],
@@ -62,10 +64,11 @@ test_that("cv_misvm() works for data-frame-like inputs", {
     group_by(bag_name) %>%
     distinct(bag_label, .pred, .pred_class)
 
-  pROC::auc(response = pred_bag$bag_label, predictor = pred_bag$.pred)
   expect_equal(dim(pred_bag), c(20, 4))
-  expect_equal(round(as.numeric(pROC::auc(response = pred_bag$bag_label, predictor = pred_bag$.pred)), 4),
-               1.000)
+  expect_snapshot({
+    pROC::auc(response = pred_bag$bag_label, predictor = pred_bag$.pred) %>%
+      suppressMessages()
+  })
 
   # qp-heuristic
   set.seed(8)
@@ -86,10 +89,11 @@ test_that("cv_misvm() works for data-frame-like inputs", {
     group_by(bag_name) %>%
     distinct(bag_label, .pred, .pred_class)
 
-  pROC::auc(response = pred_bag$bag_label, predictor = pred_bag$.pred)
   expect_equal(dim(pred_bag), c(20, 4))
-  expect_equal(round(as.numeric(pROC::auc(response = pred_bag$bag_label, predictor = pred_bag$.pred)), 4),
-               0.3956)
+  expect_snapshot({
+    pROC::auc(response = pred_bag$bag_label, predictor = pred_bag$.pred) %>%
+      suppressMessages()
+  })
 
 })
 
@@ -205,7 +209,7 @@ test_that("predict.cv_misvm returns labels that match the input labels", {
   df2 <- df1 %>% mutate(bag_label = factor(bag_label, labels = c("No", "Yes")))
   expect_message(test_prediction_levels_equal(df2, method = "heuristic"))
   expect_message(test_prediction_levels_equal(df2, method = "mip"))
-  test_prediction_levels_equal(df2, method = "heuristic", class = "formula")
+  expect_message(test_prediction_levels_equal(df2, method = "heuristic", class = "formula"))
 
   # check that 0/1 and 1/0 return the same predictions
   df2 <- df1 %>% mutate(bag_label = factor(bag_label, levels = c(0, 1)))

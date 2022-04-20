@@ -1,4 +1,4 @@
-suppressWarnings(library(dplyr))
+suppressMessages(suppressWarnings(library(dplyr)))
 
 set.seed(8)
 mil_data <- generate_mild_df(nbag = 20,
@@ -166,8 +166,8 @@ test_that("predict.misvm returns labels that match the input labels", {
   df2 <- df1 %>% mutate(bag_label = factor(bag_label, labels = c("No", "Yes")))
   expect_message(test_prediction_levels_equal(df2, method = "heuristic"))
   expect_message(test_prediction_levels_equal(df2, method = "mip"))
-  test_prediction_levels_equal(df2, method = "qp-heuristic")
-  test_prediction_levels_equal(df2, method = "heuristic", class = "formula")
+  expect_message(test_prediction_levels_equal(df2, method = "qp-heuristic"))
+  expect_message(test_prediction_levels_equal(df2, method = "heuristic", class = "formula"))
 
   # check that 0/1 and 1/0 return the same predictions
   df2 <- df1 %>% mutate(bag_label = factor(bag_label, levels = c(0, 1)))
@@ -219,11 +219,13 @@ test_that("misvm() has correct argument handling", {
   expect_equal(
     misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 2, "1" = 1))$svm_fit,
     misvm(mi(bag_label, bag_name) ~ ., data = df2, weights = c("No" = 2, "Yes" = 1))$svm_fit
-  )
+  ) %>%
+    expect_message()
   expect_equal(
     misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 2, "1" = 1), method = "mip")$gurobi_fit,
     misvm(mi(bag_label, bag_name) ~ ., data = df2, weights = c("No" = 2, "Yes" = 1), method = "mip")$gurobi_fit
-  )
+  ) %>%
+    expect_message()
 
   expect_false(isTRUE(all.equal(
     misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 2, "1" = 1), method = "mip")$gurobi_fit,
@@ -407,30 +409,25 @@ test_that("misvm() works on 'mild_df' objects", {
 test_that("`misvm()` value returns make sense", {
   skip_if_no_gurobi()
 
-  # different methods
-  names(misvm(x = df1[, 3:122], y = df1$bag_label, bags = df1$bag_name, method = "heuristic"))
-  names(misvm(x = df1[, 3:122], y = df1$bag_label, bags = df1$bag_name, method = "mip"))
-  names(misvm(x = df1[, 3:122], y = df1$bag_label, bags = df1$bag_name, method = "qp-heuristic"))
+  expect_snapshot({
+    models <- list(
+      "xy-heur" = misvm(x = df1[, 3:122], y = df1$bag_label, bags = df1$bag_name, method = "heuristic"),
+      "xy-mip" = misvm(x = df1[, 3:122], y = df1$bag_label, bags = df1$bag_name, method = "mip"),
+      "xy-qp" = misvm(x = df1[, 3:122], y = df1$bag_label, bags = df1$bag_name, method = "qp-heuristic"),
+      "formula" = misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean, method = "heuristic", data = df1),
+      "mildata" = misvm(mil_data),
+      "no-scale-heur" = misvm(x = df1[, 3:122], y = df1$bag_label, bags = df1$bag_name, method = "heuristic", control = list(scale = FALSE)),
+      "no-scale-mip" = misvm(x = df1[, 3:122], y = df1$bag_label, bags = df1$bag_name, method = "mip", control = list(scale = FALSE)),
+      "no-scale-qp" = misvm(x = df1[, 3:122], y = df1$bag_label, bags = df1$bag_name, method = "qp-heuristic", control = list(scale = FALSE)),
+      "kfm_fit" = misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean, data = df1, method = "mip", control = list(kernel = "radial")),
+      "no-weights-heur" = misvm(x = df1[, 3:122], y = df1$bag_label, bags = df1$bag_name, method = "heuristic", weights = FALSE),
+      "no-weights-mildata" = misvm(mil_data)
+    ) %>%
+      suppressWarnings() %>%
+      suppressMessages()
 
-  # different S3 methods
-  names(misvm(x = df1[, 3:122], y = df1$bag_label, bags = df1$bag_name, method = "heuristic"))
-  names(misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean, method = "heuristic", data = df1))
-  names(misvm(mil_data))
-
-  # shouldn't have `x_scale`
-  names(misvm(x = df1[, 3:122], y = df1$bag_label, bags = df1$bag_name, method = "heuristic", control = list(scale = FALSE)))
-  names(misvm(x = df1[, 3:122], y = df1$bag_label, bags = df1$bag_name, method = "mip", control = list(scale = FALSE)))
-  names(misvm(x = df1[, 3:122], y = df1$bag_label, bags = df1$bag_name, method = "qp-heuristic", control = list(scale = FALSE)))
-
-  # should have `kfm_fit`
-  expect_warning({
-    names(misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean, data = df1, method = "mip", control = list(kernel = "radial")))
+    print(lapply(models, names))
   })
-
-  # shoudln't have `weights`
-  names(misvm(x = df1[, 3:122], y = df1$bag_label, bags = df1$bag_name, method = "heuristic", weights = FALSE))
-  names(misvm(mil_data))
-
   expect_true(TRUE)
 })
 
@@ -443,29 +440,34 @@ test_that("Ordering of data doesn't change `misvm()` results", {
                  predict(model2, data, type = "raw", layer = "instance"))
   }
 
+  ind <- sample(seq_len(nrow(df1)))
   # heuristic
   form <- mi(bag_label, bag_name) ~ X1_mean + X2_mean + X3_mean
   mdl1 <- misvm(form , data = df1, method = "heuristic")
-  mdl2 <- misvm(form, data = df1[sample(1:nrow(df1)), ], method = "heuristic")
+  mdl2 <- misvm(form, data = df1[ind, ], method = "heuristic")
   expect_predictions_equal(mdl1, mdl2, df1)
   expect_predictions_equal(mdl1, mdl2, df1_test)
 
-  with(df1_test, {
-       pred <- predict(mdl2, df1_test, type = "raw")$.pred
-       pROC::auc(classify_bags(bag_label, bag_name),
-                 classify_bags(pred, bag_name))
+  expect_snapshot({
+    with(df1_test, {
+      pred <- predict(mdl2, df1_test, type = "raw")$.pred
+      pROC::auc(classify_bags(bag_label, bag_name),
+                classify_bags(pred, bag_name))
+    })
   })
 
   # qp-heuristic
   mdl1 <- misvm(form, data = df1, method = "qp-heuristic")
-  mdl2 <- misvm(form, data = df1[sample(1:nrow(df1)), ], method = "qp-heuristic")
+  mdl2 <- misvm(form, data = df1[ind, ], method = "qp-heuristic")
   expect_predictions_equal(mdl1, mdl2, df1)
   expect_predictions_equal(mdl1, mdl2, df1_test)
 
-  with(df1_test, {
-    pred <- predict(mdl2, df1_test, type = "raw")$.pred
-    pROC::auc(classify_bags(bag_label, bag_name),
-              classify_bags(pred, bag_name))
+  expect_snapshot({
+    with(df1_test, {
+      pred <- predict(mdl2, df1_test, type = "raw")$.pred
+      pROC::auc(classify_bags(bag_label, bag_name),
+                classify_bags(pred, bag_name))
+    })
   })
 
   # mild_df object
@@ -474,10 +476,12 @@ test_that("Ordering of data doesn't change `misvm()` results", {
   expect_predictions_equal(mdl1, mdl2, mil_data)
   expect_predictions_equal(mdl1, mdl2, mil_data_test)
 
-  with(mil_data_test, {
-    pred <- predict(mdl2, mil_data_test, type = "raw")$.pred
-    pROC::auc(classify_bags(bag_label, bag_name),
-              classify_bags(pred, bag_name))
+  expect_snapshot({
+    with(mil_data_test, {
+      pred <- predict(mdl2, mil_data_test, type = "raw")$.pred
+      pROC::auc(classify_bags(bag_label, bag_name),
+                classify_bags(pred, bag_name))
+    })
   })
 
 })
@@ -507,12 +511,12 @@ test_that("`misvm()` works even when there are Nan columns or idential columns",
   df3 <- df2
   df3$ident_feature <- 50
 
-  expect_warning({
+  expect_warning(expect_warning({
     mdl1 <- misvm(x = df3[, 3:124],
                   y = df3$bag_label,
                   bags = df3$bag_name,
                   method = "qp-heuristic")
-  })
+  }))
   pred <- predict(mdl1, new_data = df1_test, layer = "instance", type = "raw")
 
 })

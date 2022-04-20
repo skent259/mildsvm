@@ -10,7 +10,7 @@ test_that("`as_mild_df()` works for several data.frames.", {
   df <- as_mild_df(x)
   expect_s3_class(df, "mild_df")
   expect(is.vector(attr(df, "instance_label")), "`df` does not have attribute instance_label")
-  expect_equivalent(df, x[, -5])
+  expect_equal(df, x[, -5], ignore_attr = TRUE)
 
 
   x = data.frame('bag_LABEL' = factor(c(1, 1, 0)),
@@ -20,7 +20,7 @@ test_that("`as_mild_df()` works for several data.frames.", {
                 'instance_label' = c(0, 1, 0))
 
   expect_warning(df <- as_mild_df(x))
-  expect_equivalent(df, x[, -5])
+  expect_equal(df, x[, -5], ignore_attr = TRUE)
 
 
   x = data.frame('a' = factor(c(1, 1, 0)),
@@ -28,8 +28,11 @@ test_that("`as_mild_df()` works for several data.frames.", {
                  'c' = c('bag_1_inst_1', 'bag_1_inst_2', 'bag_2_inst_1'),
                  'd' = c(-0.4, 0.5, 2))
 
-  expect_warning(expect_message(df <- as_mild_df(x)))
-  expect_equivalent(df, x)
+  expect_message(df <- as_mild_df(x)) %>%
+    expect_warning() %>%
+    expect_warning() %>%
+    expect_warning()
+  expect_equal(df, x, ignore_attr = TRUE)
 
 
   x = data.frame('bag_name' = c(rep('bag_1', 2), 'bag_2'),

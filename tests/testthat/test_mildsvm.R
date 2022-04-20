@@ -1,4 +1,4 @@
-suppressWarnings(library(dplyr))
+suppressMessages(suppressWarnings(library(dplyr)))
 
 
 set.seed(8)
@@ -212,7 +212,7 @@ test_that("predict.mildsvm returns labels that match the input labels", {
   df1 <- mil_data %>% as.data.frame() %>% mutate(bag_label = factor(bag_label, labels = c("No", "Yes")))
   expect_message(test_prediction_levels_equal(df1, method = "heuristic"))
   expect_message(test_prediction_levels_equal(df1, method = "mip"))
-  test_prediction_levels_equal(df1, method = "qp-heuristic")
+  expect_message(test_prediction_levels_equal(df1, method = "qp-heuristic"))
   expect_message(test_prediction_levels_equal(df1, method = "heuristic", class = "formula"))
 
   # check that 0/1 and 1/0 return the same predictions
@@ -267,12 +267,13 @@ test_that("mildsvm() has correct argument handling", {
   dimnames(mil_data_test) <- dimnames(mil_data)
   expect_equal(
     mildsvm(mil_data, weights = c("0" = 2, "1" = 1))$ksvm_fit,
-    mildsvm(mil_data_test, weights = c("No" = 2, "Yes" = 1))$ksvm_fit
+    suppressMessages(mildsvm(mil_data_test, weights = c("No" = 2, "Yes" = 1))$ksvm_fit)
   )
   set.seed(8) # nystrom sampling may change, need to set seed for each
   tmp1 <- mildsvm(mil_data, weights = c("0" = 2, "1" = 1), method = "mip")
   set.seed(8)
-  tmp2 <- mildsvm(mil_data_test, weights = c("No" = 2, "Yes" = 1), method = "mip")
+  tmp2 <- mildsvm(mil_data_test, weights = c("No" = 2, "Yes" = 1), method = "mip") %>%
+    suppressMessages()
   expect_equal(tmp1$gurobi_fit, tmp2$gurobi_fit)
 
   expect_false(isTRUE(all.equal(
@@ -478,26 +479,27 @@ test_that("Re-ordering data doesn't reduce performance", {
 
 test_that("`mildsvm()` value returns make sense", {
   skip_if_no_gurobi()
-  # different methods
-  names(mildsvm(mil_data, method = "heuristic"))
-  names(mildsvm(mil_data, method = "mip", control = list(nystrom_args = list(m = 10))))
-  names(mildsvm(mil_data, method = "qp-heuristic"))
 
-  # # different S3 methods
-  names(mildsvm(x = as.data.frame(mil_data[, 4:13]),
-                y = mil_data$bag_label,
-                bags = mil_data$bag_name,
-                instances = mil_data$instance_name))
-  names(mildsvm(mild(bag_label, bag_name, instance_name) ~ ., data = mil_data))
-  names(mildsvm(mil_data))
+  expect_snapshot({
+    models <- list(
+      "mildata-heur" = mildsvm(mil_data, method = "heuristic"),
+      "mildata-mip" = mildsvm(mil_data, method = "mip", control = list(nystrom_args = list(m = 10))),
+      "mildata-qp" = mildsvm(mil_data, method = "qp-heuristic"),
+      "xy" = mildsvm(x = as.data.frame(mil_data[, 4:13]),
+              y = mil_data$bag_label,
+              bags = mil_data$bag_name,
+              instances = mil_data$instance_name),
+      "formula" = mildsvm(mild(bag_label, bag_name, instance_name) ~ ., data = mil_data),
+      "no-scale-heur" = mildsvm(mil_data, method = "heuristic", control = list(scale = FALSE)),
+      "no-scale-mip" = mildsvm(mil_data, method = "mip", control = list(scale = FALSE, nystrom_args = list(m = 10))),
+      "no-scale-qp" = mildsvm(mil_data, method = "qp-heuristic", control = list(scale = FALSE)),
+      "no-weights" = mildsvm(mil_data, method = "heuristic", weights = FALSE)
+    ) %>%
+      suppressWarnings() %>%
+      suppressMessages()
 
-  # shouldn't have `x_scale`
-  names(mildsvm(mil_data, method = "heuristic", control = list(scale = FALSE)))
-  names(mildsvm(mil_data, method = "mip", control = list(scale = FALSE, nystrom_args = list(m = 10))))
-  names(mildsvm(mil_data, method = "qp-heuristic", control = list(scale = FALSE)))
-
-  # shouldn't have `weights`
-  names(mildsvm(mil_data, method = "heuristic", weights = FALSE))
+    print(lapply(models, names))
+  })
   expect_true(TRUE)
 })
 

@@ -1,4 +1,4 @@
-suppressWarnings(library(dplyr))
+suppressMessages(suppressWarnings(library(dplyr)))
 
 ## Generic data set to work with
 set.seed(8)
@@ -74,7 +74,7 @@ test_that("smm() works with formula method", {
   mdl1 <- smm(x, y, instances)
   common_components <- c("ksvm_fit", "sigma", "cost", "levels", "features")
   expect_equal(mdl[common_components], mdl1[common_components])
-  expect_equivalent(mdl$traindata, mdl1$traindata)
+  expect_equal(mdl$traindata, mdl1$traindata, ignore_attr = TRUE)
 
   # predictions should also match
   expect_equal(predict(mdl, df, type = "raw"), predict(mdl1, df, type = "raw"))
@@ -143,11 +143,13 @@ test_that("smm() has correct argument handling", {
 
   # `kernel`
   kernel_mat <- kme(data.frame(instance_name = instances, x), sigma = 1/3)
-  expect_equal(
+  expect_message(expect_equal(
     smm(x, y, instances, control = list(kernel = "radial", sigma = 1/3, scale = FALSE)),
     smm(x, y, instances, control = list(kernel = kernel_mat))
-  )
-  mdl1 <- smm(x, y, instances, control = list(kernel = kernel_mat))
+  ))
+  suppressMessages({
+    mdl1 <- smm(x, y, instances, control = list(kernel = kernel_mat))
+  })
   predict(mdl1, type = "raw", new_data = new_x, new_instances = new_inst)
 
   # `sigma`
@@ -364,37 +366,45 @@ test_that("Re-ordering data doesn't reduce performance", {
   pred1 <- predict(mdl1, mil_df_test, type = "raw", layer = "bag")
   pred2 <- predict(mdl2, mil_df_test, type = "raw", layer = "bag")
 
-  auc1 <- with(mil_df_test,
-               pROC::auc(response = classify_bags(bag_label, bag_name),
-                         predictor = classify_bags(pred1$.pred, bag_name)))
-  auc2 <- with(mil_df_test,
-               pROC::auc(response = classify_bags(bag_label, bag_name),
-                         predictor = classify_bags(pred2$.pred, bag_name)))
+  expect_snapshot({
+    auc1 <- with(mil_df_test,
+                 pROC::auc(response = classify_bags(bag_label, bag_name),
+                           predictor = classify_bags(pred1$.pred, bag_name)))
+    auc2 <- with(mil_df_test,
+                 pROC::auc(response = classify_bags(bag_label, bag_name),
+                           predictor = classify_bags(pred2$.pred, bag_name)))
 
-  # the auc2 should be in the neighborhood of auc1
-  auc1; auc2
-  eps <- 0.05
+    # the auc2 should be in the neighborhood of auc1
+    auc1; auc2
+    eps <- 0.05
+  })
+
   expect_gte(auc2, auc1 - eps)
   expect_lte(auc2, auc1 + eps)
 })
 
 test_that("`smm()` value returns make sense", {
 
-  names(smm(x, y, instances))
-
-  # different S3 methods
-  names(smm(x, y, instances))
   df <- data.frame(y = y, instance_name = instances, x)
-  names(smm(y ~ x1 + x2 + x3, data = df))
-  names(smm(mil_df))
 
-  # shouldn't have `x_scale`
-  names(smm(x, y, instances, control = list(scale = FALSE)))
-  names(smm(mil_df, control = list(scale = FALSE)))
+  expect_snapshot({
+    models <- list(
+      "xy" = smm(x, y, instances),
+      "formula" = smm(y ~ x1 + x2 + x3, data = df),
+      "mildata" = smm(mil_df),
+      "no-scale-xy" = smm(x, y, instances, control = list(scale = FALSE)),
+      "no-scale-mildata" = smm(mil_df, control = list(scale = FALSE)),
+      "no-weights-xy" = smm(x, y, instances, weights = FALSE),
+      "no-weights-mildata" = smm(mil_df, weights = FALSE)
+    ) %>%
+      suppressWarnings() %>%
+      suppressMessages()
 
-  # shouldn't have `weights`
-  names(smm(x, y, instances, weights = FALSE))
-  names(smm(mil_df, weights = FALSE))
+    print(lapply(models, names))
+  })
+  expect_true(TRUE)
+
+
 
   expect_true(TRUE)
 })

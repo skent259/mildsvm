@@ -1,8 +1,7 @@
-context("Testing the functions in misvm_ordinal.R")
-suppressWarnings({
+suppressMessages(suppressWarnings({
   library(dplyr)
   library(tibble)
-})
+}))
 
 # Build a sample data set ------------------------------------------------------
 # - 4 columns where two of them have means related to outcome and the other two are noise
@@ -45,15 +44,18 @@ test_that("misvm_ordinal() internal functions work on simple examples", {
   tmp <- outer(as.vector(f), res$gurobi_fit$b, `+`)
   y_pred <- rowSums(tmp > 0) + 1
 
-  # evaluation measures
-  pROC::multiclass.roc(response = classify_bags(y, bags),
-                       predictor = classify_bags(f, bags))
-  mzoe <- mean(classify_bags(y, bags) != classify_bags(y_pred, bags))
-  mae <- mean(abs(classify_bags(y, bags) - classify_bags(y_pred, bags)))
+  expect_snapshot({
+    # evaluation measures
+    pROC::multiclass.roc(response = classify_bags(y, bags),
+                         predictor = classify_bags(f, bags)) %>%
+      suppressMessages()
+    mzoe <- mean(classify_bags(y, bags) != classify_bags(y_pred, bags))
+    mae <- mean(abs(classify_bags(y, bags) - classify_bags(y_pred, bags)))
 
-  mzoe; mae
-  outer(as.vector(f), res$gurobi_fit$b, `+`)
-
+    mzoe; mae
+    outer(as.vector(f), res$gurobi_fit$b, `+`)[1:10, ]
+  })
+  expect_true(TRUE)
 })
 
 test_that("misvm_ordinal() has reasonable performance", {
@@ -82,11 +84,11 @@ test_that("misvm_ordinal() has reasonable performance", {
     mae <- mean(abs(bag_resp - bag_pred))
     expect_lte(mae, mae_cutoff)
 
-    if (interactive()) {
+    expect_snapshot({
       print(roc$auc)
       print(mzoe)
       print(mae)
-    }
+    })
   }
 
   check_performance(mdl1, df1, 0.95, 0.2, 0.2)
@@ -127,12 +129,12 @@ test_that("misvm_ordinal() works for data-frame-like inputs", {
 })
 
 test_that("misvm_ordinal() works with formula method", {
-  expect_warning({
+  expect_warning(expect_warning({
     mdl1 <- misvm_ordinal(mi(bag_label, bag_name) ~ V1 + V2 + V3 + V4 + V5, data = df1)
     mdl2 <- misvm_ordinal(x = df1[, paste0("V", 1:5)],
                           y = df1$bag_label,
                           bags = df1$bag_name)
-  })
+  }))
 
   expect_equal(mdl1$model, mdl2$model)
   expect_equal(mdl1$total_step, mdl2$total_step)
@@ -197,9 +199,12 @@ test_that("predict.misvm_ordinal() returns labels that match the input labels", 
   df2 <- df1
   df3 <- df1 %>% mutate(bag_label = ordered(bag_label, labels = letters[1:5]))
   mdl2 <- misvm_ordinal(mi(bag_label, bag_name) ~ V1 + V2, data = df2, weights = NULL)
-  mdl3 <- misvm_ordinal(mi(bag_label, bag_name) ~ V1 + V2, data = df3, weights = NULL)
-  expect_equivalent(predict(mdl2, df2, type = "class") %>% mutate(.pred_class = ordered(.pred_class, labels = letters[1:5])),
-                    predict(mdl3, df3, type = "class"))
+  expect_message({
+    mdl3 <- misvm_ordinal(mi(bag_label, bag_name) ~ V1 + V2, data = df3, weights = NULL)
+  })
+  expect_equal(predict(mdl2, df2, type = "class") %>% mutate(.pred_class = ordered(.pred_class, labels = letters[1:5])),
+               predict(mdl3, df3, type = "class"),
+               ignore_attr = TRUE)
   # NOTE: re-ordering of the factors in this case WILL NOT return the same model, and this is expected
 
 })
@@ -207,10 +212,10 @@ test_that("predict.misvm_ordinal() returns labels that match the input labels", 
 test_that("Dots work in misvm_ordinal() formula", {
   df2 <- df1 %>% select(bag_label, bag_name, V1, V2, V3)
 
-  expect_warning({
+  expect_warning(expect_warning({
     misvm_dot <- misvm_ordinal(mi(bag_label, bag_name) ~ ., data = df2)
     misvm_nodot <- misvm_ordinal(mi(bag_label, bag_name) ~ V1 + V2 + V3, data = df2)
-  })
+  }))
 
   expect_equal(misvm_dot$model, misvm_nodot$model)
   expect_equal(misvm_dot$features, misvm_nodot$features)
@@ -266,17 +271,18 @@ test_that("misvm_ordinal() has correct argument handling", {
 
 test_that("`misvm_ordinal()` value returns make sense", {
 
-  # different methods
-  names(misvm_ordinal(x = df1[, 3:7], y = df1$bag_label, bags = df1$bag_name, method = "qp-heuristic", weights = NULL))
+  expect_snapshot({
+    models <- list(
+      "xy" = misvm_ordinal(x = df1[, 3:7], y = df1$bag_label, bags = df1$bag_name, method = "qp-heuristic", weights = NULL),
+      "formula" = misvm_ordinal(mi(bag_label, bag_name) ~ V1 + V2, method = "qp-heuristic", data = df1, weights = NULL),
+      "no-scale" = misvm_ordinal(x = df1[, 3:7], y = df1$bag_label, bags = df1$bag_name,
+                          method = "qp-heuristic", weights = NULL, control = list(scale = FALSE))
+    ) %>%
+      suppressWarnings() %>%
+      suppressMessages()
 
-  # different S3 methods
-  names(misvm_ordinal(x = df1[, 3:7], y = df1$bag_label, bags = df1$bag_name, method = "qp-heuristic", weights = NULL))
-  names(misvm_ordinal(mi(bag_label, bag_name) ~ V1 + V2, method = "qp-heuristic", data = df1, weights = NULL))
-
-  # shouldn't have `x_scale`
-  names(misvm_ordinal(x = df1[, 3:7], y = df1$bag_label, bags = df1$bag_name,
-                      method = "qp-heuristic", weights = NULL, control = list(scale = FALSE)))
-
+    print(lapply(models, names))
+  })
   expect_true(TRUE)
 })
 
@@ -295,11 +301,13 @@ test_that("Ordering of data doesn't change `misvm_ordinal()` results", {
   expect_predictions_equal(mdl1, mdl2, df1)
   expect_predictions_equal(mdl1, mdl2, df1_test)
 
-  with(df1_test, suppressWarnings({
-    pred <- predict(mdl2, df1_test, type = "raw")$.pred
-    pROC::auc(classify_bags(bag_label, bag_name),
-              classify_bags(pred, bag_name))
-  }))
+  expect_snapshot({
+    with(df1_test, suppressWarnings({
+      pred <- predict(mdl2, df1_test, type = "raw")$.pred
+      pROC::auc(classify_bags(bag_label, bag_name),
+                classify_bags(pred, bag_name))
+    }))
+  })
 
 })
 

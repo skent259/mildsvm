@@ -1,8 +1,7 @@
-context("Testing the functions in svor_exc.R")
-suppressWarnings({
+suppressMessages(suppressWarnings({
   library(dplyr)
   library(tibble)
-})
+}))
 
 # Build a sample data set ------------------------------------------------------
 # - 4 columns where two of them have means related to outcome and the other two are noise
@@ -28,7 +27,9 @@ df1_test <- df[!train, ]
 
 test_that("svor_exc() internal functions work on simple examples", {
 
-  res <- svor_exc_fit(y, X, c = 1, rescale = FALSE)
+
+  res <- svor_exc_fit(y, X, c = 1, rescale = FALSE) %>%
+    suppressMessages()
 
   f <- .calculate_f(res$smo_fit$alpha, compute_kernel(X, type = "linear"))
 
@@ -38,19 +39,24 @@ test_that("svor_exc() internal functions work on simple examples", {
   tmp <- outer(as.vector(f), res$smo_fit$b, `-`)
   y_pred <- rowSums(tmp > 0) + 1
 
-  # evaluation measures
-  table(y, y_pred)
-  pROC::multiclass.roc(response = y,
-                       predictor = f)
-  mzoe <- mean(y != y_pred)
-  mae <- mean(y - y_pred)
+  expect_snapshot({
+    # evaluation measures
+    table(y, y_pred)
+    pROC::multiclass.roc(response = y,
+                         predictor = f) %>%
+      suppressMessages()
+    mzoe <- mean(y != y_pred)
+    mae <- mean(y - y_pred)
 
-  mzoe; mae
+    mzoe; mae
+  })
+  expect_true(TRUE)
 })
 
 test_that("svor_exc() has reasonable performance", {
 
-  mdl1 <- svor_exc(y ~ ., data = df1, weights = NULL)
+  mdl1 <- svor_exc(y ~ ., data = df1, weights = NULL) %>%
+    suppressMessages()
 
   check_performance <- function(model, df, roc_cutoff, mzoe_cutoff, mae_cutoff) {
     preds <- predict(model, new_data = df)
@@ -73,11 +79,11 @@ test_that("svor_exc() has reasonable performance", {
     mae <- mean(abs(resp - pred))
     expect_lte(mae, mae_cutoff)
 
-    if (interactive()) {
+    expect_snapshot({
       print(roc$auc)
       print(mzoe)
       print(mae)
-    }
+    })
   }
 
   check_performance(mdl1, df1, 0.95, 0.18, 0.18)
@@ -87,7 +93,8 @@ test_that("svor_exc() has reasonable performance", {
 
 test_that("svor_exc() works for data-frame-like inputs", {
 
-  mdl2 <- svor_exc(x = X, y = y)
+  mdl2 <- svor_exc(x = X, y = y) %>%
+    suppressMessages()
 
   predict(mdl2, new_data = df1, type = "class")
   predict(mdl2, new_data = df1, type = "raw")
@@ -98,9 +105,11 @@ test_that("svor_exc() works for data-frame-like inputs", {
 })
 
 test_that("svor_exc() works with formula method", {
-  mdl1 <- svor_exc(y ~ V1 + V2 + V3 + V4 + V5, data = df1)
-  mdl2 <- svor_exc(x = df1[, paste0("V", 1:5)],
-                   y = df1$y)
+  suppressMessages({
+    mdl1 <- svor_exc(y ~ V1 + V2 + V3 + V4 + V5, data = df1)
+    mdl2 <- svor_exc(x = df1[, paste0("V", 1:5)],
+                     y = df1$y)
+  })
 
   expect_equal(mdl1$model, mdl2$model)
   expect_equal(mdl1$total_step, mdl2$total_step)
@@ -118,7 +127,8 @@ test_that("svor_exc() works with formula method", {
   predict(mdl1, df1, type = "raw")
 
   # check some obscure formulas
-  mdl1 <- svor_exc(y ~ 0 + V1:V2 + V2*V3, data = df1)
+  mdl1 <- svor_exc(y ~ 0 + V1:V2 + V2*V3, data = df1) %>%
+    suppressMessages()
   expect_equal(mdl1$features,
                colnames(model.matrix(~ 0 + V1:V2 + V2*V3, data = df1)))
   predict(mdl1, df1, type = "raw")
@@ -127,11 +137,13 @@ test_that("svor_exc() works with formula method", {
 
 test_that("predict.svor_exc() returns labels that match the input labels", {
   test_prediction_levels_equal <- function(df, class = "default") {
-    mdl <- switch(class,
-                  "default" = svor_exc(x = df[, 2:6],
-                                       y = df$y),
-                  "formula" = svor_exc(y ~ V1 + V2 + V3,
-                                       data = df))
+    suppressMessages({
+      mdl <- switch(class,
+                    "default" = svor_exc(x = df[, 2:6],
+                                         y = df$y),
+                    "formula" = svor_exc(y ~ V1 + V2 + V3,
+                                         data = df))
+    })
     preds <- predict(mdl, df, type = "class")
     expect_setequal(levels(preds$.pred_class), levels(df$y))
   }
@@ -143,21 +155,22 @@ test_that("predict.svor_exc() returns labels that match the input labels", {
 
   # 1/0
   df2 <- df1 %>% mutate(y = factor(y, levels = 5:1))
-  expect_message(test_prediction_levels_equal(df2))
-  expect_message(test_prediction_levels_equal(df2, class = "formula"))
+  test_prediction_levels_equal(df2)
+  test_prediction_levels_equal(df2, class = "formula")
 
   # Characters
   df2 <- df1 %>% mutate(y = factor(y, labels = c("A", "B", "C", "D", "E")))
-  expect_message(test_prediction_levels_equal(df2))
-  expect_message(test_prediction_levels_equal(df2, class = "formula"))
+  test_prediction_levels_equal(df2)
+  test_prediction_levels_equal(df2, class = "formula")
 
   # check re-naming of factors returns the same predictions
   df2 <- df1
   df3 <- df1 %>% mutate(y = ordered(y, labels = letters[1:5]))
   mdl2 <- svor_exc(y ~ V1 + V2, data = df2, weights = NULL)
-  mdl3 <- svor_exc(y ~ V1 + V2, data = df3, weights = NULL)
-  expect_equivalent(predict(mdl2, df2, type = "class") %>% mutate(.pred_class = ordered(.pred_class, labels = letters[1:5])),
-                    predict(mdl3, df3, type = "class"))
+  expect_message(mdl3 <- svor_exc(y ~ V1 + V2, data = df3, weights = NULL))
+  expect_equal(predict(mdl2, df2, type = "class") %>% mutate(.pred_class = ordered(.pred_class, labels = letters[1:5])),
+               predict(mdl3, df3, type = "class"),
+               ignore_attr = TRUE)
   # NOTE: re-ordering of the factors in this case WILL NOT return the same model, and this is expected
 
 })
@@ -178,8 +191,10 @@ test_that("Dots work in svor_exc() formula", {
 
 test_that("svor_exc() has correct argument handling", {
   # `weights`
-  expect_warning(svor_exc(y ~ ., data = df1, weights = TRUE))
-  svor_exc(y ~ ., data = df1, weights = NULL)
+  suppressMessages({
+    expect_warning(svor_exc(y ~ ., data = df1, weights = TRUE))
+    svor_exc(y ~ ., data = df1, weights = NULL)
+  })
   # svor_exc(y ~ ., data = df1, weights = TRUE)
   # mdl1 <- svor_exc(y ~ ., data = df1, weights = c("0" = 1, "1" = 1))
   # mdl1$weights <- NULL
@@ -209,34 +224,39 @@ test_that("svor_exc() has correct argument handling", {
   expect_false(isTRUE(all.equal(
     svor_exc(y ~ ., data = df1, weights = NULL, control = list(kernel = "radial")),
     svor_exc(y ~ ., data = df1, weights = NULL, control = list(kernel = "linear"))
-  )))
+  ))) %>%
+    suppressMessages()
 
   # `scale`
   expect_false(isTRUE(all.equal(
     svor_exc(y ~ ., data = df1, weights = NULL, control = list(scale = TRUE)),
     svor_exc(y ~ ., data = df1, weights = NULL, control = list(scale = FALSE))
-  )))
+  ))) %>%
+    suppressMessages()
 
 })
 
 test_that("`svor_exc()` value returns make sense", {
 
-  # different methods
-  names(svor_exc(x = df1[, 2:6], y = df1$y, weights = NULL))
+  expect_snapshot({
+    models <- list(
+      "xy" = svor_exc(x = df1[, 2:6], y = df1$y, weights = NULL),
+      "formula" = svor_exc(y ~ V1 + V2, data = df1, weights = NULL),
+      "no-scale" = svor_exc(x = df1[, 2:6], y = df1$y,
+                            weights = NULL, control = list(scale = FALSE))
+    ) %>%
+      suppressWarnings() %>%
+      suppressMessages()
 
-  # different S3 methods
-  names(svor_exc(x = df1[, 2:6], y = df1$y, weights = NULL))
-  names(svor_exc(y ~ V1 + V2, data = df1, weights = NULL))
-
-  # shouldn't have `x_scale`
-  names(svor_exc(x = df1[, 2:6], y = df1$y,
-                 weights = NULL, control = list(scale = FALSE)))
-
+    print(lapply(models, names))
+  })
   expect_true(TRUE)
+
 })
 
 test_that("`svor_exc() works with bag input", {
-  mdl1 <- svor_exc(x = df1[, 2:6], y = df1$y, weights = NULL)
+  mdl1 <- svor_exc(x = df1[, 2:6], y = df1$y, weights = NULL) %>%
+    suppressMessages()
   bags_test <- rep(1:50, each = 5)
 
   pred_inst <- predict(mdl1, new_data = df1_test, type = "raw")

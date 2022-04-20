@@ -1,8 +1,7 @@
-context("Testing the functions in mivsm_orova")
-suppressWarnings({
+suppressMessages(suppressWarnings({
   library(dplyr)
   library(tibble)
-})
+}))
 
 # Build a sample data set ------------------------------------------------------
 # - 4 columns where two of them have means related to outcome and the other two are noise
@@ -54,15 +53,14 @@ test_that("misvm_orova() has reasonable performance", {
     mae <- mean(abs(bag_resp - bag_pred))
     expect_lte(mae, mae_cutoff)
 
-    if (interactive()) {
+    expect_snapshot({
       print(mzoe)
       print(mae)
-
       print(table(bag_resp, bag_pred))
-    }
+    })
   }
 
-  check_performance(mdl1, df1, 0.25, 0.25)
+  check_performance(mdl1, df1, 0.28, 0.28)
   check_performance(mdl1, df1_test, 0.40, 0.40) # a bit worse on testing data, but not bad
 
 })
@@ -160,9 +158,12 @@ test_that("predict.misvm_orova() returns labels that match the input labels", {
   df2 <- df1[1:100, ]
   df3 <- df1[1:100, ] %>% mutate(bag_label = ordered(bag_label, labels = letters[1:5]))
   mdl2 <- misvm_orova(mi(bag_label, bag_name) ~ V1 + V2, data = df2, weights = FALSE)
-  mdl3 <- misvm_orova(mi(bag_label, bag_name) ~ V1 + V2, data = df3, weights = FALSE)
-  expect_equivalent(predict(mdl2, df2, type = "class") %>% mutate(.pred_class = ordered(.pred_class, labels = letters[1:5])),
-                    predict(mdl3, df3, type = "class"))
+  expect_message({
+    mdl3 <- misvm_orova(mi(bag_label, bag_name) ~ V1 + V2, data = df3, weights = FALSE)
+  })
+  expect_equal(predict(mdl2, df2, type = "class") %>% mutate(.pred_class = ordered(.pred_class, labels = letters[1:5])),
+               predict(mdl3, df3, type = "class"),
+               ignore_attr = TRUE)
   # NOTE: re-ordering of the factors in this case WILL NOT return the same model, and this is expected
 
 })
@@ -215,18 +216,20 @@ test_that("misvm_orova() has correct argument handling", {
 })
 
 test_that("`misvm_orova()` value returns make sense", {
-
-  # different methods
-  dim(df1)
   df2 <- df1[1:100, ]
-  names(misvm_orova(x = df2[, 3:7], y = df2$bag_label, bags = df2$bag_name, method = "heuristic"))
-  names(misvm_orova(x = df2[, 3:7], y = df2$bag_label, bags = df2$bag_name, method = "qp-heuristic"))
-  names(misvm_orova(x = df2[, 3:7], y = df2$bag_label, bags = df2$bag_name, method = "mip"))
 
-  # different S3 methods
-  names(misvm_orova(x = df2[, 3:7], y = df2$bag_label, bags = df2$bag_name, method = "qp-heuristic"))
-  names(misvm_orova(mi(bag_label, bag_name) ~ V1 + V2, method = "qp-heuristic", data = df2))
+  expect_snapshot({
+    models <- list(
+      "heur" = misvm_orova(x = df2[, 3:7], y = df2$bag_label, bags = df2$bag_name, method = "heuristic"),
+      "qp" = misvm_orova(x = df2[, 3:7], y = df2$bag_label, bags = df2$bag_name, method = "qp-heuristic"),
+      "mip" = misvm_orova(x = df2[, 3:7], y = df2$bag_label, bags = df2$bag_name, method = "mip"),
+      "formula" = misvm_orova(mi(bag_label, bag_name) ~ V1 + V2, method = "qp-heuristic", data = df2)
+    ) %>%
+      suppressWarnings() %>%
+      suppressMessages()
 
+    print(lapply(models, names))
+  })
   expect_true(TRUE)
 })
 
@@ -242,7 +245,7 @@ test_that("Ordering of data doesn't change `misvm_orova()` results", {
   form <- mi(bag_label, bag_name) ~ V1 + V2 + V3
   set.seed(8)
   mdl1 <- misvm_orova(form, data = df1, method = "qp-heuristic")
-  ind <- sample(1:nrow(df1))
+  ind <- sample(seq_len(nrow(df1)))
   set.seed(8)
   mdl2 <- misvm_orova(form, data = df1[ind, ], method = "qp-heuristic")
   expect_predictions_equal(mdl1, mdl2, df1)

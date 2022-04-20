@@ -121,7 +121,7 @@ test_that("Nystrom method works with various sampling parameters", {
   )
 
   fit <- kfm_nystrom(df, m = 7, r = 7, kernel = "radial", sampling = 1:7, sigma = 0.05)
-  expect_equivalent(fit$df_sub, as.matrix(df[1:7, ]))
+  expect_equal(fit$df_sub, as.matrix(df[1:7, ]), ignore_attr = TRUE)
 
   expect_warning({
     fit <- kfm_nystrom(df, m = 7, r = 7, kernel = "radial", sampling = 1:6, sigma = 0.05)
@@ -149,7 +149,7 @@ test_that("Nystrom method works with various sampling parameters", {
   })
 
   fit <- kfm_nystrom(mil_data, m = 10, r = 10, kernel = "radial", sampling = 1:10, sigma = 0.05)
-  expect_equivalent(fit$df_sub, as.matrix(mil_data[1:10, -c(1:3)]))
+  expect_equal(fit$df_sub, as.matrix(mil_data[1:10, -c(1:3)]), ignore_attr = TRUE)
 
   fit <- kfm_nystrom(mil_data, m = 10, r = 10, kernel = "radial", sampling = "random", sigma = 0.05)
 

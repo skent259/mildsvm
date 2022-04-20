@@ -1,4 +1,3 @@
-context("Testing the functions in mior.R")
 suppressWarnings({
   library(dplyr)
   library(tibble)
@@ -44,10 +43,10 @@ df1_test <- df[!train, ]
 test_that("mior() internal functions work on simple examples", {
   set.seed(8)
   cost <- 1
-  suppressWarnings({
+  suppressWarnings(suppressMessages({
     res <- mior_dual_fit(df$bag_label, df$bag_name, df[, 3:5], c0 = cost, c1 = cost,
                          rescale = TRUE, verbose = FALSE, option = "corrected")
-  })
+  }))
 
   res$gurobi_fit$w
   res$gurobi_fit$w / max(abs(res$gurobi_fit$w)) # relative
@@ -69,22 +68,23 @@ test_that("mior() internal functions work on simple examples", {
   names(y_pred) <- NULL
 
   # evaluation measures
-  table(y_pred, y[1:300]) # confusion matrix
-  pROC::multiclass.roc(response = y[1:300],
-                       predictor = y_pred)
-  mzoe <- mean(y[1:300] != y_pred)
-  mae <- mean(abs(y[1:300] - y_pred))
-
-  mzoe; mae
+  expect_snapshot({
+    (mzoe <- mean(y[1:300] != y_pred))
+    (mae <- mean(abs(y[1:300] - y_pred)))
+    table(y_pred, y[1:300]) # confusion matrix
+    pROC::multiclass.roc(response = y[1:300],
+                         predictor = y_pred)
+  })
+  expect_true(TRUE)
 })
 
 test_that("`mior()` has reasonable performance", {
 
   set.seed(8)
-  expect_warning({
-    mdl1 <- mior(mi(bag_label, bag_name) ~ V1 + V2 + V3, data = df1,
-                 cost = 1e5, cost_eta = 1e5, weights = NULL)
-  })
+  mdl1 <- mior(mi(bag_label, bag_name) ~ V1 + V2 + V3, data = df1,
+               cost = 1e5, cost_eta = 1e5, weights = NULL) %>%
+    suppressWarnings() %>%
+    suppressMessages()
 
   check_performance <- function(model, df, roc_cutoff, mzoe_cutoff, mae_cutoff) {
     preds <- predict(model, new_data = df)
@@ -125,22 +125,24 @@ test_that("`mior()` has reasonable performance", {
 test_that("mior() works for data-frame-like inputs", {
 
   # qp-heuristic method
-  expect_warning({
-    mdl2 <- mior(x = X,
-                 y = y,
-                 bags = bags,
-                 method = "qp-heuristic")
-  })
+  mdl2 <- mior(x = X,
+               y = y,
+               bags = bags,
+               method = "qp-heuristic") %>%
+    suppressWarnings() %>%
+    suppressMessages()
 
   expect_equal(
     predict(mdl2, new_data = df1, type = "class", layer = "bag"),
     predict(mdl2, new_data = df1, type = "class", layer = "bag", new_bags = df1$bag_name)
   )
 
-  predict(mdl2, new_data = df1, type = "class", layer = "bag")
-  predict(mdl2, new_data = df1, type = "class", layer = "instance")
-  predict(mdl2, new_data = df1, type = "raw", layer = "bag")
-  predict(mdl2, new_data = df1, type = "raw", layer = "instance")
+  expect_snapshot({
+    predict(mdl2, new_data = df1, type = "class", layer = "bag")
+    predict(mdl2, new_data = df1, type = "class", layer = "instance")
+    predict(mdl2, new_data = df1, type = "raw", layer = "bag")
+    predict(mdl2, new_data = df1, type = "raw", layer = "instance")
+  })
 
   bag_preds <-
     df1 %>%
@@ -155,14 +157,14 @@ test_that("mior() works for data-frame-like inputs", {
 })
 
 test_that("mior() works with formula method", {
-  expect_warning({
+  suppressMessages(suppressWarnings({
     set.seed(8)
     mdl1 <- mior(mi(bag_label, bag_name) ~ V1 + V2 + V3, data = df1)
     set.seed(8)
     mdl2 <- mior(x = df1[, paste0("V", 1:3)],
                  y = df1$bag_label,
                  bags = df1$bag_name)
-  })
+  }))
 
   expect_equal(mdl1$model, mdl2$model)
   expect_equal(mdl1$total_step, mdl2$total_step)
@@ -177,15 +179,16 @@ test_that("mior() works with formula method", {
   predict(mdl1, df1, type = "class")
 
   # check only 1 predictor works
-  expect_warning({
-    mdl1 <- mior(mi(bag_label, bag_name) ~ V1, data = df1)
-  })
+  mdl1 <- mior(mi(bag_label, bag_name) ~ V1, data = df1) %>%
+      suppressWarnings() %>%
+      suppressMessages()
   predict(mdl1, df1, type = "raw")
 
   # check some obscure formulas
-  expect_warning({
-    mdl1 <- mior(mi(bag_label, bag_name) ~ 0 + V1:V2 + V2*V3, data = df1)
-  })
+
+  mdl1 <- mior(mi(bag_label, bag_name) ~ 0 + V1:V2 + V2*V3, data = df1) %>%
+    suppressWarnings() %>%
+    suppressMessages()
   expect_equal(mdl1$features,
                colnames(model.matrix(~ 0 + V1:V2 + V2*V3, data = df1)))
   predict(mdl1, df1, type = "raw")
@@ -194,7 +197,7 @@ test_that("mior() works with formula method", {
 
 test_that("predict.mior() returns labels that match the input labels", {
   test_prediction_levels_equal <- function(df, method, class = "default") {
-    suppressWarnings({
+    suppressMessages(suppressWarnings({
       mdl <- switch(class,
                     "default" = mior(x = df[, 4:6],
                                      y = df$bag_label,
@@ -203,7 +206,7 @@ test_that("predict.mior() returns labels that match the input labels", {
                     "formula" = mior(mi(bag_label, bag_name) ~ V1 + V2 + V3,
                                      data = df,
                                      method = method))
-    })
+    }))
     preds <- predict(mdl, df, type = "class")
     expect_setequal(levels(preds$.pred_class), levels(df$bag_label))
   }
@@ -215,25 +218,26 @@ test_that("predict.mior() returns labels that match the input labels", {
 
   # 1/0
   df2 <- df1 %>% mutate(bag_label = factor(bag_label, levels = 3:1))
-  expect_message(test_prediction_levels_equal(df2, method = "qp-heuristic"))
-  expect_message(test_prediction_levels_equal(df2, method = "qp-heuristic", class = "formula"))
+  test_prediction_levels_equal(df2, method = "qp-heuristic")
+  test_prediction_levels_equal(df2, method = "qp-heuristic", class = "formula")
 
   # Characters
   df2 <- df1 %>% mutate(bag_label = factor(bag_label, labels = c("A", "B", "C")))
-  expect_message(test_prediction_levels_equal(df2, method = "qp-heuristic"))
-  expect_message(test_prediction_levels_equal(df2, method = "qp-heuristic", class = "formula"))
+  test_prediction_levels_equal(df2, method = "qp-heuristic")
+  test_prediction_levels_equal(df2, method = "qp-heuristic", class = "formula")
 
   # check re-naming of factors returns the same predictions
   df2 <- df1
   df3 <- df1 %>% mutate(bag_label = ordered(bag_label, labels = letters[1:3]))
-  suppressWarnings({
+  suppressMessages(suppressWarnings({
     set.seed(8)
     mdl2 <- mior(mi(bag_label, bag_name) ~ V1 + V2, data = df2, weights = NULL)
     set.seed(8)
     mdl3 <- mior(mi(bag_label, bag_name) ~ V1 + V2, data = df3, weights = NULL)
-  })
-  expect_equivalent(predict(mdl2, df2, type = "class") %>% mutate(.pred_class = ordered(.pred_class, labels = letters[1:3])),
-                    predict(mdl3, df3, type = "class"))
+  }))
+  expect_equal(predict(mdl2, df2, type = "class") %>% mutate(.pred_class = ordered(.pred_class, labels = letters[1:3])),
+               predict(mdl3, df3, type = "class"),
+               ignore_attr = TRUE)
   # NOTE: re-ordering of the factors in this case WILL NOT return the same model, and this is expected
 
 })
@@ -241,12 +245,12 @@ test_that("predict.mior() returns labels that match the input labels", {
 test_that("Dots work in mior() formula", {
   df2 <- df1 %>% select(bag_label, bag_name, V1, V2, V3)
 
-  expect_warning({
+  suppressMessages(suppressWarnings({
     set.seed(8)
     misvm_dot <- mior(mi(bag_label, bag_name) ~ ., data = df2)
     set.seed(8)
     misvm_nodot <- mior(mi(bag_label, bag_name) ~ V1 + V2 + V3, data = df2)
-  })
+  }))
 
   expect_equal(misvm_dot$model, misvm_nodot$model)
   expect_equal(misvm_dot$features, misvm_nodot$features)
@@ -257,71 +261,54 @@ test_that("Dots work in mior() formula", {
 })
 
 test_that("mior() has correct argument handling", {
+  set.seed(8)
   # `weights`
-  expect_warning(mior(mi(bag_label, bag_name) ~ ., data = df1, weights = TRUE), "Weights")
-  expect_warning(mior(mi(bag_label, bag_name) ~ ., data = df1, weights = NULL), "Step")
-  # mior(mi(bag_label, bag_name) ~ ., data = df1, weights = TRUE)
-  # mdl1 <- mior(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 1, "1" = 1))
-  # mdl1$weights <- NULL
-  # mdl2 <- mior(mi(bag_label, bag_name) ~ ., data = df1, weights = FALSE)
-  # expect_equal(mdl1, mdl2)
-  #
-  # df2 <- df1 %>% mutate(bag_label = factor(bag_label, levels = c(1, 0)))
-  # dimnames(df2) <- dimnames(df1)
-  # expect_equal(
-  #   mior(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 2, "1" = 1)),
-  #   mior(mi(bag_label, bag_name) ~ ., data = df2, weights = c("0" = 2, "1" = 1))
-  # )
-  #
-  # df2 <- df1 %>% mutate(bag_label = factor(bag_label, labels = c("No", "Yes")))
-  # dimnames(df2) <- dimnames(df1)
-  # expect_equal(
-  #   mior(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 2, "1" = 1))$svm_fit,
-  #   mior(mi(bag_label, bag_name) ~ ., data = df2, weights = c("No" = 2, "Yes" = 1))$svm_fit
-  # )
-  #
-  # expect_false(isTRUE(all.equal(
-  #   mior(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 2, "1" = 1), method = "qp-heuristic")$gurobi_fit,
-  #   mior(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 1e-6, "1" = 1), method = "qp-heuristic")$model
-  # )))
+  expect_warning(mior(mi(bag_label, bag_name) ~ ., data = df1, weights = TRUE), "Weights") %>%
+    suppressWarnings() %>%
+    suppressMessages()
+  expect_warning(mior(mi(bag_label, bag_name) ~ ., data = df1, weights = NULL), "Step") %>%
+    suppressWarnings() %>%
+    suppressMessages()
 
   # `kernel`
   # NOTE: currently only "linear" kernel should work
-  suppressWarnings({
+  suppressMessages(suppressWarnings({
     set.seed(8)
     mdl1 <- mior(mi(bag_label, bag_name) ~ ., data = df1, method = "qp-heuristic", weights = NULL, control = list(kernel = "radial"))
     set.seed(8)
     mdl2 <- mior(mi(bag_label, bag_name) ~ ., data = df1, method = "qp-heuristic", weights = NULL, control = list(kernel = "linear"))
-  })
+  }))
   expect_equal(mdl1, mdl2)
 
   # `scale`
-  suppressWarnings({
+  suppressMessages(suppressWarnings({
     set.seed(8)
     mdl1 <- mior(mi(bag_label, bag_name) ~ ., data = df1, method = "qp-heuristic", weights = NULL, control = list(scale = TRUE))
     set.seed(8)
     mdl2 <- mior(mi(bag_label, bag_name) ~ ., data = df1, method = "qp-heuristic", weights = NULL, control = list(scale = FALSE))
-  })
+  }))
   expect_false(isTRUE(all.equal(mdl1, mdl2)))
 
 })
 
 test_that("`mior()` value returns make sense", {
 
-  suppressWarnings({
-    # different methods
-    names(mior(x = df1[, 4:6], y = df1$bag_label, bags = df1$bag_name, method = "qp-heuristic", weights = NULL))
+  expect_snapshot({
+    models <- list(
+      "xy" = mior(x = df1[, 4:6], y = df1$bag_label, bags = df1$bag_name,
+           method = "qp-heuristic", weights = NULL),
+      "formula" = mior(mi(bag_label, bag_name) ~ V1 + V2,
+           method = "qp-heuristic", data = df1, weights = NULL),
+      "no-scale" = mior(x = df1[, 4:6], y = df1$bag_label, bags = df1$bag_name,
+           method = "qp-heuristic", weights = NULL, control = list(scale = FALSE))
+    ) %>%
+      suppressWarnings() %>%
+      suppressMessages()
 
-    # different S3 methods
-    names(mior(x = df1[, 4:6], y = df1$bag_label, bags = df1$bag_name, method = "qp-heuristic", weights = NULL))
-    names(mior(mi(bag_label, bag_name) ~ V1 + V2, method = "qp-heuristic", data = df1, weights = NULL))
-
-    # shouldn't have `x_scale`
-    names(mior(x = df1[, 4:6], y = df1$bag_label, bags = df1$bag_name,
-               method = "qp-heuristic", weights = NULL, control = list(scale = FALSE)))
+    print(lapply(models, names))
   })
-
   expect_true(TRUE)
+
 })
 
 test_that("Ordering of data doesn't change `mior()` results", {
@@ -333,13 +320,13 @@ test_that("Ordering of data doesn't change `mior()` results", {
   }
 
   # heuristic
-  suppressWarnings({
+  suppressMessages(suppressWarnings({
     form <- mi(bag_label, bag_name) ~ V1 + V2 + V3
     set.seed(8)
     mdl1 <- mior(form, data = df1, method = "qp-heuristic", weights = NULL)
     set.seed(8)
     mdl2 <- mior(form, data = df1[sample(1:nrow(df1)), ], method = "qp-heuristic", weights = NULL)
-  })
+  }))
   expect_predictions_equal(mdl1, mdl2, df1)
   expect_predictions_equal(mdl1, mdl2, df1_test)
 
@@ -349,48 +336,7 @@ test_that("Ordering of data doesn't change `mior()` results", {
       roc <- pROC::multiclass.roc(response = bag_label, predictor = pred)
       pROC::auc(roc)
     })
-    # pROC::auc(classify_bags(bag_label, bag_name),
-    #           classify_bags(pred, bag_name))
   }))
 })
 
-
-# # really simple example
-# set.seed(8)
-# y <- c(rep(1, 5), rep(2, 2), rep(3, 2), rep(4, 3))
-# bags <- c(rep(1, 2), rep(2, 3), rep(3, 2), rep(4, 2), rep(5, 3))
-#
-# X <- matrix(NA, nrow = length(y), ncol = 5)
-# for (y_ in unique(y)) {
-#   to_fill <- which(y_ == y)
-#   X[to_fill, ] <- mvtnorm::rmvnorm(length(to_fill), mean = c(3*y_, -3*y_, 1*y_, 0, 0))
-# }
-# colnames(X) <- paste0("V", 1:ncol(X))
-# x <- as.matrix(X)
-#
-#
-#
-# set.seed(8)
-# # tmp <- mior_dual_fit(y, bags, x, 1, 1, verbose = TRUE)
-#
-# K <- max(y)
-# w_t <- rnorm(ncol(x)) # check to see if there is a suggested initialization
-# b_t <- sort(rnorm(K+1))
-#
-# scores <- as.matrix(x) %*% w_t - (b_t[y] + b_t[y+1]) / 2
-# scores <- as.numeric(scores)
-# # g <- abs(scores)
-# # h <- -classify_bags(-abs(scores), bags, condense = FALSE)
-# theta <- compute_theta(g = abs(scores), bags)
-# lambda <- sign(scores)
-#
-# delta <- theta*lambda
-# # decompose h, obtain problem 10, dual form of problem 10
-# model <- mior_dual_model(x, y, bags, delta, 1, 1)
-# colnames(model$A) <- model$varnames
-# model$A
-#
-# gurobi_result <- gurobi::gurobi(model)
-#
-# compute_b(gurobi_result, model, delta, y, bags, 1, 1)
 
