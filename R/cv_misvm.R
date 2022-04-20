@@ -21,6 +21,8 @@ validate_cv_misvm <- function(x) {
 #'   more details on the fitting function.
 #'
 #' @inheritParams misvm
+#' @param x A data.frame, matrix, or similar object of covariates, where each
+#'   row represents a sample.
 #' @param cost_seq A sequence of `cost` arguments (default `2^(-2:2)`) in
 #'   `misvm()`.
 #' @param n_fold The number of folds (default 5). If this is specified,

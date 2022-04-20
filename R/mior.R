@@ -29,7 +29,7 @@ validate_mior <- function(x) {
 #' with `control$option = 'xiao'`.
 #'
 #'
-#' @inheritParams misvm
+#' @inheritParams omisvm
 #' @param cost_eta The additional cost parameter in MIOR which controls how far
 #'   away the first and last separating hyperplanes are relative to other costs.
 #' @param data If `formula` is provided, a data.frame or similar from which

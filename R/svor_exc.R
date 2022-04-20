@@ -13,7 +13,7 @@ validate_svor_exc <- function(x) {
 #' This function fits the Support Vector Ordinal Regression with Explicit
 #' Constraints based on the research of Chu and Keerthi (2007).
 #'
-#' @inheritParams misvm
+#' @inheritParams omisvm
 #' @param data If `formula` is provided, a data.frame or similar from which
 #'   formula elements will be extracted.
 #' @param cost The cost parameter in SVM.

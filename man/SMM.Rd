@@ -20,11 +20,12 @@
 
 \method{smm}{formula}(formula, data, instances = "instance_name", ...)
 
-\method{smm}{mild_df}(data, ...)
+\method{smm}{mild_df}(x, ...)
 }
 \arguments{
 \item{x}{A data.frame, matrix, or similar object of covariates, where each
-row represents a sample.}
+row represents a sample. If a \code{mild_df} object is passed, \verb{y, bags, instances} are automatically extracted, and all other columns will be used
+as predictors.}
 
 \item{y}{A numeric, character, or factor vector of bag labels for each
 instance.  Must satisfy \code{length(y) == nrow(x)}. Suggest that one of the
@@ -60,9 +61,7 @@ This argument is an alternative to the \verb{x, y, bags, instances } arguments,
 but requires the \code{data} argument. See examples.}
 
 \item{data}{If \code{formula} is provided, a data.frame or similar from which
-formula elements will be extracted.  Otherwise, a \code{mild_df} object from
-which \verb{x, y, bags, instances} are automatically extracted. If a \code{mild_df}
-object is used, all columns will be used as predictors.}
+formula elements will be extracted.}
 }
 \value{
 An object of class \code{smm}  The object contains at least the

@@ -22,6 +22,8 @@ validate_omisvm <- function(x) {
 #' space. Additional methods should be available shortly.
 #'
 #' @inheritParams misvm
+#' @param x A data.frame, matrix, or similar object of covariates, where each
+#'   row represents a sample.
 #' @param h A scalar that controls the trade-off between maximizing the margin
 #'   and minimizing distance between hyperplanes.
 #' @param data If `formula` is provided, a data.frame or similar from which
@@ -230,7 +232,7 @@ predict.omisvm <- function(object,
   } else {
     new_x <- new_data[, object$features, drop = FALSE]
   }
-  
+
   if (method == "qp-heuristic") {
     scores <- as.matrix(new_x) %*% object$gurobi_fit$w
     scores_matrix <- outer(as.vector(scores), object$gurobi_fit$b, `+`)

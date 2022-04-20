@@ -332,18 +332,15 @@ mismm.formula <- function(formula, data, ...) {
 
 #' @describeIn mismm Method for `mild_df` objects
 #' @export
-mismm.mild_df <- function(data, ...) {
+mismm.mild_df <- function(x, ...) {
 
-    # x <- as.data.frame(subset(data, select = -c(bag_label, bag_name, instance_name)))
-    x <- data
+    y <- x$bag_label
+    bags <- x$bag_name
+    instances <- x$instance_name
     x$bag_label <- x$bag_name <- x$instance_name <- NULL
-    y <- data$bag_label
-    bags <- data$bag_name
-    instances <- data$instance_name
 
     res <- mismm.default(x, y, bags, instances, ...)
     res$call_type <- "mismm.mild_df"
-    # res$formula <- formula
     res$bag_name <- "bag_name"
     res$instance_name <- "instance_name"
     return(res)

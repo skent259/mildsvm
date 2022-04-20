@@ -26,7 +26,9 @@ validate_misvm <- function(x) {
 #' using the gurobi package optimization back-end.
 #'
 #' @param x A data.frame, matrix, or similar object of covariates, where each
-#'   row represents a sample.
+#'   row represents a sample. If a `mild_df` object is passed, `y, bags,
+#'   instances` are automatically extracted, and all other columns will be used
+#'   as predictors.
 #' @param y A numeric, character, or factor vector of bag labels for each
 #'   instance.  Must satisfy `length(y) == nrow(x)`. Suggest that one of the
 #'   levels is 1, '1', or TRUE, which becomes the positive class; otherwise, a
@@ -38,9 +40,7 @@ validate_misvm <- function(x) {
 #'   alternative to the `x, y, bags` arguments, but requires the `data`
 #'   argument. See examples.
 #' @param data If `formula` is provided, a data.frame or similar from which
-#'   formula elements will be extracted.  Otherwise, a `mild_df` object from
-#'   which `x, y, bags, instances` are automatically extracted. If a `mild_df`
-#'   object is used, all columns will be used as predictors.
+#'   formula elements will be extracted.
 #' @param cost The cost parameter in SVM. If `method = 'heuristic'`, this will
 #'   be fed to `kernlab::ksvm()`, otherwise it is similarly in internal
 #'   functions.
@@ -314,18 +314,14 @@ misvm.formula <- function(formula, data, ...) {
 #'   instance level based on specified functions, then perform `misvm()` on
 #'   instance level data.
 #' @export
-misvm.mild_df <- function(data, .fns = list(mean = mean, sd = stats::sd), cor = FALSE, ...)
+misvm.mild_df <- function(x, .fns = list(mean = mean, sd = stats::sd), cor = FALSE, ...)
 {
-  instance_data <- summarize_samples(data, .fns, cor)
-  x <- instance_data
+  x <- summarize_samples(x, .fns, cor) # instance level data
+  y <- x$bag_label
+  bags <- x$bag_name
   x$bag_label <- x$bag_name <- x$instance_name <- NULL
-  res <- misvm.default(
-    x,
-    y = instance_data$bag_label,
-    bags = instance_data$bag_name,
-    ...
-  )
 
+  res <- misvm.default(x, y, bags, ...)
   res$call_type <- "misvm.mild_df"
   res$bag_name <- "bag_name"
   res$instance_name <- "instance_name"

@@ -189,13 +189,11 @@ smm.formula <- function(formula, data, instances = "instance_name", ...)
 #' @describeIn smm Method for `mild_df` objects. Use the `bag_label` as `y` at
 #'   the instance level, then perform `smm()` ignoring the MIL structure.
 #' @export
-smm.mild_df <- function(data, ...)
+smm.mild_df <- function(x, ...)
 {
-    x <- data
+    y <- x$bag_label
+    instances <- x$instance_name
     x$bag_label <- x$bag_name <- x$instance_name <- NULL
-    # x <- as.data.frame(subset(data, select = -c(bag_label, bag_name, instance_name)))
-    y <- data$bag_label
-    instances <- data$instance_name
 
     res <- smm.default(x, y, instances, ...)
     res$call_type <- "smm.mild_df"

@@ -20,7 +20,7 @@ validate_misvm_orova <- function(x) {
 #' ordinal outcome with K levels, we fit K MI-SVM models to predict an
 #' individual level vs not.
 #'
-#' @inheritParams misvm
+#' @inheritParams omisvm
 #' @param data If `formula` is provided, a data.frame or similar from which
 #'   formula elements will be extracted
 #' @param ... Arguments passed to or from other methods.
