@@ -104,11 +104,7 @@ svor_exc.default <- function(x, y,
   # store colnames of x
   col_x <- colnames(x)
 
-  # weights
-  if (!is.null(weights)) {
-    weights <- NULL
-    warning("Weights are not currently implemented for `svor_exc()`.")
-  }
+  weights <- .warn_no_weights(weights, "svor_exc")
 
   if (method == "smo") {
     res <- svor_exc_fit(y, x,

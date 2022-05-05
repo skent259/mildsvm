@@ -147,10 +147,7 @@ mior.default <- function(x, y, bags,
   col_x <- colnames(x)
 
   # weights
-  if (!is.null(weights)) {
-    weights <- NULL
-    warning("Weights are not currently implemented for `mior()`.")
-  }
+  weights <- .warn_no_weights(weights, "mior")
 
   if (method == "qp-heuristic") {
     res <- mior_dual_fit(y, bags, x,

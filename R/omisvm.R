@@ -104,6 +104,7 @@ omisvm.default <- function(x, y, bags,
     time_limit = 60
   )
   control <- .set_default(control, defaults)
+  control <- .set_scale(control)
 
   # store the levels of y and convert to 0,1 numeric format.
   y_info <- .convert_y_ordinal(y)
@@ -114,11 +115,7 @@ omisvm.default <- function(x, y, bags,
   x <- .check_x_columns(x)
   col_x <- colnames(x)
 
-  # weights
-  if (!is.null(weights)) {
-    weights <- NULL
-    warning("Weights are not currently implemented for `omisvm()`.")
-  }
+  weights <- .warn_no_weights(weights, "omisvm")
 
   if (method == "qp-heuristic") {
     # y = 2*y - 1 # convert {0,1} to {-1, 1}

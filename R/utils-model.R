@@ -149,6 +149,21 @@ convert_y <- function(y) {
   return(w)
 }
 
+#' Warn about no weights
+#' @inheritParams .set_weights
+#' @param fun The function name to use in the warning message
+#' @noRd
+.warn_no_weights <- function(w, fun = "omisvm") {
+  fun <- match.arg(fun, c("mior", "omisvm", "svor_exc"))
+
+  if (!is.null(w)) {
+    w <- NULL
+    msg <- paste0("Weights are not currently implemented for `", fun, "()`.")
+    rlang::warn(msg)
+  }
+  return(w)
+}
+
 #' Calculate x-matrix from a standard formula
 #' @inheritParams smm
 #' @param skip a vector of variable names to skip, or `NULL` to keep all
