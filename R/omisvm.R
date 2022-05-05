@@ -110,7 +110,8 @@ omisvm.default <- function(x, y, bags,
   y <- y_info$y
   lev <- y_info$lev
 
-  # store colnames of x
+  # remove NaN columns and columns with no variance, store col names
+  x <- .check_x_columns(x)
   col_x <- colnames(x)
 
   # weights
