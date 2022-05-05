@@ -1,3 +1,44 @@
+#' Set default values in a list, when not present
+#' @param x A list to modify.
+#' @param args A list or vector of named arguments for defaults
+#' @noRd
+.set_default <- function(x, args) {
+  for (i in seq_along(args)) {
+    nm <- names(args[i])
+    if (nm %ni% names(x)) {
+      x[nm] <- args[i]
+    }
+  }
+  return(x)
+}
+
+#' Reset 'scale' value in control list
+#' @inheritParams .set_default
+#' @noRd
+.set_scale <- function(x) {
+  if ("scale" %ni% names(x) && inherits(x$kernel, "matrix")) {
+    # if kernel matrix is passed in, then really no re-scaling was done.
+    x$scale <- FALSE
+  } else if ("scale" %ni% names(x)) {
+    x$scale <- TRUE
+  }
+  return(x)
+}
+
+#' Reset 'start' value in control list
+#' @inheritParams .set_default
+#' @noRd
+.set_start <- function(x) {
+  if (x$start && x$kernel != "linear") {
+    x$start <- FALSE
+    rlang::inform(c(
+      "Warm start is not available when `kernel` is not equal to 'linear'.",
+      i = "Setting `start` = FALSE. "
+    ))
+  }
+  return(x)
+}
+
 #' Store the levels of y and convert to 0,1 numeric format.
 #' @inheritParams .reorder
 #' @noRd
@@ -71,6 +112,42 @@ convert_y <- function(y) {
   return(x)
 }
 
+#' Calculate weights
+#'
+#' These weights control the importance of the cost parameter in SVM on errors
+#' within different `y` values by multiplying against it.  Calculation depends
+#' on what is passed to `w`:
+#' - `TRUE`: weights are calculated based on inverse counts of instances within
+#'   a given label, where we only count one positive instance per bag.  This
+#'   reflects an inverse weighting on the counts of `y` used in training.
+#' - A named vector: the weights of the vector are used, provided they match the
+#'   levels of `y`. If names don't match, an error is thrown.
+#' - `FALSE` or `NULL`: weights not used, returned as `NULL`.
+#'
+#' @param w A named vector, or `TRUE`, to control the weight of the cost
+#'   parameter for each possible y value.  Weights multiply against the cost
+#'   vector. If `TRUE`, weights are calculated based on inverse counts of
+#'   instances with given label, where we only count one positive instance per
+#'   bag. Otherwise, names must match the levels of `y`.
+#' @param y Output from `.convert_y()`
+#' @inheritParams misvm
+#' @noRd
+.set_weights <- function(w, y, bags) {
+  lev <- y$lev
+  y <- y$y
+
+  if (is.numeric(w)) {
+    stopifnot(names(w) == lev | names(w) == rev(lev))
+    w <- w[lev]
+    names(w) <- c("-1", "1")
+  } else if (w) {
+    bag_labels <- sapply(split(y, factor(bags)), unique)
+    w <- c("-1" = sum(bag_labels == 1) / sum(y == 0), "1" = 1)
+  } else {
+    w <- NULL
+  }
+  return(w)
+}
 
 #' Calculate x-matrix from a standard formula
 #' @inheritParams smm

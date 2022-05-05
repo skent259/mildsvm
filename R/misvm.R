@@ -172,19 +172,9 @@ misvm.default <- function(x, y, bags,
     start = FALSE
   )
   control <- .set_default(control, defaults)
-  if ("scale" %ni% names(control) && inherits(control$kernel, "matrix")) {
-        # if kernel matrix is passed in, then really no re-scaling was done.
-        control$scale <- FALSE
-    } else if ("scale" %ni% names(control)) {
-        control$scale <- TRUE
-    }
-  if (control$start && control$kernel != "linear") {
-    control$start <- FALSE
-    rlang::inform(c(
-      "Warm start is not available when `kernel` is not equal to 'linear'.",
-      i = "Setting `start` = FALSE. "
-    ))
-  }
+  control <- .set_scale(control)
+  control <- .set_start(control)
+
   # store the levels of y and convert to 0,1 numeric format.
   y_info <- convert_y(y)
   y <- y_info$y
@@ -194,17 +184,7 @@ misvm.default <- function(x, y, bags,
   x <- .check_x_columns(x)
   col_x <- colnames(x)
 
-  # weights
-  if (is.numeric(weights)) {
-    stopifnot(names(weights) == lev | names(weights) == rev(lev))
-    weights <- weights[lev]
-    names(weights) <- c("-1", "1")
-  } else if (weights) {
-    bag_labels <- sapply(split(y, factor(bags)), unique)
-    weights <- c("-1" = sum(bag_labels == 1) / sum(y == 0), "1" = 1)
-  } else {
-    weights <- NULL
-  }
+  weights <- .set_weights(weights, y_info, bags)
 
   # Nystrom approximation to x for mip and  methods
   if (method %in% c("mip") & control$kernel == "radial") {
