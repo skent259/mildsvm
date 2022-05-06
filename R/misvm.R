@@ -181,8 +181,9 @@ misvm.default <- function(x, y, bags,
   lev <- y_info$lev
 
   # remove NaN columns and columns with no variance, store col names
-  x <- .check_x_columns(x)
-  col_x <- colnames(x)
+  x_info <- .convert_x(x, scale = FALSE) # scaling done internally
+  x <- x_info$x
+  col_x <- x_info$col_x
 
   weights <- .set_weights(weights, y_info, bags)
 
@@ -875,29 +876,25 @@ misvm_dualqpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = N
   bags <- r$b
   X <- r$X
   if (rescale) X <- scale(X)
-
+  # browser()
   # randomly select initial representative instances
   pos_bags <- unique(bags[y==1])
   selected <- sapply(pos_bags, function(bag) {
     .resample(which(bags == bag), size = 1)
   })
 
-  if (!is.matrix(kernel)) {
-    K <- compute_kernel(X, type = kernel, sigma = sigma)
-  } else {
-    K <- kernel
-  }
+  K <- .convert_kernel(X, kernel, sigma = sigma)
 
   params <- list()
-  params$OutputFlag = 1*verbose
-  params$IntFeasTol = 1e-5
-  params$PSDTol = 1e-4
-  if (time_limit) params$TimeLimit = time_limit
+  params[["OutputFlag"]] <- 1 * verbose
+  params[["IntFeasTol"]] <- 1e-5
+  params[["PSDTol"]] <- 1e-4
+  if (time_limit) params[["TimeLimit"]] <- time_limit
 
   selection_changed <- TRUE
-  itercount = 0
-  baritercount = 0
-  n_selections = 0
+  itercount <- 0
+  baritercount <- 0
+  n_selections <- 0
 
   while (selection_changed & n_selections < max_step) {
     ind <- c(which(y == -1), selected) # effective set for this iteration
@@ -912,7 +909,7 @@ misvm_dualqpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = N
       error = function(e) {
         rlang::warn(paste0("Warning from gurobi: ", conditionMessage(e)))
         rlang::inform("Trying NonConvex version")
-        params$NonConvex <- 2
+        params[["NonConvex"]] <- 2
         return(gurobi::gurobi(opt_model, params = params))
       })
 
@@ -935,7 +932,7 @@ misvm_dualqpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = N
     selection_changed <- !identical(selected, new_selection)
     if (selection_changed) {
       selected <- new_selection
-      n_selections = n_selections + 1
+      n_selections <- n_selections + 1
     }
   }
   if (n_selections == max_step) {
@@ -1081,7 +1078,7 @@ misvm_dualqpheuristic_model <- function(y, bags, K, c, weights = NULL) {
   # Objective
   model$modelsense <- "max"
   model$obj <- rep(1, n_a)
-  model$Q <- - 1/2 * y %*% t(y) * K # TODO: replace this with kernel at some point
+  model$Q <- - 1/2 * y %*% t(y) * K
   # Constraints
   model$varnames <- c(paste0("a", 1:n_a))
   model$A <- constraint

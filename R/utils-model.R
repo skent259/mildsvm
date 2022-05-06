@@ -109,7 +109,47 @@ convert_y <- function(y) {
   col_x <- setdiff(col_x, names(which(nan_columns)))
   col_x <- setdiff(col_x, names(which(ident_columns)))
   x <- x[, col_x, drop = FALSE]
+  x <- as.matrix(x)
   return(x)
+}
+
+#' Process x
+#'
+#' Check columns of x for NaN and no variance, then optionally scale
+#' @inheritParams misvm
+#' @param scale A logical for whether to rescale the input before fitting
+#'   (default `FALSE`).
+#' @noRd
+.convert_x <- function(x, scale = FALSE) {
+  x <- .check_x_columns(x)
+
+  if (scale) {
+    x <- scale(x)
+    x_scale <- list(
+      "center" = attr(x, "scaled:center"),
+      "scale" = attr(x, "scaled:scale")
+    )
+  } else {
+    x_scale <- NULL
+  }
+
+  list(x = x, col_x = colnames(x), x_scale = x_scale)
+}
+
+#' Convert kernel argument to matrix
+#'
+#' @param x A data.frame of covariates.
+#' @param k The kernel argument. Either a character that describes the kernel
+#'   (`'linear'` or `'radial'`) or a kernel matrix at the instance level.
+#' @param ... Additional arguments passed to `compute_kernel()`, such as
+#'   `sigma`.
+#' @noRd
+.convert_kernel <- function(x, kernel, ...) {
+  if (!is.matrix(kernel)) {
+    compute_kernel(x, type = kernel, ...)
+  } else {
+    kernel
+  }
 }
 
 #' Calculate weights

@@ -256,11 +256,7 @@ svor_exc_fit <- function(y, X, c, rescale = TRUE, weights = NULL,
   if (rescale) X <- scale(X)
   unorder <- match(seq_along(r$order), r$order)
 
-  if (!is.matrix(kernel)) {
-    K <- compute_kernel(X, type = kernel, sigma = sigma)
-  } else {
-    K <- kernel
-  }
+  K <- .convert_kernel(X, kernel, sigma = sigma)
 
   smo_fit <- smo(y, K, c, max_step)
 
