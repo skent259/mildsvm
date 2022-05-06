@@ -4,7 +4,7 @@ test_that("data repliation on y works as expected.", {
   check_length <- function(y, k) {
     y_new <- .y_datarep(y, k)
 
-    expect_equal((k-1)*length(y), length(y_new))
+    expect_equal((k - 1) * length(y), length(y_new))
   }
 
   check_length(1:3, k = 3)
@@ -15,7 +15,7 @@ test_that("data repliation on y works as expected.", {
   check_counting_rule <- function(y, k) {
     y_new <- .y_datarep(y, k)
 
-    counts <- rowSums(matrix(y_new, ncol = (k-1)) == 1) + 1
+    counts <- rowSums(matrix(y_new, ncol = (k - 1)) == 1) + 1
     expect_equal(y, counts)
   }
 
@@ -51,23 +51,24 @@ test_that("data replication on x matches kernel in linear case", {
 # It's important to recognize that we do NOT want data replication
 # to match exactly in the 'rbf' case.  This is because the non-linear
 # transformation should exist on the x only, not on the features that
-# indicate the replication.
+# indicate the replication. However, we should be able to recover it with a
+# separate function.
 test_that("data replication on x matches kernel in rbf case", {
 
   check_datarep_no_match <- function(x, k, h) {
-    kernel <- compute_kernel(x, type = "radial", sigma = 1/2)
+    kernel <- compute_kernel(x, type = "radial", sigma = 0.5)
     x_new <- .x_datarep(x, k, h)
     kernel_new <- .kernel_datarep(kernel, k, h)
 
     # shouldn't match overall
     expect_true(isFALSE({
-      all(compute_kernel(x_new, type = "radial", sigma = 1/2) == kernel_new)
+      all(compute_kernel(x_new, type = "radial", sigma = 0.5) == kernel_new)
     }))
 
-    # but first block should match
+    # but should be able to calculate with `.compute_kernel_datarep()`
     expect_equal(
-      sum(compute_kernel(x_new, type = "radial", sigma = 1/2) == kernel_new),
-      nrow(x)^2
+      .compute_kernel_datarep(x_new, x_new, k, h, type = "radial", sigma = 0.5),
+      kernel_new
     )
   }
 
