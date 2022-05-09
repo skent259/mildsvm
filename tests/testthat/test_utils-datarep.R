@@ -68,7 +68,8 @@ test_that("data replication on x matches kernel in rbf case", {
     # but should be able to calculate with `.compute_kernel_datarep()`
     expect_equal(
       .compute_kernel_datarep(x_new, x_new, k, h, type = "radial", sigma = 0.5),
-      kernel_new
+      kernel_new,
+      ignore_attr = TRUE
     )
   }
 

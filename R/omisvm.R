@@ -106,35 +106,54 @@ omisvm.default <- function(x, y, bags,
   control <- .set_default(control, defaults)
   control <- .set_scale(control)
 
-  # store the levels of y and convert to 0,1 numeric format.
+  # store the levels of y and convert to numeric format.
   y_info <- .convert_y_ordinal(y)
   y <- y_info$y
   lev <- y_info$lev
+  k <- length(lev)
 
-  # remove NaN columns and columns with no variance, store col names
-  x <- .check_x_columns(x)
-  col_x <- colnames(x)
+  # remove NaN columns and columns with no variance, store col names, scale
+  x_info <- .convert_x(x, control$scale)
+  # x_info <- .convert_x(x, FALSE)
+  x <- x_info$x
+  col_x <- x_info$col_x
+  x_scale <- x_info$x_scale
 
   weights <- .warn_no_weights(weights, "omisvm")
 
   if (method == "qp-heuristic") {
-    # y = 2*y - 1 # convert {0,1} to {-1, 1}
-    res <- omisvm_qpheuristic_fit(y, bags, x,
-                                  c = cost,
-                                  h = h,
-                                  rescale = control$scale,
-                                  weights = weights,
-                                  verbose = control$verbose,
-                                  time_limit = control$time_limit,
-                                  max_step = control$max_step)
-  } else {
-    stop("omisvm requires method = 'qp-heuristic'.")
+
+    # Perform data replication on `y`, `bags`, `kernel`, `x`
+    y <- .y_datarep(y, k)
+    bags <- .bags_datarep(bags, k)
+    kernel <- .convert_kernel(x, control$kernel, sigma = control$sigma)
+    kernel <- .kernel_datarep(kernel, k, h)
+    x <- .x_datarep(x, k, h)
+
+    # browser()
+    # Run misvm on replicated data, passing in kernel for faster computation
+    res <- misvm_dualqpheuristic_fit(y, bags$.repl, x,
+                                     c = cost,
+                                     rescale = FALSE,
+                                     weights = weights,
+                                     kernel = kernel,
+                                     sigma = control$sigma,
+                                     verbose = control$verbose,
+                                     time_limit = control$time_limit,
+                                     max_step = control$max_step)
+    res$gurobi_fit$kernel <- control$kernel
+    # res <- omisvm_qpheuristic_fit(y, bags, x,
+    #                               c = cost,
+    #                               h = h,
+    #                               rescale = control$scale,
+    #                               weights = weights,
+    #                               verbose = control$verbose,
+    #                               time_limit = control$time_limit,
+    #                               max_step = control$max_step)
   }
 
+  # browser()
   out <- res[1]
-  # if (method %in% c("mip") & control$kernel == "radial") {
-  #   out$kfm_fit <- kfm_fit
-  # }
   out$call_type <- "misvm.default"
   out$x <- res$x
   out$features <- col_x
@@ -144,7 +163,7 @@ omisvm.default <- function(x, y, bags,
   out$weights <- weights
   out$repr_inst <- res$repr_inst
   out$n_step <- res$n_step
-  out$x_scale <- res$x_scale
+  out$x_scale <- x_scale
   new_omisvm(out, method = method)
 }
 
@@ -225,42 +244,41 @@ predict.omisvm <- function(object,
   layer <- match.arg(layer, c("bag", "instance"))
   method <- attr(object, "method")
 
-  if (object$call_type == "omisvm.formula") {
-    new_x <- x_from_mi_formula(object$formula, new_data)
-  } else {
-    new_x <- new_data[, object$features, drop = FALSE]
-  }
+  k <- length(object$lev)
+  h <- object$h
 
-  if (method == "qp-heuristic") {
-    scores <- as.matrix(new_x) %*% object$gurobi_fit$w
-    scores_matrix <- outer(as.vector(scores), object$gurobi_fit$b, `+`)
-    class_ <- rowSums(scores_matrix > 0) + 1
-  } else {
-    stop("predict.misvm requires method = 'qp-heuristic'.")
-  }
+
+  new_x <- .get_new_x(object, new_data)
+  new_x_dr <- .x_datarep(new_x, k, h)
+
+  kernel_dr <- .compute_kernel_datarep(
+    as.matrix(new_x_dr),
+    object$gurobi_fit$xmatrix,
+    k = k,
+    h = h,
+    type = object$gurobi_fit$kernel,
+    sigma = object$gurobi_fit$sigma
+  )
+
+  scores_dr <- kernel_dr %*% object$gurobi_fit$ay + object$gurobi_fit$b
+  scores_matrix <- matrix(scores_dr, nrow = nrow(new_x), ncol = k-1)
+
+  scores <- scores_matrix[, 1, drop = TRUE]
+  class_ <- rowSums(scores_matrix > 0) + 1
 
   if (layer == "bag") {
-    if (object$call_type == "omisvm.formula" & new_bags[1] == "bag_name" & length(new_bags) == 1) {
-      new_bags <- object$bag_name
-    }
-    if (length(new_bags) == 1 & new_bags[1] %in% colnames(new_data)) {
-      bags <- new_data[[new_bags]]
-    } else {
-      bags <- new_bags
-    }
+    bags <- .get_bags(object, new_data, new_bags)
     scores <- classify_bags(scores, bags, condense = FALSE)
-    # scores_matrix <- apply(scores_matrix, 2, classify_bags, bags = bags, condense = FALSE)
-    # colnames(scores_matrix) <- paste0(".pred_", )
     class_ <- classify_bags(class_, bags, condense = FALSE)
   }
   class_ <- factor(class_, levels = seq_along(object$levels), labels = object$levels)
 
-  res <- switch(type,
-                "raw" = tibble::tibble(.pred = as.numeric(scores)),
-                "class" = tibble::tibble(.pred_class = class_))
+  res <- switch(
+    type,
+    "raw" = tibble::tibble(.pred = as.numeric(scores)),
+    "class" = tibble::tibble(.pred_class = class_)
+  )
 
-  # TODO: consider returning the AUC here as an attribute.  Can only do if we have the true bag labels
-  # attr(res, "AUC") <- calculated_auc
   attr(res, "layer") <- layer
   res
 }

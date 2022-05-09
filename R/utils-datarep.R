@@ -95,15 +95,16 @@
   }
 
   dr_cols <- rev(ncol(x) - seq_len(k - 2) + 1)
-  x <- x[, -dr_cols, drop = FALSE]
-  x2 <- x2[, -dr_cols, drop = FALSE]
-  x_kernel <- compute_kernel(x, x2, ...)
+  x_kernel <- compute_kernel(
+    x[, -dr_cols, drop = FALSE],
+    x2[, -dr_cols, drop = FALSE],
+    ...
+  )
 
-  n <- nrow(x_kernel) / (k - 1)
-  h_block <- matrix(rep(h^2, n^2), nrow = n)
-  h_kernel <- Matrix::bdiag(c(
-    rep(0, n),
-    rep(list(h_block), k - 2))
+  h_kernel <- compute_kernel(
+    x[, dr_cols, drop = FALSE],
+    x2[, dr_cols, drop = FALSE],
+    type = "linear"
   )
 
   as.matrix(x_kernel + h_kernel)
