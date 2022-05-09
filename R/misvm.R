@@ -359,18 +359,7 @@ predict.misvm <- function(object,
                                   cor = object$summary_cor)
   }
 
-  if (object$call_type == "misvm.formula") {
-    new_x <- x_from_mi_formula(object$formula, new_data)
-    new_x <- new_x[, object$features, drop = FALSE]
-  } else {
-    new_x <- new_data[, object$features, drop = FALSE]
-  }
-  if ("kfm_fit" %in% names(object)) {
-    new_x <- build_fm(object$kfm_fit, as.matrix(new_x))
-  }
-  if (method == "qp-heuristic" & "x_scale" %in% names(object)) {
-    new_x <- as.data.frame(scale(new_x, center = object$x_scale$center, scale = object$x_scale$scale))
-  }
+  new_x <- .get_new_x(object, new_data)
 
   # kernel
   if (method == "qp-heuristic") {
@@ -398,14 +387,7 @@ predict.misvm <- function(object,
   }
 
   if (layer == "bag") {
-    if (object$call_type == "misvm.formula" & new_bags[1] == "bag_name" & length(new_bags) == 1) {
-      new_bags <- object$bag_name
-    }
-    if (length(new_bags) == 1 & new_bags[1] %in% colnames(new_data)) {
-      bags <- new_data[[new_bags]]
-    } else {
-      bags <- new_bags
-    }
+    bags <- .get_bags(object, new_data, new_bags)
     scores <- classify_bags(scores, bags, condense = FALSE)
     pos <- classify_bags(pos, bags, condense = FALSE)
   }

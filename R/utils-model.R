@@ -248,6 +248,45 @@ x_from_mild_formula <- function(formula, data) {
   x <- as.data.frame(x)
 }
 
+#' Get bags for prediction function
+#'
+#' Used in `misvm()`, `omisvm()`
+#' @inheritParams predict.misvm
+#' @noRd
+.get_bags <- function(object, new_data, new_bags) {
+  if (grepl("formula", object$call_type) & new_bags[1] == "bag_name" & length(new_bags) == 1) {
+    new_bags <- object$bag_name
+  }
+  if (length(new_bags) == 1 & new_bags[1] %in% colnames(new_data)) {
+    bags <- new_data[[new_bags]]
+  } else {
+    bags <- new_bags
+  }
+}
+
+#' Get new_x for prediction function
+#'
+#' Used in `misvm()`, `omisvm()`
+#' @inheritParams predict.misvm
+#' @noRd
+.get_new_x <- function(object, new_data) {
+  method <- attr(object, "method")
+
+  if (grepl("formula", object$call_type)) {
+    new_x <- x_from_mi_formula(object$formula, new_data)
+    new_x <- new_x[, object$features, drop = FALSE]
+  } else {
+    new_x <- new_data[, object$features, drop = FALSE]
+  }
+  if ("kfm_fit" %in% names(object)) {
+    new_x <- build_fm(object$kfm_fit, as.matrix(new_x))
+  }
+  if (method == "qp-heuristic" & "x_scale" %in% names(object)) {
+    new_x <- as.data.frame(scale(new_x, center = object$x_scale$center, scale = object$x_scale$scale))
+  }
+  new_x
+}
+
 #' Initialize Instance Selection
 #'
 #' Use bag_label and instance_name information to initialize the selected
