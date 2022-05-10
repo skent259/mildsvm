@@ -278,7 +278,7 @@ test_that("Ordering of data doesn't change `omisvm()` results", {
   # heuristic
   form <- mi(bag_label, bag_name) ~ V1 + V2 + V3
   mdl1 <- omisvm(form, data = df1, method = "qp-heuristic", weights = NULL)
-  mdl2 <- omisvm(form, data = df1[sample(1:nrow(df1)), ], method = "qp-heuristic", weights = NULL)
+  mdl2 <- omisvm(form, data = df1[sample(seq_len(nrow(df1))), ], method = "qp-heuristic", weights = NULL)
   expect_predictions_equal(mdl1, mdl2, df1)
   expect_predictions_equal(mdl1, mdl2, df1_test)
 

@@ -114,7 +114,7 @@ misvm_orova.formula <- function(formula, data, ...) {
 
   res <- misvm_orova.default(x, y, bags, ...)
 
-  for (i in 1:length(res$fits)) {
+  for (i in seq_along(res$fits)) {
     res$fits[[i]]$call_type <- "misvm.formula"
     res$fits[[i]]$formula <- formula
     res$fits[[i]]$bag_name <- bag_name
@@ -185,7 +185,7 @@ predict.misvm_orova <- function(object,
   colnames(scores_df) <- paste0(".pred_", object$levels)
 
   class_ <- apply(scores_df, 1, which.max)
-  class_ <- factor(class_, levels = 1:length(object$levels), labels = object$levels)
+  class_ <- factor(class_, levels = seq_along(object$levels), labels = object$levels)
 
   res <- switch(type,
                 "raw" = tibble::as_tibble(scores_df),

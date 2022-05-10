@@ -298,7 +298,7 @@ test_that("Ordering of data doesn't change `svor_exc()` results", {
   form <- y ~ V1 + V2 + V3
   suppressMessages({
     mdl1 <- svor_exc(form, data = df1, weights = NULL)
-    mdl2 <- svor_exc(form, data = df1[sample(1:nrow(df1)), ], weights = NULL)
+    mdl2 <- svor_exc(form, data = df1[sample(seq_len(nrow(df1))), ], weights = NULL)
   })
   expect_predictions_equal(mdl1, mdl2, df1)
   expect_predictions_equal(mdl1, mdl2, df1_test)

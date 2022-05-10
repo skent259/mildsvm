@@ -145,7 +145,7 @@ test_that("`mior()` examples work", {
     )
     score <- X %*% c(2, -1, 0)
     y <- as.numeric(cut(score, c(-Inf, quantile(score, probs = 1:2 / 3), Inf)))
-    bags <- 1:length(y)
+    bags <- seq_along(y)
 
     # add in points outside boundaries
     X <- rbind(
