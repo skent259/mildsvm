@@ -86,19 +86,12 @@ Constraints based on the research of Chu and Keerthi (2007).
 }}
 
 \examples{
-# make some data
-set.seed(8)
-n <- 400
-y <- sample(1:5, size = n, prob = (1 / 1:5), replace = TRUE)
-X <- matrix(NA, nrow = length(y), ncol = 5)
-for (y_ in unique(y)) {
-  to_fill <- which(y_ == y)
-  X[to_fill, ] <- mvtnorm::rmvnorm(length(to_fill), mean = c(2*y_, -1*y_, 1*y_, 0, 0))
-}
-colnames(X) <- paste0("V", 1:ncol(X))
+data("ordmvnorm")
+x <- ordmvnorm[, 4:8]
+y <- ordmvnorm$inst_label
 
-mdl1 <- svor_exc(X, y)
-predict(mdl1, X)
+mdl1 <- svor_exc(x, y)
+predict(mdl1, x)
 
 }
 \seealso{

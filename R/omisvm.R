@@ -49,21 +49,13 @@ validate_omisvm <- function(x) {
 #' @seealso [predict.omisvm()] for prediction on new data.
 #'
 #' @examples
-#' set.seed(8)
-#' # make some data
-#' n <- 500
-#' y <- sample(1:5, size = n, prob = (1 / 1:5)^2, replace = TRUE)
-#' bags <- rep(1:(n/5), each = 5)
-#' X <- matrix(NA, nrow = length(y), ncol = 5)
-#' for (y_ in unique(y)) {
-#'   to_fill <- which(y_ == y)
-#'   X[to_fill, ] <- mvtnorm::rmvnorm(length(to_fill), mean = c(2*y_, -1*y_, 1*y_, 0, 0))
-#' }
-#' colnames(X) <- paste0("V", 1:ncol(X))
-#' y <- classify_bags(y, bags, condense = FALSE)
+#' data("ordmvnorm")
+#' x <- ordmvnorm[, 4:8]
+#' y <- ordmvnorm$inst_label
+#' bags <- ordmvnorm$bag_name
 #'
-#' mdl1 <- omisvm(X, y, bags, weights = NULL)
-#' predict(mdl1, X, new_bags = bags)
+#' mdl1 <- omisvm(x, y, bags, weights = NULL)
+#' predict(mdl1, x, new_bags = bags)
 #'
 #' @author Sean Kent
 #' @name omisvm
@@ -208,24 +200,16 @@ omisvm.formula <- function(formula, data, ...) {
 #' @seealso [omisvm()] for fitting the `omisvm` object.
 #'
 #' @examples
-#' set.seed(8)
-#' # make some data
-#' n <- 50
-#' y <- sample(1:5, size = n, prob = (1 / 1:5)^2, replace = TRUE)
-#' bags <- rep(1:(n/5), each = 5)
-#' X <- matrix(NA, nrow = length(y), ncol = 5)
-#' for (y_ in unique(y)) {
-#'   to_fill <- which(y_ == y)
-#'   X[to_fill, ] <- mvtnorm::rmvnorm(length(to_fill), mean = c(2*y_, -1*y_, 1*y_, 0, 0))
-#' }
-#' colnames(X) <- paste0("V", 1:ncol(X))
-#' y <- classify_bags(y, bags, condense = FALSE)
+#' data("ordmvnorm")
+#' x <- ordmvnorm[, 4:8]
+#' y <- ordmvnorm$inst_label
+#' bags <- ordmvnorm$bag_name
 #'
-#' mdl1 <- omisvm(X, y, bags, weights = NULL)
+#' mdl1 <- omisvm(x, y, bags, weights = NULL)
 #'
 #' # summarize predictions at the bag layer
 #' library(dplyr)
-#' df1 <- bind_cols(y = y, bags = bags, as.data.frame(X))
+#' df1 <- bind_cols(y = y, bags = bags, as.data.frame(x))
 #' df1 %>%
 #'   bind_cols(predict(mdl1, df1, new_bags = bags, type = "class")) %>%
 #'   bind_cols(predict(mdl1, df1, new_bags = bags, type = "raw")) %>%

@@ -48,19 +48,12 @@ validate_svor_exc <- function(x) {
 #' @seealso [predict.svor_exc()] for prediction on new data.
 #'
 #' @examples
-#' # make some data
-#' set.seed(8)
-#' n <- 400
-#' y <- sample(1:5, size = n, prob = (1 / 1:5), replace = TRUE)
-#' X <- matrix(NA, nrow = length(y), ncol = 5)
-#' for (y_ in unique(y)) {
-#'   to_fill <- which(y_ == y)
-#'   X[to_fill, ] <- mvtnorm::rmvnorm(length(to_fill), mean = c(2*y_, -1*y_, 1*y_, 0, 0))
-#' }
-#' colnames(X) <- paste0("V", 1:ncol(X))
+#' data("ordmvnorm")
+#' x <- ordmvnorm[, 4:8]
+#' y <- ordmvnorm$inst_label
 #'
-#' mdl1 <- svor_exc(X, y)
-#' predict(mdl1, X)
+#' mdl1 <- svor_exc(x, y)
+#' predict(mdl1, x)
 #'
 #' @author Sean Kent
 #' @name svor_exc
@@ -166,20 +159,13 @@ svor_exc.formula <- function(formula, data, ...) {
 #' @seealso [svor_exc()] for fitting the `svor_exc` object.
 #'
 #' @examples
-#' # make some data
-#' set.seed(8)
-#' n <- 400
-#' y <- sample(1:5, size = n, prob = (1 / 1:5), replace = TRUE)
-#' X <- matrix(NA, nrow = length(y), ncol = 5)
-#' for (y_ in unique(y)) {
-#'   to_fill <- which(y_ == y)
-#'   X[to_fill, ] <- mvtnorm::rmvnorm(length(to_fill), mean = c(2*y_, -1*y_, 1*y_, 0, 0))
-#' }
-#' colnames(X) <- paste0("V", 1:ncol(X))
+#' data("ordmvnorm")
+#' y <- ordmvnorm$inst_label
+#' x <- ordmvnorm[, 4:8]
 #'
-#' mdl1 <- svor_exc(X, y)
-#' predict(mdl1, X)
-#' predict(mdl1, X, type = "raw")
+#' mdl1 <- svor_exc(x, y)
+#' predict(mdl1, x)
+#' predict(mdl1, x, type = "raw")
 #'
 #' @export
 #' @author Sean Kent
@@ -196,6 +182,7 @@ predict.svor_exc <- function(object,
   # new_x
   if (object$call_type == "svor_exc.formula") {
     new_x <- x_from_formula(object$formula, new_data)
+    new_x <- new_x[, object$features, drop = FALSE]
   } else {
     new_x <- new_data[, object$features, drop = FALSE]
   }

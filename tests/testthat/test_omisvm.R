@@ -3,30 +3,11 @@ suppressMessages(suppressWarnings({
   library(tibble)
 }))
 
-# Build a sample data set ------------------------------------------------------
-# - 4 columns where two of them have means related to outcome and the other two are noise
-# - bags are aggregated randomly
-set.seed(8)
-n <- 1000
-y <- sample(1:5, size = n, prob = (1 / 1:5)^2, replace = TRUE)
-bags <- rep(1:(n/5), each = 5)
-
-classify_bags(y, bags) %>% table()
-y <- classify_bags(y, bags, condense = FALSE)
-
-X <- matrix(NA, nrow = length(y), ncol = 5)
-for (y_ in unique(y)) {
-  to_fill <- which(y_ == y)
-  X[to_fill, ] <- mvtnorm::rmvnorm(length(to_fill), mean = c(2*y_, -1*y_, 1*y_, 0, 0))
-}
-colnames(X) <- paste0("V", 1:ncol(X))
-
-# build into data frames
-df <- bind_cols(bag_label = classify_bags(y, bags, condense = FALSE), bag_name = bags, as.data.frame(X)) %>%
-  as_tibble()
-train <- bags %in% 1:100
-df1 <- df[train, ]
-df1_test <- df[!train, ]
+data("ordmvnorm")
+train <- ordmvnorm$bag_name %in% 1:100
+df1 <- ordmvnorm[train, ]
+df1$inst_label <- NULL
+df1_test <- ordmvnorm[!train, ]
 
 # Tests ------------------------------------------------------------------------
 
