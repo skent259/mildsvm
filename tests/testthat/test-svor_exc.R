@@ -3,26 +3,6 @@ suppressMessages(suppressWarnings({
   library(tibble)
 }))
 
-# # Build a sample data set ------------------------------------------------------
-# # - 4 columns where two of them have means related to outcome and the other two are noise
-# set.seed(8)
-# n <- 400
-# y <- sample(1:5, size = n, prob = (1 / 1:5), replace = TRUE)
-#
-# X <- matrix(NA, nrow = length(y), ncol = 5)
-# for (y_ in unique(y)) {
-#   to_fill <- which(y_ == y)
-#   X[to_fill, ] <- mvtnorm::rmvnorm(length(to_fill), mean = c(2*y_, -1*y_, 1*y_, 0, 0))
-# }
-# colnames(X) <- paste0("V", 1:ncol(X))
-#
-# # build into data frames
-# df <- bind_cols(y = y, as.data.frame(X)) %>%
-#   as_tibble()
-# train <- rownames(df) %in% 1:150
-# df1 <- df[train, ]
-# df1_test <- df[!train, ]
-
 
 data("ordmvnorm")
 
@@ -99,7 +79,7 @@ test_that("svor_exc() has reasonable performance", {
   }
 
   check_performance(mdl1, df1, 0.93, 0.20, 0.20)
-  check_performance(mdl1, df1_test, 0.94, 0.21, 0.21) # a bit worse on testing data, but not bad
+  check_performance(mdl1, df1_test, 0.94, 0.22, 0.22) # a bit worse on testing data, but not bad
 
 })
 

@@ -284,6 +284,7 @@ test_that("`misvm()` examples work", {
 })
 
 test_that("`omisvm()` examples work", {
+  set.seed(8)
   expect_snapshot({
     data("ordmvnorm")
     x <- ordmvnorm[, 4:8]

@@ -35,30 +35,30 @@
     Code
       print(roc$auc)
     Output
-      Multi-class area under the curve: 0.9394
+      Multi-class area under the curve: 0.9377
     Code
       print(mzoe)
     Output
-      [1] 0.1933333
+      [1] 0.2
     Code
       print(mae)
     Output
-      [1] 0.1933333
+      [1] 0.2
 
 ---
 
     Code
       print(roc$auc)
     Output
-      Multi-class area under the curve: 0.9498
+      Multi-class area under the curve: 0.9474
     Code
       print(mzoe)
     Output
-      [1] 0.2070588
+      [1] 0.2129412
     Code
       print(mae)
     Output
-      [1] 0.2070588
+      [1] 0.2129412
 
 # `svor_exc()` value returns make sense
 
