@@ -53,23 +53,23 @@
     Code
       print(roc$auc)
     Output
-      Multi-class area under the curve: 0.8788
+      Multi-class area under the curve: 0.8871
     Code
       print(mzoe)
     Output
-      [1] 0.84
+      [1] 0.83
     Code
       print(mae)
     Output
-      [1] 1.01
+      [1] 0.99
     Code
       print(table(bag_resp, bag_pred))
     Output
               bag_pred
       bag_resp  1  2  3
              1 10  0  0
-             2 30  4  0
-             3  3 18  2
+             2 28  6  0
+             3  2 20  1
              4  0  1 19
              5  0  0 13
 
@@ -78,36 +78,11 @@
     Code
       print(roc$auc)
     Output
-      Multi-class area under the curve: 0.8712
+      Multi-class area under the curve: 0.8805
     Code
       print(mzoe)
     Output
-      [1] 0.78
-    Code
-      print(mae)
-    Output
-      [1] 0.92
-    Code
-      print(table(bag_resp, bag_pred))
-    Output
-              bag_pred
-      bag_resp  1  2  3
-             1 14  3  0
-             2 26  5  0
-             3  0 22  3
-             4  0  1 13
-             5  0  0 13
-
----
-
-    Code
-      print(roc$auc)
-    Output
-      Multi-class area under the curve: 0.8948
-    Code
-      print(mzoe)
-    Output
-      [1] 0.78
+      [1] 0.73
     Code
       print(mae)
     Output
@@ -116,37 +91,62 @@
       print(table(bag_resp, bag_pred))
     Output
               bag_pred
-      bag_resp  1  2  3  4
-             1 10  0  0  0
-             2 27  7  0  0
-             3  0 20  3  0
-             4  0  2 16  2
-             5  0  0 10  3
+      bag_resp  1  2  3
+             1 17  0  0
+             2 23  8  0
+             3  3 20  2
+             4  0  1 13
+             5  0  0 13
 
 ---
 
     Code
       print(roc$auc)
     Output
-      Multi-class area under the curve: 0.8812
+      Multi-class area under the curve: 0.7303
     Code
       print(mzoe)
     Output
-      [1] 0.72
+      [1] 0.69
     Code
       print(mae)
     Output
-      [1] 0.8
+      [1] 1.05
     Code
       print(table(bag_resp, bag_pred))
     Output
               bag_pred
-      bag_resp  1  2  3  4
-             1 14  3  0  0
-             2 25  6  0  0
-             3  0 19  6  0
-             4  0  0 12  2
-             5  0  0  8  5
+      bag_resp  1  2  3
+             1  5  5  0
+             2  8 26  0
+             3  0 23  0
+             4  0 18  2
+             5  0  5  8
+
+---
+
+    Code
+      print(roc$auc)
+    Output
+      Multi-class area under the curve: 0.7535
+    Code
+      print(mzoe)
+    Output
+      [1] 0.64
+    Code
+      print(mae)
+    Output
+      [1] 0.89
+    Code
+      print(table(bag_resp, bag_pred))
+    Output
+              bag_pred
+      bag_resp  1  2  3
+             1  8  9  0
+             2  4 27  0
+             3  0 24  1
+             4  0  8  6
+             5  0  4  9
 
 # `omisvm()` value returns make sense
 

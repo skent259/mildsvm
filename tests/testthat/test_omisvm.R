@@ -52,19 +52,19 @@ test_that("omisvm() has reasonable performance", {
 
   # Note: performance drops with radial kernel, and similar for linear kernel
   # using dual (currently not used for this reason)
-  set.seed(9)
-  mdl2 <- omisvm(mi(bag_label, bag_name) ~ ., data = df1[1:250, ], weights = NULL,
+  set.seed(10)
+  mdl2 <- omisvm(mi(bag_label, bag_name) ~ ., data = df1[1:250, ], weights = TRUE,
                  control = list(kernel = "radial"))
   check_performance(mdl2, df1, 0.85, 0.85, 1.05)
   check_performance(mdl2, df1_test, 0.85, 0.80, 0.95)
 
   # With smaller s, slightly worse
-  set.seed(9)
+  set.seed(10)
   mdl3 <- omisvm(mi(bag_label, bag_name) ~ ., data = df1[1:250, ],
                  s = 3,
-                 weights = NULL, control = list(kernel = "radial"))
-  check_performance(mdl3, df1, 0.75, 0.85, 1.05)
-  check_performance(mdl3, df1_test, 0.75, 0.80, 0.95)
+                 weights = TRUE, control = list(kernel = "radial"))
+  check_performance(mdl3, df1, 0.70, 1.1, 1.1)
+  check_performance(mdl3, df1_test, 0.75, 0.7, 1.0)
 
 })
 
@@ -100,13 +100,11 @@ test_that("omisvm() works for data-frame-like inputs", {
   expect_setequal(bag_preds$bag_name, unique(df1$bag_name))
 
   # qp-heuristic, radial kernel
-  expect_warning({
-    mdl2 <- omisvm(x = df1[, paste0("V", 1:5)],
-                   y = df1$bag_label,
-                   bags = df1$bag_name,
-                   method = "qp-heuristic",
-                   control = list(kernel = "radial"))
-  })
+  mdl2 <- omisvm(x = df1[, paste0("V", 1:5)],
+                 y = df1$bag_label,
+                 bags = df1$bag_name,
+                 method = "qp-heuristic",
+                 control = list(kernel = "radial"))
 
   expect_equal(
     predict(mdl2, new_data = df1, type = "class", layer = "bag"),
@@ -138,16 +136,16 @@ test_that("omisvm() works with formula method", {
   expect_equal(predict(mdl1, df1, type = "class"), predict(mdl2, df1, type = "class"))
 
   # qp-heuristic, radial kernel
-  expect_warning(expect_warning({
-    set.seed(8)
-    mdl1 <- omisvm(mi(bag_label, bag_name) ~ V1 + V2 + V3 + V4 + V5, data = df1,
-                   control = list(kernel = "radial"))
-    set.seed(8)
-    mdl2 <- omisvm(x = df1[, paste0("V", 1:5)],
-                   y = df1$bag_label,
-                   bags = df1$bag_name,
-                   control = list(kernel = "radial"))
-  }))
+
+  set.seed(8)
+  mdl1 <- omisvm(mi(bag_label, bag_name) ~ V1 + V2 + V3 + V4 + V5, data = df1,
+                 control = list(kernel = "radial"))
+  set.seed(8)
+  mdl2 <- omisvm(x = df1[, paste0("V", 1:5)],
+                 y = df1$bag_label,
+                 bags = df1$bag_name,
+                 control = list(kernel = "radial"))
+
   expect_equal(predict(mdl1, df1, type = "raw"), predict(mdl2, df1, type = "raw"))
 
   # check only 1 predictor works
@@ -167,6 +165,7 @@ test_that("omisvm() works with formula method", {
 })
 
 test_that("predict.omisvm() returns labels that match the input labels", {
+  set.seed(9)
   test_prediction_levels_equal <- function(df, method,
                                            class = "default",
                                            kernel = "linear") {

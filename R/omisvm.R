@@ -111,10 +111,10 @@ omisvm.default <- function(x, y, bags,
   col_x <- x_info$col_x
   x_scale <- x_info$x_scale
 
-  weights <- .warn_no_weights(weights, "omisvm")
   s <- .warn_omisvm_s(s, k, method, control$kernel)
 
   if (method == "qp-heuristic" & control$kernel == "linear") {
+    weights <- .warn_no_weights(weights, "omisvm")
     res <- omisvm_qpheuristic_fit(y, bags, x,
                                   c = cost,
                                   h = h,
@@ -137,6 +137,8 @@ omisvm.default <- function(x, y, bags,
     kernel <- .convert_kernel(x, control$kernel, sigma = control$sigma)
     kernel <- .kernel_datarep(kernel, k, h)[ind, ind, drop = FALSE]
     x <- .x_datarep(x, k, h)[ind, , drop = FALSE]
+
+    weights <- .set_weights(weights, list(y = y > 0, lev = NULL), bags$.repl)
 
     # Run misvm on replicated data, passing in kernel for faster computation
     res <- misvm_dualqpheuristic_fit(y, bags$.repl, x,

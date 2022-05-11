@@ -180,7 +180,7 @@ convert_y <- function(y) {
     stopifnot(names(w) == lev | names(w) == rev(lev))
     w <- w[lev]
     names(w) <- c("-1", "1")
-  } else if (w) {
+  } else if (isTRUE(w)) {
     bag_labels <- sapply(split(y, factor(bags)), unique)
     w <- c("-1" = sum(bag_labels == 1) / sum(y == 0), "1" = 1)
   } else {
@@ -198,8 +198,14 @@ convert_y <- function(y) {
 
   if (!is.null(w)) {
     w <- NULL
-    msg <- paste0("Weights are not currently implemented for `", fun, "()`.")
-    rlang::warn(msg)
+    if (fun == "omisvm") {
+      msg <- paste0("Weights are not currently implemented for `",
+                    fun, "()` when `kernel == 'linear'`.")
+      rlang::warn(msg)
+    } else {
+      msg <- paste0("Weights are not currently implemented for `", fun, "()`.")
+      rlang::warn(msg)
+    }
   }
   return(w)
 }
