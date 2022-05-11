@@ -46,20 +46,13 @@ When the object was fitted using the \code{formula} method, then the parameter
 the original function call.
 }
 \examples{
-# make some data
-set.seed(8)
-n <- 400
-y <- sample(1:5, size = n, prob = (1 / 1:5), replace = TRUE)
-X <- matrix(NA, nrow = length(y), ncol = 5)
-for (y_ in unique(y)) {
-  to_fill <- which(y_ == y)
-  X[to_fill, ] <- mvtnorm::rmvnorm(length(to_fill), mean = c(2*y_, -1*y_, 1*y_, 0, 0))
-}
-colnames(X) <- paste0("V", 1:ncol(X))
+data("ordmvnorm")
+y <- ordmvnorm$inst_label
+x <- ordmvnorm[, 4:8]
 
-mdl1 <- svor_exc(X, y)
-predict(mdl1, X)
-predict(mdl1, X, type = "raw")
+mdl1 <- svor_exc(x, y)
+predict(mdl1, x)
+predict(mdl1, x, type = "raw")
 
 }
 \seealso{

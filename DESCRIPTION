@@ -1,7 +1,7 @@
 Package: mildsvm
 Type: Package
 Title: Multiple-instance Learning in R
-Version: 0.3.1.9004
+Version: 0.3.1.9006
 Authors@R: 
     c(person("Sean", "Kent",
              email = "skent259@gmail.com",
@@ -38,3 +38,5 @@ Suggests:
 RoxygenNote: 7.1.2
 Roxygen: list(markdown = TRUE)
 Config/testthat/edition: 3
+Depends: 
+    R (>= 2.10)

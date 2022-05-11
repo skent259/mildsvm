@@ -147,10 +147,7 @@ mior.default <- function(x, y, bags,
   col_x <- colnames(x)
 
   # weights
-  if (!is.null(weights)) {
-    weights <- NULL
-    warning("Weights are not currently implemented for `mior()`.")
-  }
+  weights <- .warn_no_weights(weights, "mior")
 
   if (method == "qp-heuristic") {
     res <- mior_dual_fit(y, bags, x,
@@ -310,12 +307,7 @@ predict.mior <- function(object,
 
   class_ <- factor(class_, levels = seq_along(object$levels), labels = object$levels)
 
-  res <- switch(type,
-                "raw" = tibble::tibble(.pred = as.numeric(scores)),
-                "class" = tibble::tibble(.pred_class = class_))
-
-  # TODO: consider returning the AUC here as an attribute.  Can only do if we have the true bag labels
-  # attr(res, "AUC") <- calculated_auc
+  res <- .pred_output(type, scores, class_)
   attr(res, "layer") <- layer
   attr(res, "midpoints") <- midpoints
   return(res)
@@ -349,14 +341,10 @@ mior_dual_fit <- function(y, bags, x, c0, c1, rescale = TRUE, weights = NULL,
   threshold <- 0.1
   # verbose <- FALSE
 
-  # gurobi parameters
-  params <- list()
-  params$OutputFlag = 1*(verbose == 2)
-  params$IntFeasTol = min(1e-5, 1e-5*c0, 1e-5*c1)
-  params$IntFeasTol = max(params$IntFeasTol, 1e-9) # 1e-9 is smallest gurobi will accept
-  params$BarQCPConvTol = 1e-9
-  params$PSDTol = 1e-4
-  if (time_limit) params$TimeLimit = time_limit
+  params <- .gurobi_params(verbose == 2, time_limit)
+  params[["IntFeasTol"]] = min(1e-5, 1e-5*c0, 1e-5*c1)
+  params[["IntFeasTol"]] = max(params[["IntFeasTol"]], 1e-9) # 1e-9 is smallest gurobi will accept
+  params[["BarQCPConvTol"]] = 1e-9
 
   # initialize parameters
   K <- max(y)

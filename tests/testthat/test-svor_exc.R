@@ -3,35 +3,27 @@ suppressMessages(suppressWarnings({
   library(tibble)
 }))
 
-# Build a sample data set ------------------------------------------------------
-# - 4 columns where two of them have means related to outcome and the other two are noise
-set.seed(8)
-n <- 400
-y <- sample(1:5, size = n, prob = (1 / 1:5), replace = TRUE)
 
-X <- matrix(NA, nrow = length(y), ncol = 5)
-for (y_ in unique(y)) {
-  to_fill <- which(y_ == y)
-  X[to_fill, ] <- mvtnorm::rmvnorm(length(to_fill), mean = c(2*y_, -1*y_, 1*y_, 0, 0))
-}
-colnames(X) <- paste0("V", 1:ncol(X))
+data("ordmvnorm")
 
-# build into data frames
-df <- bind_cols(y = y, as.data.frame(X)) %>%
-  as_tibble()
-train <- rownames(df) %in% 1:150
-df1 <- df[train, ]
-df1_test <- df[!train, ]
+train <- ordmvnorm$bag_name %in% 1:30
+df1 <- ordmvnorm[train, ]
+df1$bag_label <- df1$bag_name <- NULL
+colnames(df1)[1] <- "y"
+
+df1_test <- ordmvnorm[!train, ]
+colnames(df1_test)[3] <- "y"
 
 # Tests ------------------------------------------------------------------------
 
 test_that("svor_exc() internal functions work on simple examples", {
+  y <- df1$y
+  x <- as.matrix(df1[, 2:6])
 
-
-  res <- svor_exc_fit(y, X, c = 1, rescale = FALSE) %>%
+  res <- svor_exc_fit(y, x, c = 1, rescale = FALSE) %>%
     suppressMessages()
 
-  f <- .calculate_f(res$smo_fit$alpha, compute_kernel(X, type = "linear"))
+  f <- .calculate_f(res$smo_fit$alpha, compute_kernel(x, type = "linear"))
 
   # ggplot2::qplot(f, y) +
   #   ggplot2::geom_vline(xintercept = res$smo_fit$b, linetype = "dotted")
@@ -86,14 +78,14 @@ test_that("svor_exc() has reasonable performance", {
     })
   }
 
-  check_performance(mdl1, df1, 0.95, 0.18, 0.18)
-  check_performance(mdl1, df1_test, 0.94, 0.19, 0.19) # a bit worse on testing data, but not bad
+  check_performance(mdl1, df1, 0.93, 0.20, 0.20)
+  check_performance(mdl1, df1_test, 0.94, 0.22, 0.22) # a bit worse on testing data, but not bad
 
 })
 
 test_that("svor_exc() works for data-frame-like inputs", {
 
-  mdl2 <- svor_exc(x = X, y = y) %>%
+  mdl2 <- svor_exc(x = df1[, paste0("V", 1:5)], y = df1$y) %>%
     suppressMessages()
 
   predict(mdl2, new_data = df1, type = "class")
@@ -178,8 +170,10 @@ test_that("predict.svor_exc() returns labels that match the input labels", {
 test_that("Dots work in svor_exc() formula", {
   df2 <- df1 %>% select(y, V1, V2, V3)
 
-  misvm_dot <- svor_exc(y ~ ., data = df2)
-  misvm_nodot <- svor_exc(y ~ V1 + V2 + V3, data = df2)
+  suppressMessages({
+    misvm_dot <- svor_exc(y ~ ., data = df2)
+    misvm_nodot <- svor_exc(y ~ V1 + V2 + V3, data = df2)
+  })
 
   expect_equal(misvm_dot$model, misvm_nodot$model)
   expect_equal(misvm_dot$features, misvm_nodot$features)
@@ -257,7 +251,7 @@ test_that("`svor_exc()` value returns make sense", {
 test_that("`svor_exc() works with bag input", {
   mdl1 <- svor_exc(x = df1[, 2:6], y = df1$y, weights = NULL) %>%
     suppressMessages()
-  bags_test <- rep(1:50, each = 5)
+  bags_test <- df1_test$bag_name
 
   pred_inst <- predict(mdl1, new_data = df1_test, type = "raw")
   pred_bag <- predict(mdl1, new_data = df1_test, new_bags = bags_test,
@@ -282,8 +276,10 @@ test_that("Ordering of data doesn't change `svor_exc()` results", {
   }
 
   form <- y ~ V1 + V2 + V3
-  mdl1 <- svor_exc(form, data = df1, weights = NULL)
-  mdl2 <- svor_exc(form, data = df1[sample(1:nrow(df1)), ], weights = NULL)
+  suppressMessages({
+    mdl1 <- svor_exc(form, data = df1, weights = NULL)
+    mdl2 <- svor_exc(form, data = df1[sample(seq_len(nrow(df1))), ], weights = NULL)
+  })
   expect_predictions_equal(mdl1, mdl2, df1)
   expect_predictions_equal(mdl1, mdl2, df1_test)
 

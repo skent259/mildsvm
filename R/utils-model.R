@@ -1,3 +1,44 @@
+#' Set default values in a list, when not present
+#' @param x A list to modify.
+#' @param args A list or vector of named arguments for defaults
+#' @noRd
+.set_default <- function(x, args) {
+  for (i in seq_along(args)) {
+    nm <- names(args[i])
+    if (nm %ni% names(x)) {
+      x[nm] <- args[i]
+    }
+  }
+  return(x)
+}
+
+#' Reset 'scale' value in control list
+#' @inheritParams .set_default
+#' @noRd
+.set_scale <- function(x) {
+  if ("scale" %ni% names(x) && inherits(x$kernel, "matrix")) {
+    # if kernel matrix is passed in, then really no re-scaling was done.
+    x$scale <- FALSE
+  } else if ("scale" %ni% names(x)) {
+    x$scale <- TRUE
+  }
+  return(x)
+}
+
+#' Reset 'start' value in control list
+#' @inheritParams .set_default
+#' @noRd
+.set_start <- function(x) {
+  if (x$start && x$kernel != "linear") {
+    x$start <- FALSE
+    rlang::inform(c(
+      "Warm start is not available when `kernel` is not equal to 'linear'.",
+      i = "Setting `start` = FALSE. "
+    ))
+  }
+  return(x)
+}
+
 #' Store the levels of y and convert to 0,1 numeric format.
 #' @inheritParams .reorder
 #' @noRd
@@ -35,6 +76,168 @@ convert_y <- function(y) {
   }
   y <- as.numeric(y)
   list(y = y, lev = lev)
+}
+
+
+#' Check columns of x for NaN and no variance
+#'
+#' This function will return x after checking for columns with NaN values and
+#' columns with no variance. Both types will provide warnings about which columns are
+#' being removed.
+#' @inheritParams misvm
+#' @noRd
+.check_x_columns <- function(x) {
+  # store colnames of x
+  x <- as.data.frame(x)
+  col_x <- colnames(x)
+
+  # remove NaN columns and columns with no variance
+  nan_columns <- vapply(x, function(.x) any(is.nan(.x)), FUN.VALUE = logical(1))
+  if (any(nan_columns)) {
+    rlang::warn(c(
+      "Cannot use columns with NaN values.",
+      x = paste("Removing columns", paste0(names(which(nan_columns)), collapse = ", "))
+    ))
+  }
+  ident_columns <- vapply(x, function(.x) all(.x == .x[1]), FUN.VALUE = logical(1))
+  if (any(ident_columns, na.rm = TRUE)) {
+    rlang::warn(c(
+      "Cannot use columns that have the same value for all rows.",
+      x = paste("Removing columns", paste0(names(which(ident_columns)), collapse = ", "))
+    ))
+  }
+  col_x <- setdiff(col_x, names(which(nan_columns)))
+  col_x <- setdiff(col_x, names(which(ident_columns)))
+  x <- x[, col_x, drop = FALSE]
+  x <- as.matrix(x)
+  return(x)
+}
+
+#' Process x
+#'
+#' Check columns of x for NaN and no variance, then optionally scale
+#' @inheritParams misvm
+#' @param scale A logical for whether to rescale the input before fitting
+#'   (default `FALSE`).
+#' @noRd
+.convert_x <- function(x, scale = FALSE) {
+  x <- .check_x_columns(x)
+
+  if (scale) {
+    x <- scale(x)
+    x_scale <- list(
+      "center" = attr(x, "scaled:center"),
+      "scale" = attr(x, "scaled:scale")
+    )
+  } else {
+    x_scale <- NULL
+  }
+
+  list(x = x, col_x = colnames(x), x_scale = x_scale)
+}
+
+#' Convert kernel argument to matrix
+#'
+#' @param x A data.frame of covariates.
+#' @param k The kernel argument. Either a character that describes the kernel
+#'   (`'linear'` or `'radial'`) or a kernel matrix at the instance level.
+#' @param ... Additional arguments passed to `compute_kernel()`, such as
+#'   `sigma`.
+#' @noRd
+.convert_kernel <- function(x, kernel, ...) {
+  if (!is.matrix(kernel)) {
+    compute_kernel(x, type = kernel, ...)
+  } else {
+    kernel
+  }
+}
+
+#' Calculate weights
+#'
+#' These weights control the importance of the cost parameter in SVM on errors
+#' within different `y` values by multiplying against it.  Calculation depends
+#' on what is passed to `w`:
+#' - `TRUE`: weights are calculated based on inverse counts of instances within
+#'   a given label, where we only count one positive instance per bag.  This
+#'   reflects an inverse weighting on the counts of `y` used in training.
+#' - A named vector: the weights of the vector are used, provided they match the
+#'   levels of `y`. If names don't match, an error is thrown.
+#' - `FALSE` or `NULL`: weights not used, returned as `NULL`.
+#'
+#' @param w A named vector, or `TRUE`, to control the weight of the cost
+#'   parameter for each possible y value.  Weights multiply against the cost
+#'   vector. If `TRUE`, weights are calculated based on inverse counts of
+#'   instances with given label, where we only count one positive instance per
+#'   bag. Otherwise, names must match the levels of `y`.
+#' @param y Output from `.convert_y()`
+#' @inheritParams misvm
+#' @noRd
+.set_weights <- function(w, y, bags) {
+  lev <- y$lev
+  y <- y$y
+
+  if (is.numeric(w)) {
+    stopifnot(names(w) == lev | names(w) == rev(lev))
+    w <- w[lev]
+    names(w) <- c("-1", "1")
+  } else if (isTRUE(w)) {
+    bag_labels <- sapply(split(y, factor(bags)), unique)
+    w <- c("-1" = sum(bag_labels == 1) / sum(y == 0), "1" = 1)
+  } else {
+    w <- NULL
+  }
+  return(w)
+}
+
+#' Warn about no weights
+#' @inheritParams .set_weights
+#' @param fun The function name to use in the warning message
+#' @noRd
+.warn_no_weights <- function(w, fun = "omisvm") {
+  fun <- match.arg(fun, c("mior", "omisvm", "svor_exc"))
+
+  if (!is.null(w)) {
+    w <- NULL
+    if (fun == "omisvm") {
+      msg <- paste0("Weights are not currently implemented for `",
+                    fun, "()` when `kernel == 'linear'`.")
+      rlang::warn(msg)
+    } else {
+      msg <- paste0("Weights are not currently implemented for `", fun, "()`.")
+      rlang::warn(msg)
+    }
+  }
+  return(w)
+}
+
+#' Warn about argument `s` in `omisvm()`
+#' @inheritParams omisvm
+#' @param k An integer for the number of levels in the outcome
+#' @param kernel Taken from `control$kernel` in `omisvm()`
+#' @noRd
+.warn_omisvm_s <- function(s, k, method, kernel) {
+  if (method == "qp-heuristic" & kernel == "linear" & s != Inf) {
+    rlang::warn(
+      "The argument `s` is not currently used for `kernel == 'linear'`."
+    )
+  }
+
+  if (s == Inf) {
+    s <- k-1 # all points replicated
+  } else if (s < 1) {
+    s <- 1
+    rlang::warn(c(
+      "The value of `s` must not be smaller than 1.",
+      i = "Setting `s <- 1` for a minimal number of replicated points."
+    ))
+  } else if (s > k-1) {
+    s <- k-1
+    rlang::warn(c(
+      "The value of `s` must not be larger than the number of levels in `y` minus 1.",
+      i = "Setting `s <- k-1` for a maximal number of replicated points"
+    ))
+  }
+  return(s)
 }
 
 #' Calculate x-matrix from a standard formula
@@ -79,6 +282,73 @@ x_from_mild_formula <- function(formula, data) {
   x <- stats::model.matrix(formula[-2], data = data[, predictors, drop = FALSE])
   if (attr(stats::terms(formula, data = data), "intercept") == 1) x <- x[, -1, drop = FALSE]
   x <- as.data.frame(x)
+}
+
+#' Get bags for prediction function
+#'
+#' Used in `misvm()`, `omisvm()`
+#' @inheritParams predict.misvm
+#' @noRd
+.get_bags <- function(object, new_data, new_bags) {
+  if (grepl("formula", object$call_type) & new_bags[1] == "bag_name" & length(new_bags) == 1) {
+    new_bags <- object$bag_name
+  }
+  if (length(new_bags) == 1 & new_bags[1] %in% colnames(new_data)) {
+    bags <- new_data[[new_bags]]
+  } else {
+    bags <- new_bags
+  }
+}
+
+#' Get new_x for prediction function
+#'
+#' Used in `misvm()`, `omisvm()`
+#' @inheritParams predict.misvm
+#' @noRd
+.get_new_x <- function(object, new_data) {
+  method <- attr(object, "method")
+
+  if (grepl("formula", object$call_type)) {
+    new_x <- x_from_mi_formula(object$formula, new_data)
+    new_x <- new_x[, object$features, drop = FALSE]
+  } else {
+    new_x <- new_data[, object$features, drop = FALSE]
+  }
+  if ("kfm_fit" %in% names(object)) {
+    new_x <- build_fm(object$kfm_fit, as.matrix(new_x))
+  }
+  if (method == "qp-heuristic" & "x_scale" %in% names(object)) {
+    new_x <- as.data.frame(scale(new_x, center = object$x_scale$center, scale = object$x_scale$scale))
+  }
+  new_x
+}
+
+#' Return prediction output
+#' @inheritParams predict.misvm
+#' @param scores A vector of raw output scores
+#' @param class_ A vector of class labels
+#' @noRd
+.pred_output <- function(type, scores, class_) {
+  switch(
+    type,
+    "raw" = tibble::tibble(.pred = as.numeric(scores)),
+    "class" = tibble::tibble(.pred_class = class_)
+  )
+}
+
+#' Default gurobi parameters
+#' @inheritParams misvm_mip_fit
+#' @noRd
+.gurobi_params <- function(verbose, time_limit) {
+  params <- list()
+  params[["OutputFlag"]] = 1*verbose
+  params[["IntFeasTol"]] = 1e-5
+  params[["PSDTol"]] <- 1e-4
+  if (time_limit) {
+    params[["TimeLimit"]] = time_limit
+  }
+
+  params
 }
 
 #' Initialize Instance Selection

@@ -4,12 +4,12 @@
       table(y, y_pred)
     Output
          y_pred
-      y     1   2   3   4   5
-        1 168   7   3   0   0
-        2  33  22  28   0   0
-        3   3   8  38   8   1
-        4   0   0  15   7  13
-        5   0   0   2   7  37
+      y    1  2  3  5
+        1 11  4  0  0
+        2  9 28  3  0
+        3  0  6 34  0
+        4  0  0 15 20
+        5  0  0  0 20
     Code
       pROC::multiclass.roc(response = y, predictor = f) %>% suppressMessages()
     Output
@@ -18,47 +18,47 @@
       multiclass.roc.default(response = y, predictor = f)
       
       Data: f with 5 levels of y: 1, 2, 3, 4, 5.
-      Multi-class area under the curve: 0.9323
+      Multi-class area under the curve: 0.9671
     Code
       mzoe <- mean(y != y_pred)
       mae <- mean(y - y_pred)
       mzoe
     Output
-      [1] 0.32
+      [1] 0.38
     Code
       mae
     Output
-      [1] 0.0225
+      [1] 0.02
 
 # svor_exc() has reasonable performance
 
     Code
       print(roc$auc)
     Output
-      Multi-class area under the curve: 0.958
+      Multi-class area under the curve: 0.9377
     Code
       print(mzoe)
     Output
-      [1] 0.14
+      [1] 0.2
     Code
       print(mae)
     Output
-      [1] 0.14
+      [1] 0.2
 
 ---
 
     Code
       print(roc$auc)
     Output
-      Multi-class area under the curve: 0.9527
+      Multi-class area under the curve: 0.9474
     Code
       print(mzoe)
     Output
-      [1] 0.156
+      [1] 0.2129412
     Code
       print(mae)
     Output
-      [1] 0.156
+      [1] 0.2129412
 
 # `svor_exc()` value returns make sense
 

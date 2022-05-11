@@ -1,40 +1,3 @@
-# omisvm() internal functions work on simple examples
-
-    Code
-      pROC::multiclass.roc(response = classify_bags(y, bags), predictor = classify_bags(
-        f, bags)) %>% suppressMessages()
-    Output
-      
-      Call:
-      multiclass.roc.default(response = classify_bags(y, bags), predictor = classify_bags(f,     bags))
-      
-      Data: classify_bags(f, bags) with 5 levels of classify_bags(y, bags): 1, 2, 3, 4, 5.
-      Multi-class area under the curve: 0.9982
-    Code
-      mzoe <- mean(classify_bags(y, bags) != classify_bags(y_pred, bags))
-      mae <- mean(abs(classify_bags(y, bags) - classify_bags(y_pred, bags)))
-      mzoe
-    Output
-      [1] 0.06
-    Code
-      mae
-    Output
-      [1] 0.06
-    Code
-      outer(as.vector(f), res$gurobi_fit$b, `+`)[1:10, ]
-    Output
-                  [,1]      [,2]       [,3]      [,4]
-       [1,] -0.1757371 -2.453356 -4.8078936 -6.979969
-       [2,] -1.0602319 -3.337851 -5.6923884 -7.864464
-       [3,]  0.6259899 -1.651629 -4.0061666 -6.178242
-       [4,]  0.8622232 -1.415396 -3.7699333 -5.942009
-       [5,]  0.9196849 -1.357934 -3.7124716 -5.884547
-       [6,]  4.2715276  1.993909 -0.3606289 -2.532705
-       [7,]  4.3343577  2.056739 -0.2977988 -2.469875
-       [8,]  4.1057509  1.828132 -0.5264056 -2.698481
-       [9,]  5.6321565  3.354538  1.0000000 -1.172076
-      [10,]  4.2658762  1.988257 -0.3662803 -2.538356
-
 # omisvm() has reasonable performance
 
     Code
@@ -49,6 +12,16 @@
       print(mae)
     Output
       [1] 0.06
+    Code
+      print(table(bag_resp, bag_pred))
+    Output
+              bag_pred
+      bag_resp  1  2  3  4  5
+             1  9  1  0  0  0
+             2  1 33  0  0  0
+             3  0  0 22  1  0
+             4  0  0  0 18  2
+             5  0  0  0  1 12
 
 ---
 
@@ -64,6 +37,116 @@
       print(mae)
     Output
       [1] 0.05
+    Code
+      print(table(bag_resp, bag_pred))
+    Output
+              bag_pred
+      bag_resp  1  2  3  4  5
+             1 16  1  0  0  0
+             2  0 31  0  0  0
+             3  0  0 23  2  0
+             4  0  0  0 13  1
+             5  0  0  0  1 12
+
+---
+
+    Code
+      print(roc$auc)
+    Output
+      Multi-class area under the curve: 0.8871
+    Code
+      print(mzoe)
+    Output
+      [1] 0.83
+    Code
+      print(mae)
+    Output
+      [1] 0.99
+    Code
+      print(table(bag_resp, bag_pred))
+    Output
+              bag_pred
+      bag_resp  1  2  3
+             1 10  0  0
+             2 28  6  0
+             3  2 20  1
+             4  0  1 19
+             5  0  0 13
+
+---
+
+    Code
+      print(roc$auc)
+    Output
+      Multi-class area under the curve: 0.8805
+    Code
+      print(mzoe)
+    Output
+      [1] 0.73
+    Code
+      print(mae)
+    Output
+      [1] 0.9
+    Code
+      print(table(bag_resp, bag_pred))
+    Output
+              bag_pred
+      bag_resp  1  2  3
+             1 17  0  0
+             2 23  8  0
+             3  3 20  2
+             4  0  1 13
+             5  0  0 13
+
+---
+
+    Code
+      print(roc$auc)
+    Output
+      Multi-class area under the curve: 0.7303
+    Code
+      print(mzoe)
+    Output
+      [1] 0.69
+    Code
+      print(mae)
+    Output
+      [1] 1.05
+    Code
+      print(table(bag_resp, bag_pred))
+    Output
+              bag_pred
+      bag_resp  1  2  3
+             1  5  5  0
+             2  8 26  0
+             3  0 23  0
+             4  0 18  2
+             5  0  5  8
+
+---
+
+    Code
+      print(roc$auc)
+    Output
+      Multi-class area under the curve: 0.7535
+    Code
+      print(mzoe)
+    Output
+      [1] 0.64
+    Code
+      print(mae)
+    Output
+      [1] 0.89
+    Code
+      print(table(bag_resp, bag_pred))
+    Output
+              bag_pred
+      bag_resp  1  2  3
+             1  8  9  0
+             2  4 27  0
+             3  0 24  1
+             4  0  8  6
+             5  0  4  9
 
 # `omisvm()` value returns make sense
 
@@ -100,5 +183,18 @@
       Setting levels: control = 1, case = 2
       Setting direction: controls < cases
     Output
-      Area under the curve: 1
+      Area under the curve: 0.9938
+
+---
+
+    Code
+      with(df1_test, suppressWarnings({
+        pred <- predict(mdl2, df1_test, type = "raw")$.pred
+        pROC::auc(classify_bags(bag_label, bag_name), classify_bags(pred, bag_name))
+      }))
+    Message <simpleMessage>
+      Setting levels: control = 1, case = 2
+      Setting direction: controls > cases
+    Output
+      Area under the curve: 0.8215
 

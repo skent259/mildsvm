@@ -3,64 +3,17 @@ suppressMessages(suppressWarnings({
   library(tibble)
 }))
 
-# Build a sample data set ------------------------------------------------------
-# - 4 columns where two of them have means related to outcome and the other two are noise
-# - bags are aggregated randomly
+data("ordmvnorm")
+train <- ordmvnorm$bag_name %in% 1:100
+df1 <- ordmvnorm[train, ]
+df1$inst_label <- NULL
+df1_test <- ordmvnorm[!train, ]
+
 set.seed(8)
-n <- 1000
-y <- sample(1:5, size = n, prob = (1 / 1:5)^2, replace = TRUE)
-bags <- rep(1:(n/5), each = 5)
-
-classify_bags(y, bags) %>% table()
-y <- classify_bags(y, bags, condense = FALSE)
-
-X <- matrix(NA, nrow = length(y), ncol = 5)
-for (y_ in unique(y)) {
-  to_fill <- which(y_ == y)
-  X[to_fill, ] <- mvtnorm::rmvnorm(length(to_fill), mean = c(2*y_, -1*y_, 1*y_, 0, 0))
-}
-colnames(X) <- paste0("V", 1:ncol(X))
-
-# build into data frames
-df <- bind_cols(bag_label = classify_bags(y, bags, condense = FALSE), bag_name = bags, as.data.frame(X)) %>%
-  as_tibble()
-train <- bags %in% 1:100
-df1 <- df[train, ]
-df1_test <- df[!train, ]
 
 # Tests ------------------------------------------------------------------------
 
-test_that("omisvm() internal functions work on simple examples", {
-
-  res <- omisvm_qpheuristic_fit(y, bags, X, c = 1, h = 1)
-
-  f <- as.matrix(X) %*% res$gurobi_fit$w # + b_
-
-  # ggplot2::qplot(f, y) +
-  #   ggplot2::geom_vline(xintercept = -res$gurobi_fit$b, linetype = "dotted")
-  # ggplot2::qplot(classify_bags(f, bags), classify_bags(y, bags)) +
-  #   ggplot2::geom_vline(xintercept = -res$gurobi_fit$b, linetype = "dotted")
-
-  tmp <- outer(as.vector(f), res$gurobi_fit$b, `+`)
-  y_pred <- rowSums(tmp > 0) + 1
-
-  expect_snapshot({
-    # evaluation measures
-    pROC::multiclass.roc(response = classify_bags(y, bags),
-                         predictor = classify_bags(f, bags)) %>%
-      suppressMessages()
-    mzoe <- mean(classify_bags(y, bags) != classify_bags(y_pred, bags))
-    mae <- mean(abs(classify_bags(y, bags) - classify_bags(y_pred, bags)))
-
-    mzoe; mae
-    outer(as.vector(f), res$gurobi_fit$b, `+`)[1:10, ]
-  })
-  expect_true(TRUE)
-})
-
 test_that("omisvm() has reasonable performance", {
-
-  mdl1 <- omisvm(mi(bag_label, bag_name) ~ ., data = df1, weights = NULL)
 
   check_performance <- function(model, df, roc_cutoff, mzoe_cutoff, mae_cutoff) {
     preds <- predict(model, new_data = df)
@@ -88,21 +41,46 @@ test_that("omisvm() has reasonable performance", {
       print(roc$auc)
       print(mzoe)
       print(mae)
+      print(table(bag_resp, bag_pred))
     })
   }
 
+  set.seed(9)
+  mdl1 <- omisvm(mi(bag_label, bag_name) ~ ., data = df1, weights = NULL)
   check_performance(mdl1, df1, 0.95, 0.2, 0.2)
-  check_performance(mdl1, df1_test, 0.93, 0.3, 0.3) # a bit worse on testing data, but not bad
+  check_performance(mdl1, df1_test, 0.93, 0.3, 0.3)
+
+  # Note: performance drops with radial kernel, and similar for linear kernel
+  # using dual (currently not used for this reason)
+  set.seed(10)
+  mdl2 <- omisvm(mi(bag_label, bag_name) ~ ., data = df1[1:250, ], weights = TRUE,
+                 control = list(kernel = "radial"))
+  check_performance(mdl2, df1, 0.85, 0.85, 1.05)
+  check_performance(mdl2, df1_test, 0.85, 0.80, 0.95)
+
+  # With smaller s, slightly worse
+  set.seed(10)
+  mdl3 <- omisvm(mi(bag_label, bag_name) ~ ., data = df1[1:250, ],
+                 s = 3,
+                 weights = TRUE, control = list(kernel = "radial"))
+  check_performance(mdl3, df1, 0.70, 1.1, 1.1)
+  check_performance(mdl3, df1_test, 0.75, 0.7, 1.0)
 
 })
+
+# make data smaller for fast testing
+train <- ordmvnorm$bag_name %in% 1:20
+df1 <- ordmvnorm[train, ]
+df1$inst_label <- NULL
+df1_test <- ordmvnorm[!train, ]
 
 test_that("omisvm() works for data-frame-like inputs", {
 
   # qp-heuristic method
   expect_warning({
-    mdl2 <- omisvm(x = X,
-                   y = y,
-                   bags = bags,
+    mdl2 <- omisvm(x = df1[, paste0("V", 1:5)],
+                   y = df1$bag_label,
+                   bags = df1$bag_name,
                    method = "qp-heuristic")
   })
 
@@ -110,11 +88,6 @@ test_that("omisvm() works for data-frame-like inputs", {
     predict(mdl2, new_data = df1, type = "class", layer = "bag"),
     predict(mdl2, new_data = df1, type = "class", layer = "bag", new_bags = df1$bag_name)
   )
-
-  predict(mdl2, new_data = df1, type = "class", layer = "bag")
-  predict(mdl2, new_data = df1, type = "class", layer = "instance")
-  predict(mdl2, new_data = df1, type = "raw", layer = "bag")
-  predict(mdl2, new_data = df1, type = "raw", layer = "instance")
 
   bag_preds <-
     df1 %>%
@@ -126,11 +99,27 @@ test_that("omisvm() works for data-frame-like inputs", {
   expect_equal(nrow(bag_preds), length(unique(df1$bag_name)))
   expect_setequal(bag_preds$bag_name, unique(df1$bag_name))
 
+  # qp-heuristic, radial kernel
+  mdl2 <- omisvm(x = df1[, paste0("V", 1:5)],
+                 y = df1$bag_label,
+                 bags = df1$bag_name,
+                 method = "qp-heuristic",
+                 control = list(kernel = "radial"))
+
+  expect_equal(
+    predict(mdl2, new_data = df1, type = "class", layer = "bag"),
+    predict(mdl2, new_data = df1, type = "class", layer = "bag", new_bags = df1$bag_name)
+  )
+
+
 })
 
 test_that("omisvm() works with formula method", {
+  # qp-heuristic
   expect_warning(expect_warning({
+    set.seed(8)
     mdl1 <- omisvm(mi(bag_label, bag_name) ~ V1 + V2 + V3 + V4 + V5, data = df1)
+    set.seed(8)
     mdl2 <- omisvm(x = df1[, paste0("V", 1:5)],
                    y = df1$bag_label,
                    bags = df1$bag_name)
@@ -145,8 +134,19 @@ test_that("omisvm() works with formula method", {
   # predictions should match
   expect_equal(predict(mdl1, df1, type = "raw"), predict(mdl2, df1, type = "raw"))
   expect_equal(predict(mdl1, df1, type = "class"), predict(mdl2, df1, type = "class"))
-  predict(mdl1, df1, type = "raw")
-  predict(mdl1, df1, type = "class")
+
+  # qp-heuristic, radial kernel
+
+  set.seed(8)
+  mdl1 <- omisvm(mi(bag_label, bag_name) ~ V1 + V2 + V3 + V4 + V5, data = df1,
+                 control = list(kernel = "radial"))
+  set.seed(8)
+  mdl2 <- omisvm(x = df1[, paste0("V", 1:5)],
+                 y = df1$bag_label,
+                 bags = df1$bag_name,
+                 control = list(kernel = "radial"))
+
+  expect_equal(predict(mdl1, df1, type = "raw"), predict(mdl2, df1, type = "raw"))
 
   # check only 1 predictor works
   expect_warning({
@@ -165,16 +165,21 @@ test_that("omisvm() works with formula method", {
 })
 
 test_that("predict.omisvm() returns labels that match the input labels", {
-  test_prediction_levels_equal <- function(df, method, class = "default") {
-    expect_warning({
+  set.seed(9)
+  test_prediction_levels_equal <- function(df, method,
+                                           class = "default",
+                                           kernel = "linear") {
+    suppressWarnings({
       mdl <- switch(class,
                     "default" = omisvm(x = df[, 3:7],
                                        y = df$bag_label,
                                        bags = df$bag_name,
-                                       method = method),
+                                       method = method,
+                                       control = list(kernel = kernel)),
                     "formula" = omisvm(mi(bag_label, bag_name) ~ V1 + V2 + V3,
                                        data = df,
-                                       method = method))
+                                       method = method,
+                                       control = list(kernel = kernel)))
     })
     preds <- predict(mdl, df, type = "class")
     expect_setequal(levels(preds$.pred_class), levels(df$bag_label))
@@ -183,9 +188,10 @@ test_that("predict.omisvm() returns labels that match the input labels", {
   # 1:5
   df2 <- df1 %>% mutate(bag_label = factor(bag_label))
   test_prediction_levels_equal(df2, method = "qp-heuristic")
+  test_prediction_levels_equal(df2, method = "qp-heuristic", kernel = "radial")
   test_prediction_levels_equal(df2, method = "qp-heuristic", class = "formula")
 
-  # 1/0
+  # 1 0
   df2 <- df1 %>% mutate(bag_label = factor(bag_label, levels = 5:1))
   expect_message(test_prediction_levels_equal(df2, method = "qp-heuristic"))
   expect_message(test_prediction_levels_equal(df2, method = "qp-heuristic", class = "formula"))
@@ -193,6 +199,7 @@ test_that("predict.omisvm() returns labels that match the input labels", {
   # Characters
   df2 <- df1 %>% mutate(bag_label = factor(bag_label, labels = c("A", "B", "C", "D", "E")))
   expect_message(test_prediction_levels_equal(df2, method = "qp-heuristic"))
+  expect_message(test_prediction_levels_equal(df2, method = "qp-heuristic", kernel = "radial"))
   expect_message(test_prediction_levels_equal(df2, method = "qp-heuristic", class = "formula"))
 
   # check re-naming of factors returns the same predictions
@@ -212,10 +219,12 @@ test_that("predict.omisvm() returns labels that match the input labels", {
 test_that("Dots work in omisvm() formula", {
   df2 <- df1 %>% select(bag_label, bag_name, V1, V2, V3)
 
-  expect_warning(expect_warning({
+  suppressWarnings({
+    set.seed(8)
     misvm_dot <- omisvm(mi(bag_label, bag_name) ~ ., data = df2)
+    set.seed(8)
     misvm_nodot <- omisvm(mi(bag_label, bag_name) ~ V1 + V2 + V3, data = df2)
-  }))
+  })
 
   expect_equal(misvm_dot$model, misvm_nodot$model)
   expect_equal(misvm_dot$features, misvm_nodot$features)
@@ -229,42 +238,21 @@ test_that("omisvm() has correct argument handling", {
   # `weights`
   expect_warning(omisvm(mi(bag_label, bag_name) ~ ., data = df1, weights = TRUE))
   omisvm(mi(bag_label, bag_name) ~ ., data = df1, weights = NULL)
-  # omisvm(mi(bag_label, bag_name) ~ ., data = df1, weights = TRUE)
-  # mdl1 <- omisvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 1, "1" = 1))
-  # mdl1$weights <- NULL
-  # mdl2 <- omisvm(mi(bag_label, bag_name) ~ ., data = df1, weights = FALSE)
-  # expect_equal(mdl1, mdl2)
-  #
-  # df2 <- df1 %>% mutate(bag_label = factor(bag_label, levels = c(1, 0)))
-  # dimnames(df2) <- dimnames(df1)
-  # expect_equal(
-  #   omisvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 2, "1" = 1)),
-  #   omisvm(mi(bag_label, bag_name) ~ ., data = df2, weights = c("0" = 2, "1" = 1))
-  # )
-  #
-  # df2 <- df1 %>% mutate(bag_label = factor(bag_label, labels = c("No", "Yes")))
-  # dimnames(df2) <- dimnames(df1)
-  # expect_equal(
-  #   omisvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 2, "1" = 1))$svm_fit,
-  #   omisvm(mi(bag_label, bag_name) ~ ., data = df2, weights = c("No" = 2, "Yes" = 1))$svm_fit
-  # )
-  #
-  # expect_false(isTRUE(all.equal(
-  #   omisvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 2, "1" = 1), method = "qp-heuristic")$gurobi_fit,
-  #   omisvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 1e-6, "1" = 1), method = "qp-heuristic")$model
-  # )))
 
   # `kernel`
-  # NOTE: currently only "linear" kernel should work
-  expect_equal(
-    omisvm(mi(bag_label, bag_name) ~ ., data = df1, method = "qp-heuristic", weights = NULL, control = list(kernel = "radial")),
-    omisvm(mi(bag_label, bag_name) ~ ., data = df1, method = "qp-heuristic", weights = NULL, control = list(kernel = "linear"))
-  )
+  expect_false(isTRUE(all.equal(
+    omisvm(mi(bag_label, bag_name) ~ ., data = df1, method = "qp-heuristic",
+    weights = NULL, control = list(kernel = "radial")),
+    omisvm(mi(bag_label, bag_name) ~ ., data = df1, method = "qp-heuristic",
+    weights = NULL, control = list(kernel = "linear"))
+  )))
 
   # `scale`
   expect_false(isTRUE(all.equal(
-    omisvm(mi(bag_label, bag_name) ~ ., data = df1, method = "qp-heuristic", weights = NULL, control = list(scale = TRUE)),
-    omisvm(mi(bag_label, bag_name) ~ ., data = df1, method = "qp-heuristic", weights = NULL, control = list(scale = FALSE))
+    omisvm(mi(bag_label, bag_name) ~ ., data = df1, method = "qp-heuristic",
+    weights = NULL, control = list(scale = TRUE)),
+    omisvm(mi(bag_label, bag_name) ~ ., data = df1, method = "qp-heuristic",
+    weights = NULL, control = list(scale = FALSE))
   )))
 
 })
@@ -291,13 +279,20 @@ test_that("Ordering of data doesn't change `omisvm()` results", {
     # If predictions match for `type = 'raw` and `layer = 'instance'`, they will
     # match for all other options.
     expect_equal(predict(model1, data, type = "raw", layer = "instance"),
-                 predict(model2, data, type = "raw", layer = "instance"))
+                 predict(model2, data, type = "raw", layer = "instance"),
+                 tolerance = 1e-4)
   }
 
-  # heuristic
-  form <- mi(bag_label, bag_name) ~ V1 + V2 + V3
-  mdl1 <- omisvm(form, data = df1, method = "qp-heuristic", weights = NULL)
-  mdl2 <- omisvm(form, data = df1[sample(1:nrow(df1)), ], method = "qp-heuristic", weights = NULL)
+  ind <- sample(seq_len(nrow(df1)))
+
+  # qp-heuristic
+  suppressMessages(suppressWarnings({
+    form <- mi(bag_label, bag_name) ~ V1 + V2 + V3
+    set.seed(8)
+    mdl1 <- omisvm(form, data = df1, method = "qp-heuristic", weights = NULL)
+    set.seed(8)
+    mdl2 <- omisvm(form, data = df1[ind, ], method = "qp-heuristic", weights = NULL)
+  }))
   expect_predictions_equal(mdl1, mdl2, df1)
   expect_predictions_equal(mdl1, mdl2, df1_test)
 
@@ -309,5 +304,38 @@ test_that("Ordering of data doesn't change `omisvm()` results", {
     }))
   })
 
+  # qp-heuristic, radial kernel
+  suppressWarnings({
+    form <- mi(bag_label, bag_name) ~ V1 + V2 + V3
+    set.seed(9)
+    mdl1 <- omisvm(form, data = df1, method = "qp-heuristic",
+                   weights = NULL, control = list(kernel = "radial"))
+    set.seed(9)
+    mdl2 <- omisvm(form, data = df1[ind, ], method = "qp-heuristic",
+                   weights = NULL, control = list(kernel = "radial"))
+  })
+
+  expect_predictions_equal(mdl1, mdl2, df1)
+  expect_predictions_equal(mdl1, mdl2, df1_test)
+
+  expect_snapshot({
+    with(df1_test, suppressWarnings({
+      pred <- predict(mdl2, df1_test, type = "raw")$.pred
+      pROC::auc(classify_bags(bag_label, bag_name),
+                classify_bags(pred, bag_name))
+    }))
+  })
+
+})
+
+test_that("`omisvm()` can use all values of `s`", {
+
+  form <- mi(bag_label, bag_name) ~ V1 + V2 + V3
+  omisvm(form, data = df1, s = 4, weights = NULL, control = list(kernel = "radial"))
+  omisvm(form, data = df1, s = 1, weights = NULL, control = list(kernel = "radial"))
+  omisvm(form, data = df1, s = -1, weights = NULL, control = list(kernel = "radial")) %>%
+    expect_warning()
+  omisvm(form, data = df1, s = 20, weights = NULL, control = list(kernel = "radial")) %>%
+    expect_warning()
 })
 

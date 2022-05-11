@@ -337,11 +337,7 @@ predict.smm <- function(object,
     pos <- 2*(raw > 0) - 1
     pos <- factor(pos, levels = c(-1, 1), labels = object$levels)
 
-    res <- switch(
-        type,
-        "raw" = tibble::tibble(.pred = raw),
-        "class" = tibble::tibble(.pred_class = pos)
-    )
+    res <- .pred_output(type, raw, pos)
     attr(res, "layer") <- layer
     return(res)
 }

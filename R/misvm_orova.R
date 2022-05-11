@@ -37,21 +37,13 @@ validate_misvm_orova <- function(x) {
 #' @seealso [predict.misvm_orova()] for prediction on new data.
 #'
 #' @examples
-#' set.seed(8)
-#' # make some data
-#' n <- 500
-#' y <- sample(1:5, size = n, prob = (1 / 1:5)^2, replace = TRUE)
-#' bags <- rep(1:(n/5), each = 5)
-#' X <- matrix(NA, nrow = length(y), ncol = 5)
-#' for (y_ in unique(y)) {
-#'   to_fill <- which(y_ == y)
-#'   X[to_fill, ] <- mvtnorm::rmvnorm(length(to_fill), mean = c(2*y_, -1*y_, 1*y_, 0, 0))
-#' }
-#' colnames(X) <- paste0("V", 1:ncol(X))
-#' y <- classify_bags(y, bags, condense = FALSE)
+#' data("ordmvnorm")
+#' x <- ordmvnorm[, 4:8]
+#' y <- ordmvnorm$inst_label
+#' bags <- ordmvnorm$bag_name
 #'
-#' mdl1 <- misvm_orova(X, y, bags)
-#' predict(mdl1, X, new_bags = bags)
+#' mdl1 <- misvm_orova(x, y, bags)
+#' predict(mdl1, x, new_bags = bags)
 #'
 #' @author Sean Kent
 #' @name misvm_orova
@@ -122,7 +114,7 @@ misvm_orova.formula <- function(formula, data, ...) {
 
   res <- misvm_orova.default(x, y, bags, ...)
 
-  for (i in 1:length(res$fits)) {
+  for (i in seq_along(res$fits)) {
     res$fits[[i]]$call_type <- "misvm.formula"
     res$fits[[i]]$formula <- formula
     res$fits[[i]]$bag_name <- bag_name
@@ -146,6 +138,9 @@ misvm_orova.formula <- function(formula, data, ...) {
 #'   names match the original function call.
 #'
 #' @param object An object of class `misvm_orova`
+#' @param type If `'class'`, return predicted values based on the highest output
+#'   of an individual model.  If `'raw'`, return the raw predicted scores for
+#'   each model.
 #' @inheritParams predict.misvm
 #'
 #' @return A tibble with `nrow(new_data)` rows.  If `type = 'class'`, the tibble
@@ -156,24 +151,16 @@ misvm_orova.formula <- function(formula, data, ...) {
 #' @seealso [misvm_orova()] for fitting the `misvm_orova` object.
 #'
 #' @examples
-#' set.seed(8)
-#' # make some data
-#' n <- 50
-#' y <- sample(1:5, size = n, prob = (1 / 1:5)^2, replace = TRUE)
-#' bags <- rep(1:(n/5), each = 5)
-#' X <- matrix(NA, nrow = length(y), ncol = 5)
-#' for (y_ in unique(y)) {
-#'   to_fill <- which(y_ == y)
-#'   X[to_fill, ] <- mvtnorm::rmvnorm(length(to_fill), mean = c(2*y_, -1*y_, 1*y_, 0, 0))
-#' }
-#' colnames(X) <- paste0("V", 1:ncol(X))
-#' y <- classify_bags(y, bags, condense = FALSE)
+#' data("ordmvnorm")
+#' x <- ordmvnorm[, 4:8]
+#' y <- ordmvnorm$inst_label
+#' bags <- ordmvnorm$bag_name
 #'
-#' mdl1 <- misvm_orova(X, y, bags)
+#' mdl1 <- misvm_orova(x, y, bags)
 #'
 #' # summarize predictions at the bag layer
 #' library(dplyr)
-#' df1 <- bind_cols(y = y, bags = bags, as.data.frame(X))
+#' df1 <- bind_cols(y = y, bags = bags, as.data.frame(x))
 #' df1 %>%
 #'   bind_cols(predict(mdl1, df1, new_bags = bags, type = "class")) %>%
 #'   bind_cols(predict(mdl1, df1, new_bags = bags, type = "raw")) %>%
@@ -192,24 +179,21 @@ predict.misvm_orova <- function(object,
   type <- match.arg(type, c("class", "raw"))
   layer <- match.arg(layer, c("bag", "instance"))
   method <- attr(object, "method")
+  levels <- object$levels
 
   preds <- lapply(object$fits, predict,
                   new_data = new_data, type = "raw", layer = layer,
                   new_bags = new_bags, ...)
 
   scores_df <- do.call(cbind, preds)
-  colnames(scores_df) <- paste0(".pred_", object$levels)
+  colnames(scores_df) <- paste0(".pred_", levels)
 
   class_ <- apply(scores_df, 1, which.max)
-  class_ <- factor(class_, levels = 1:length(object$levels), labels = object$levels)
+  class_ <- factor(class_, levels = seq_along(levels), labels = levels)
 
   res <- switch(type,
                 "raw" = tibble::as_tibble(scores_df),
                 "class" = tibble::tibble(.pred_class = class_))
-
-
-  # TODO: consider returning the AUC here as an attribute.  Can only do if we have the true bag labels
-  # attr(res, "AUC") <- calculated_auc
   attr(res, "layer") <- layer
   return(res)
 }

@@ -19,8 +19,9 @@
 \item{new_data}{A data frame to predict from. This needs to have all of the
 features that the data was originally fitted with.}
 
-\item{type}{If \code{'class'}, return predicted values with threshold of 0 as
--1 or +1.  If \code{'raw'}, return the raw predicted scores.}
+\item{type}{If \code{'class'}, return predicted values based on the highest output
+of an individual model.  If \code{'raw'}, return the raw predicted scores for
+each model.}
 
 \item{layer}{If \code{'bag'}, return predictions at the bag level.  If
 \code{'instance'}, return predictions at the instance level.}
@@ -50,24 +51,16 @@ parameters \code{new_bags} and \code{new_instances} are not necessary, as long a
 names match the original function call.
 }
 \examples{
-set.seed(8)
-# make some data
-n <- 50
-y <- sample(1:5, size = n, prob = (1 / 1:5)^2, replace = TRUE)
-bags <- rep(1:(n/5), each = 5)
-X <- matrix(NA, nrow = length(y), ncol = 5)
-for (y_ in unique(y)) {
-  to_fill <- which(y_ == y)
-  X[to_fill, ] <- mvtnorm::rmvnorm(length(to_fill), mean = c(2*y_, -1*y_, 1*y_, 0, 0))
-}
-colnames(X) <- paste0("V", 1:ncol(X))
-y <- classify_bags(y, bags, condense = FALSE)
+data("ordmvnorm")
+x <- ordmvnorm[, 4:8]
+y <- ordmvnorm$inst_label
+bags <- ordmvnorm$bag_name
 
-mdl1 <- misvm_orova(X, y, bags)
+mdl1 <- misvm_orova(x, y, bags)
 
 # summarize predictions at the bag layer
 library(dplyr)
-df1 <- bind_cols(y = y, bags = bags, as.data.frame(X))
+df1 <- bind_cols(y = y, bags = bags, as.data.frame(x))
 df1 \%>\%
   bind_cols(predict(mdl1, df1, new_bags = bags, type = "class")) \%>\%
   bind_cols(predict(mdl1, df1, new_bags = bags, type = "raw")) \%>\%

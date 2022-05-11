@@ -145,7 +145,7 @@ test_that("`mior()` examples work", {
     )
     score <- X %*% c(2, -1, 0)
     y <- as.numeric(cut(score, c(-Inf, quantile(score, probs = 1:2 / 3), Inf)))
-    bags <- 1:length(y)
+    bags <- seq_along(y)
 
     # add in points outside boundaries
     X <- rbind(
@@ -229,24 +229,16 @@ test_that("`predict.mismm()` examples work", {
 
 test_that("`misvm_orova()` examples work", {
   expect_snapshot({
-    set.seed(8)
-    # make some data
-    n <- 500
-    y <- sample(1:5, size = n, prob = (1 / 1:5)^2, replace = TRUE)
-    bags <- rep(1:(n/5), each = 5)
-    X <- matrix(NA, nrow = length(y), ncol = 5)
-    for (y_ in unique(y)) {
-      to_fill <- which(y_ == y)
-      X[to_fill, ] <- mvtnorm::rmvnorm(length(to_fill), mean = c(2*y_, -1*y_, 1*y_, 0, 0))
-    }
-    colnames(X) <- paste0("V", 1:ncol(X))
-    y <- classify_bags(y, bags, condense = FALSE)
+    data("ordmvnorm")
+    x <- ordmvnorm[, 4:8]
+    y <- ordmvnorm$inst_label
+    bags <- ordmvnorm$bag_name
 
-    mdl1 <- misvm_orova(X, y, bags)
-    predict(mdl1, X, new_bags = bags)
+    mdl1 <- misvm_orova(x, y, bags)
+    predict(mdl1, x, new_bags = bags)
 
     # summarize predictions at the bag layer
-    df1 <- bind_cols(y = y, bags = bags, as.data.frame(X))
+    df1 <- bind_cols(y = y, bags = bags, as.data.frame(x))
     df1 %>%
       bind_cols(predict(mdl1, df1, new_bags = bags, type = "class")) %>%
       bind_cols(predict(mdl1, df1, new_bags = bags, type = "raw")) %>%
@@ -292,24 +284,17 @@ test_that("`misvm()` examples work", {
 })
 
 test_that("`omisvm()` examples work", {
+  set.seed(8)
   expect_snapshot({
-    set.seed(8)
-    # make some data
-    n <- 500
-    y <- sample(1:5, size = n, prob = (1 / 1:5)^2, replace = TRUE)
-    bags <- rep(1:(n/5), each = 5)
-    X <- matrix(NA, nrow = length(y), ncol = 5)
-    for (y_ in unique(y)) {
-      to_fill <- which(y_ == y)
-      X[to_fill, ] <- mvtnorm::rmvnorm(length(to_fill), mean = c(2*y_, -1*y_, 1*y_, 0, 0))
-    }
-    colnames(X) <- paste0("V", 1:ncol(X))
-    y <- classify_bags(y, bags, condense = FALSE)
+    data("ordmvnorm")
+    x <- ordmvnorm[, 4:8]
+    y <- ordmvnorm$inst_label
+    bags <- ordmvnorm$bag_name
 
-    mdl1 <- omisvm(X, y, bags, weights = NULL)
-    predict(mdl1, X, new_bags = bags)
+    mdl1 <- omisvm(x, y, bags, weights = NULL)
+    predict(mdl1, x, new_bags = bags)
 
-    df1 <- bind_cols(y = y, bags = bags, as.data.frame(X))
+    df1 <- bind_cols(y = y, bags = bags, as.data.frame(x))
     df1 %>%
       bind_cols(predict(mdl1, df1, new_bags = bags, type = "class")) %>%
       bind_cols(predict(mdl1, df1, new_bags = bags, type = "raw")) %>%
@@ -362,20 +347,13 @@ test_that("`summarize_samples()` examples work", {
 
 test_that("`svor_exc()` examples work", {
   expect_snapshot({
-    # make some data
-    set.seed(8)
-    n <- 400
-    y <- sample(1:5, size = n, prob = (1 / 1:5), replace = TRUE)
-    X <- matrix(NA, nrow = length(y), ncol = 5)
-    for (y_ in unique(y)) {
-      to_fill <- which(y_ == y)
-      X[to_fill, ] <- mvtnorm::rmvnorm(length(to_fill), mean = c(2*y_, -1*y_, 1*y_, 0, 0))
-    }
-    colnames(X) <- paste0("V", 1:ncol(X))
+    data("ordmvnorm")
+    x <- ordmvnorm[, 4:8]
+    y <- ordmvnorm$inst_label
 
-    mdl1 <- svor_exc(X, y)
-    predict(mdl1, X)
-    predict(mdl1, X, type = "raw")
+    mdl1 <- svor_exc(x, y)
+    predict(mdl1, x)
+    predict(mdl1, x, type = "raw")
   })
 
   expect_s3_class(mdl1, "svor_exc")

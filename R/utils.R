@@ -41,20 +41,6 @@
        order = data_order)
 }
 
-#' Set default values in a list, when not present
-#' @param x A list to modify.
-#' @param args A list or vector of named arguments for defaults
-#' @noRd
-.set_default <- function(x, args) {
-  for (i in seq_along(args)) {
-    nm <- names(args[i])
-    if (nm %ni% names(x)) {
-      x[nm] <- args[i]
-    }
-  }
-  return(x)
-}
-
 #' Classify y from bags
 #'
 #' Formally, this function applies `max()` on `y` for each level of `bags`.

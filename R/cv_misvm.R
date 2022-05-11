@@ -236,8 +236,8 @@ predict.cv_misvm <- function(object, new_data,
                              new_bags = "bag_name",
                              ...)
 {
-  type <- match.arg(type)
-  layer <- match.arg(layer)
+  type <- match.arg(type, c("class", "raw"))
+  layer <- match.arg(layer, c("bag", "instance"))
 
   predict.misvm(object$misvm_fit, new_data = new_data, type = type, layer = layer,
                 new_bags = new_bags)

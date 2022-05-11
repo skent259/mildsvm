@@ -172,58 +172,20 @@ misvm.default <- function(x, y, bags,
     start = FALSE
   )
   control <- .set_default(control, defaults)
-  if ("scale" %ni% names(control) && inherits(control$kernel, "matrix")) {
-        # if kernel matrix is passed in, then really no re-scaling was done.
-        control$scale <- FALSE
-    } else if ("scale" %ni% names(control)) {
-        control$scale <- TRUE
-    }
-  if (control$start && control$kernel != "linear") {
-    control$start <- FALSE
-    rlang::inform(c(
-      "Warm start is not available when `kernel` is not equal to 'linear'.",
-      i = "Setting `start` = FALSE. "
-    ))
-  }
+  control <- .set_scale(control)
+  control <- .set_start(control)
+
   # store the levels of y and convert to 0,1 numeric format.
   y_info <- convert_y(y)
   y <- y_info$y
   lev <- y_info$lev
 
-  # store colnames of x
-  x <- as.data.frame(x)
-  col_x <- colnames(x)
+  # remove NaN columns and columns with no variance, store col names
+  x_info <- .convert_x(x, scale = FALSE) # scaling done internally
+  x <- x_info$x
+  col_x <- x_info$col_x
 
-  # remove NaN columns and columns with no variance
-  nan_columns <- vapply(x, function(.x) any(is.nan(.x)), FUN.VALUE = logical(1))
-  if (any(nan_columns)) {
-    rlang::warn(c(
-      "Cannot use columns with NaN values.",
-      x = paste("Removing columns", paste0(names(which(nan_columns)), collapse = ", "))
-    ))
-  }
-  ident_columns <- vapply(x, function(.x) all(.x == .x[1]), FUN.VALUE = logical(1))
-  if (any(ident_columns, na.rm = TRUE)) {
-    rlang::warn(c(
-      "Cannot use columns that have the same value for all rows.",
-      x = paste("Removing columns", paste0(names(which(ident_columns)), collapse = ", "))
-    ))
-  }
-  col_x <- setdiff(col_x, names(which(nan_columns)))
-  col_x <- setdiff(col_x, names(which(ident_columns)))
-  x <- x[, col_x, drop = FALSE]
-
-  # weights
-  if (is.numeric(weights)) {
-    stopifnot(names(weights) == lev | names(weights) == rev(lev))
-    weights <- weights[lev]
-    names(weights) <- c("-1", "1")
-  } else if (weights) {
-    bag_labels <- sapply(split(y, factor(bags)), unique)
-    weights <- c("-1" = sum(bag_labels == 1) / sum(y == 0), "1" = 1)
-  } else {
-    weights <- NULL
-  }
+  weights <- .set_weights(weights, y_info, bags)
 
   # Nystrom approximation to x for mip and  methods
   if (method %in% c("mip") & control$kernel == "radial") {
@@ -397,18 +359,7 @@ predict.misvm <- function(object,
                                   cor = object$summary_cor)
   }
 
-  if (object$call_type == "misvm.formula") {
-    new_x <- x_from_mi_formula(object$formula, new_data)
-    new_x <- new_x[, object$features, drop = FALSE]
-  } else {
-    new_x <- new_data[, object$features, drop = FALSE]
-  }
-  if ("kfm_fit" %in% names(object)) {
-    new_x <- build_fm(object$kfm_fit, as.matrix(new_x))
-  }
-  if (method == "qp-heuristic" & "x_scale" %in% names(object)) {
-    new_x <- as.data.frame(scale(new_x, center = object$x_scale$center, scale = object$x_scale$scale))
-  }
+  new_x <- .get_new_x(object, new_data)
 
   # kernel
   if (method == "qp-heuristic") {
@@ -436,30 +387,18 @@ predict.misvm <- function(object,
   }
 
   if (layer == "bag") {
-    if (object$call_type == "misvm.formula" & new_bags[1] == "bag_name" & length(new_bags) == 1) {
-      new_bags <- object$bag_name
-    }
-    if (length(new_bags) == 1 & new_bags[1] %in% colnames(new_data)) {
-      bags <- new_data[[new_bags]]
-    } else {
-      bags <- new_bags
-    }
+    bags <- .get_bags(object, new_data, new_bags)
     scores <- classify_bags(scores, bags, condense = FALSE)
     pos <- classify_bags(pos, bags, condense = FALSE)
   }
   pos <- factor(pos, levels = c(-1, 1), labels = object$levels)
 
-  res <- switch(type,
-                "raw" = tibble::tibble(.pred = as.numeric(scores)),
-                "class" = tibble::tibble(.pred_class = pos))
-
+  res <- .pred_output(type, scores, pos)
   if (object$call_type == "misvm.mild_df") {
     # bring back the predictions from instance level to the sample level
     ind <- match(mil_info$instance_name, new_data$instance_name)
     res <- res[ind, , drop = FALSE]
   }
-  # TODO: consider returning the AUC here as an attribute.  Can only do if we have the true bag labels
-  # attr(res, "AUC") <- calculated_auc
   attr(res, "layer") <- layer
   return(res)
 }
@@ -737,9 +676,8 @@ misvm_heuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
     }
   }
   if (n_selections == max_step) {
-    message = paste0("Number of iterations of heuristic algorithm reached threshold of ", max_step, ". Stopping with current selection.")
-    warning(message)
-    cat(message, "Value of c is ", c, "\n")
+    msg = paste0("Number of iterations of heuristic algorithm reached threshold of ", max_step, ". Stopping with current selection.")
+    warning(msg)
   }
 
   # vector representing selected positive instances
@@ -805,11 +743,6 @@ misvm_qpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
                            function(bag) { apply(X[bags == bag, , drop = FALSE], 2, mean) }))
   }
 
-  params <- list()
-  params$OutputFlag = 1*verbose
-  params$IntFeasTol = 1e-5
-  if (time_limit) params$TimeLimit = time_limit
-
   selection_changed <- TRUE
   itercount = 0
   baritercount = 0
@@ -821,7 +754,7 @@ misvm_qpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
     X_model <- rbind(X[y == -1, , drop = FALSE],
                      X_selected)
     model <- misvm_qpheuristic_model(y_model, b_model, X_model, c, weights)
-    gurobi_result <- gurobi::gurobi(model, params = params)
+    gurobi_result <- gurobi::gurobi(model, .gurobi_params(verbose, time_limit))
 
     w <- gurobi_result$x[grepl("w", model$varnames)]
     b_ <- gurobi_result$x[grepl("b", model$varnames)]
@@ -914,29 +847,19 @@ misvm_dualqpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = N
   bags <- r$b
   X <- r$X
   if (rescale) X <- scale(X)
-
+  # browser()
   # randomly select initial representative instances
   pos_bags <- unique(bags[y==1])
   selected <- sapply(pos_bags, function(bag) {
     .resample(which(bags == bag), size = 1)
   })
 
-  if (!is.matrix(kernel)) {
-    K <- compute_kernel(X, type = kernel, sigma = sigma)
-  } else {
-    K <- kernel
-  }
-
-  params <- list()
-  params$OutputFlag = 1*verbose
-  params$IntFeasTol = 1e-5
-  params$PSDTol = 1e-4
-  if (time_limit) params$TimeLimit = time_limit
+  K <- .convert_kernel(X, kernel, sigma = sigma)
 
   selection_changed <- TRUE
-  itercount = 0
-  baritercount = 0
-  n_selections = 0
+  itercount <- 0
+  baritercount <- 0
+  n_selections <- 0
 
   while (selection_changed & n_selections < max_step) {
     ind <- c(which(y == -1), selected) # effective set for this iteration
@@ -946,12 +869,13 @@ misvm_dualqpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = N
 
     gurobi_result <-
       tryCatch({
-        gurobi::gurobi(opt_model, params = params)
+        gurobi::gurobi(opt_model, .gurobi_params(verbose, time_limit))
       },
       error = function(e) {
         rlang::warn(paste0("Warning from gurobi: ", conditionMessage(e)))
         rlang::inform("Trying NonConvex version")
-        params$NonConvex <- 2
+        params <- .gurobi_params(verbose, time_limit)
+        params[["NonConvex"]] <- 2
         return(gurobi::gurobi(opt_model, params = params))
       })
 
@@ -974,7 +898,7 @@ misvm_dualqpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = N
     selection_changed <- !identical(selected, new_selection)
     if (selection_changed) {
       selected <- new_selection
-      n_selections = n_selections + 1
+      n_selections <- n_selections + 1
     }
   }
   if (n_selections == max_step) {
@@ -1120,7 +1044,7 @@ misvm_dualqpheuristic_model <- function(y, bags, K, c, weights = NULL) {
   # Objective
   model$modelsense <- "max"
   model$obj <- rep(1, n_a)
-  model$Q <- - 1/2 * y %*% t(y) * K # TODO: replace this with kernel at some point
+  model$Q <- - 1/2 * y %*% t(y) * K
   # Constraints
   model$varnames <- c(paste0("a", 1:n_a))
   model$A <- constraint
