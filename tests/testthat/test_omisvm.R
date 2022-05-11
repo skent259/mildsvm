@@ -41,6 +41,7 @@ test_that("omisvm() has reasonable performance", {
       print(roc$auc)
       print(mzoe)
       print(mae)
+      print(table(bag_resp, bag_pred))
     })
   }
 
@@ -56,6 +57,14 @@ test_that("omisvm() has reasonable performance", {
                  control = list(kernel = "radial"))
   check_performance(mdl2, df1, 0.85, 0.85, 1.05)
   check_performance(mdl2, df1_test, 0.85, 0.80, 0.95)
+
+  # With smaller s, slightly worse
+  set.seed(9)
+  mdl3 <- omisvm(mi(bag_label, bag_name) ~ ., data = df1[1:250, ],
+                 s = 3,
+                 weights = NULL, control = list(kernel = "radial"))
+  check_performance(mdl3, df1, 0.75, 0.85, 1.05)
+  check_performance(mdl3, df1_test, 0.75, 0.80, 0.95)
 
 })
 
@@ -233,17 +242,17 @@ test_that("omisvm() has correct argument handling", {
 
   # `kernel`
   expect_false(isTRUE(all.equal(
-    omisvm(mi(bag_label, bag_name) ~ ., data = df1, method = "qp-heuristic", 
+    omisvm(mi(bag_label, bag_name) ~ ., data = df1, method = "qp-heuristic",
     weights = NULL, control = list(kernel = "radial")),
-    omisvm(mi(bag_label, bag_name) ~ ., data = df1, method = "qp-heuristic", 
+    omisvm(mi(bag_label, bag_name) ~ ., data = df1, method = "qp-heuristic",
     weights = NULL, control = list(kernel = "linear"))
   )))
 
   # `scale`
   expect_false(isTRUE(all.equal(
-    omisvm(mi(bag_label, bag_name) ~ ., data = df1, method = "qp-heuristic", 
+    omisvm(mi(bag_label, bag_name) ~ ., data = df1, method = "qp-heuristic",
     weights = NULL, control = list(scale = TRUE)),
-    omisvm(mi(bag_label, bag_name) ~ ., data = df1, method = "qp-heuristic", 
+    omisvm(mi(bag_label, bag_name) ~ ., data = df1, method = "qp-heuristic",
     weights = NULL, control = list(scale = FALSE))
   )))
 
@@ -307,7 +316,6 @@ test_that("Ordering of data doesn't change `omisvm()` results", {
                    weights = NULL, control = list(kernel = "radial"))
   })
 
-  # expect_equal(mdl1, mdl2)
   expect_predictions_equal(mdl1, mdl2, df1)
   expect_predictions_equal(mdl1, mdl2, df1_test)
 
@@ -319,5 +327,16 @@ test_that("Ordering of data doesn't change `omisvm()` results", {
     }))
   })
 
+})
+
+test_that("`omisvm()` can use all values of `s`", {
+
+  form <- mi(bag_label, bag_name) ~ V1 + V2 + V3
+  omisvm(form, data = df1, s = 4, weights = NULL, control = list(kernel = "radial"))
+  omisvm(form, data = df1, s = 1, weights = NULL, control = list(kernel = "radial"))
+  omisvm(form, data = df1, s = -1, weights = NULL, control = list(kernel = "radial")) %>%
+    expect_warning()
+  omisvm(form, data = df1, s = 20, weights = NULL, control = list(kernel = "radial")) %>%
+    expect_warning()
 })
 

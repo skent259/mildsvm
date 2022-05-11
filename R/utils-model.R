@@ -204,6 +204,36 @@ convert_y <- function(y) {
   return(w)
 }
 
+#' Warn about argument `s` in `omisvm()`
+#' @inheritParams omisvm
+#' @param k An integer for the number of levels in the outcome
+#' @param kernel Taken from `control$kernel` in `omisvm()`
+#' @noRd
+.warn_omisvm_s <- function(s, k, method, kernel) {
+  if (method == "qp-heuristic" & kernel == "linear" & s != Inf) {
+    rlang::warn(
+      "The argument `s` is not currently used for `kernel == 'linear'`."
+    )
+  }
+
+  if (s == Inf) {
+    s <- k-1 # all points replicated
+  } else if (s < 1) {
+    s <- 1
+    rlang::warn(c(
+      "The value of `s` must not be smaller than 1.",
+      i = "Setting `s <- 1` for a minimal number of replicated points."
+    ))
+  } else if (s > k-1) {
+    s <- k-1
+    rlang::warn(c(
+      "The value of `s` must not be larger than the number of levels in `y` minus 1.",
+      i = "Setting `s <- k-1` for a maximal number of replicated points"
+    ))
+  }
+  return(s)
+}
+
 #' Calculate x-matrix from a standard formula
 #' @inheritParams smm
 #' @param skip a vector of variable names to skip, or `NULL` to keep all

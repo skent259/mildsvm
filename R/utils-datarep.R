@@ -1,4 +1,16 @@
 
+
+.include_datarep <- function(y, s, k) {
+  # include when max(1, q-s+1) <= y <= q and
+  # include when q+1 <= y <= min(K, q+s)
+  out <- lapply(seq_len(k-1), FUN = function(q) {
+    include <-
+      (max(1, q-s+1) <= y & y <= q) |
+      (q+1 <= y & y <= min(k, q+s))
+  })
+  unlist(out)
+}
+
 #' Vector of 0's with a 1 in the qth spot
 #' @noRd
 .e <- function(q, len) {
@@ -14,7 +26,7 @@
 #' @noRd
 .y_datarep <- function(y, k) {
   # y_i -> { -1 for y_i = 1, ..., q; +1 for y_i = q+1, ..., K }
-  out <- lapply(seq_len(k - 1), FUN = function(q) {
+  out <- lapply(seq_len(k-1), FUN = function(q) {
     y_new <- 1 * (y >= q + 1)
     y_new <- 2 * y_new - 1
   })
@@ -30,7 +42,7 @@
 #' @inheritParams y_datarep
 #' @noRd
 .bags_datarep <- function(bags, k) {
-  out <- lapply(seq_len(k - 1), FUN = function(q) {
+  out <- lapply(seq_len(k-1), FUN = function(q) {
     data.frame(
       .orig = bags,
       .repl = paste0(bags, "_rep", q),
@@ -50,7 +62,7 @@
 .x_datarep <- function(x, k, h = 1) {
   # row x_i -> [x_i, h*e_{q-1}]
   # e_{q-1} is a k-2 length vector that is 0 except in the q-1 position
-  out <- lapply(seq_len(k - 1), FUN = function(q) {
+  out <- lapply(seq_len(k-1), FUN = function(q) {
     x_h <- replicate(nrow(x), h * .e(q - 1, k - 2), simplify = FALSE)
     x_h <- do.call(rbind, x_h)
     cbind(x, x_h)
@@ -71,7 +83,7 @@
     rep(list(h_mat), k - 2))
   )
 
-  rep_ind <- rep(seq_len(nrow(kernel)), k - 1)
+  rep_ind <- rep(seq_len(nrow(kernel)), k-1)
   as.matrix(kernel[rep_ind, rep_ind] + h_mat)
 }
 

@@ -19,8 +19,9 @@
 \item{new_data}{A data frame to predict from. This needs to have all of the
 features that the data was originally fitted with.}
 
-\item{type}{If \code{'class'}, return predicted values with threshold of 0 as
--1 or +1.  If \code{'raw'}, return the raw predicted scores.}
+\item{type}{If \code{'class'}, return predicted values based on the highest output
+of an individual model.  If \code{'raw'}, return the raw predicted scores for
+each model.}
 
 \item{layer}{If \code{'bag'}, return predictions at the bag level.  If
 \code{'instance'}, return predictions at the instance level.}

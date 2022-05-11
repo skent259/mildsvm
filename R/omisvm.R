@@ -26,25 +26,25 @@ validate_omisvm <- function(x) {
 #'   row represents a sample.
 #' @param h A scalar that controls the trade-off between maximizing the margin
 #'   and minimizing distance between hyperplanes.
+#' @param s An integer for how many replication points to add to the dataset. If
+#'   `k` represents the number of labels in y, must have `1 <= s <= k-1`. The
+#'   default, `Inf`, uses the maximum number of replication points, `k-1`.
 #' @param data If `formula` is provided, a data.frame or similar from which
 #'   formula elements will be extracted
 #' @param ... Arguments passed to or from other methods.
 #'
 #' @return An object of class `omisvm.`  The object contains at least the
-#'   following components:
-#'   * `*_fit`: A fit object depending on the `method` parameter.  If `method =
-#'   'qp-heuristic'` this will be `gurobi_fit` from a model optimization.
-#'   * `call_type`: A character indicating which method `omisvm()` was
-#'   called with.
-#'   * `features`: The names of features used in training.
-#'   * `levels`: The levels of `y` that are recorded for future prediction.
-#'   * `cost`: The cost parameter from function inputs.
-#'   * `weights`: The calculated weights on the `cost` parameter.
-#'   * `repr_inst`: The instances from positive bags that are selected to be
-#'   most representative of the positive instances.
-#'   * `n_step`: If `method == 'qp-heuristic'`, the total steps used in the
-#'   heuristic algorithm.
-#'   * `x_scale`: If `scale = TRUE`, the scaling parameters for new predictions.
+#'   following components: * `*_fit`: A fit object depending on the `method`
+#'   parameter.  If `method = 'qp-heuristic'` this will be `gurobi_fit` from a
+#'   model optimization. * `call_type`: A character indicating which method
+#'   `omisvm()` was called with. * `features`: The names of features used in
+#'   training. * `levels`: The levels of `y` that are recorded for future
+#'   prediction. * `cost`: The cost parameter from function inputs. * `weights`:
+#'   The calculated weights on the `cost` parameter. * `repr_inst`: The
+#'   instances from positive bags that are selected to be most representative of
+#'   the positive instances. * `n_step`: If `method == 'qp-heuristic'`, the
+#'   total steps used in the heuristic algorithm. * `x_scale`: If `scale =
+#'   TRUE`, the scaling parameters for new predictions.
 #'
 #' @seealso [predict.omisvm()] for prediction on new data.
 #'
@@ -71,6 +71,7 @@ omisvm <- function(x, ...) {
 omisvm.default <- function(x, y, bags,
                            cost = 1,
                            h = 1,
+                           s = Inf,
                            method = c("qp-heuristic"),
                            weights = TRUE,
                            control = list(kernel = "linear",
@@ -111,6 +112,7 @@ omisvm.default <- function(x, y, bags,
   x_scale <- x_info$x_scale
 
   weights <- .warn_no_weights(weights, "omisvm")
+  s <- .warn_omisvm_s(s, k, method, control$kernel)
 
   if (method == "qp-heuristic" & control$kernel == "linear") {
     res <- omisvm_qpheuristic_fit(y, bags, x,
@@ -129,11 +131,12 @@ omisvm.default <- function(x, y, bags,
     x <- r$X
 
     # Perform data replication on `y`, `bags`, `kernel`, `x`
-    y <- .y_datarep(y, k)
-    bags <- .bags_datarep(bags, k)
+    ind <- .include_datarep(y, s, k)
+    y <- .y_datarep(y, k)[ind]
+    bags <- .bags_datarep(bags, k)[ind, , drop = FALSE]
     kernel <- .convert_kernel(x, control$kernel, sigma = control$sigma)
-    kernel <- .kernel_datarep(kernel, k, h)
-    x <- .x_datarep(x, k, h)
+    kernel <- .kernel_datarep(kernel, k, h)[ind, ind, drop = FALSE]
+    x <- .x_datarep(x, k, h)[ind, , drop = FALSE]
 
     # Run misvm on replicated data, passing in kernel for faster computation
     res <- misvm_dualqpheuristic_fit(y, bags$.repl, x,

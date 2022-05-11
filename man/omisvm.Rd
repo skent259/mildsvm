@@ -12,6 +12,7 @@
   bags,
   cost = 1,
   h = 1,
+  s = Inf,
   method = c("qp-heuristic"),
   weights = TRUE,
   control = list(kernel = "linear", sigma = if (is.vector(x)) 1 else 1/ncol(x),
@@ -40,6 +41,10 @@ functions.}
 
 \item{h}{A scalar that controls the trade-off between maximizing the margin
 and minimizing distance between hyperplanes.}
+
+\item{s}{An integer for how many replication points to add to the dataset. If
+\code{k} represents the number of labels in y, must have \verb{1 <= s <= k-1}. The
+default, \code{Inf}, uses the maximum number of replication points, \code{k-1}.}
 
 \item{method}{The algorithm to use in fitting (default  \code{'heuristic'}).  When
 \code{method = 'heuristic'}, which employs an algorithm similar to Andrews et
@@ -90,21 +95,16 @@ formula elements will be extracted}
 }
 \value{
 An object of class \code{omisvm.}  The object contains at least the
-following components:
-\itemize{
-\item \verb{*_fit}: A fit object depending on the \code{method} parameter.  If \code{method =   'qp-heuristic'} this will be \code{gurobi_fit} from a model optimization.
-\item \code{call_type}: A character indicating which method \code{omisvm()} was
-called with.
-\item \code{features}: The names of features used in training.
-\item \code{levels}: The levels of \code{y} that are recorded for future prediction.
-\item \code{cost}: The cost parameter from function inputs.
-\item \code{weights}: The calculated weights on the \code{cost} parameter.
-\item \code{repr_inst}: The instances from positive bags that are selected to be
-most representative of the positive instances.
-\item \code{n_step}: If \code{method == 'qp-heuristic'}, the total steps used in the
-heuristic algorithm.
-\item \code{x_scale}: If \code{scale = TRUE}, the scaling parameters for new predictions.
-}
+following components: * \verb{*_fit}: A fit object depending on the \code{method}
+parameter.  If \code{method = 'qp-heuristic'} this will be \code{gurobi_fit} from a
+model optimization. * \code{call_type}: A character indicating which method
+\code{omisvm()} was called with. * \code{features}: The names of features used in
+training. * \code{levels}: The levels of \code{y} that are recorded for future
+prediction. * \code{cost}: The cost parameter from function inputs. * \code{weights}:
+The calculated weights on the \code{cost} parameter. * \code{repr_inst}: The
+instances from positive bags that are selected to be most representative of
+the positive instances. * \code{n_step}: If \code{method == 'qp-heuristic'}, the
+total steps used in the heuristic algorithm. * \code{x_scale}: If \code{scale = TRUE}, the scaling parameters for new predictions.
 }
 \description{
 This function fits a modification of MI-SVM to ordinal outcome data based on

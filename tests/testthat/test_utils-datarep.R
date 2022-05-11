@@ -1,3 +1,33 @@
+test_that("data repliation with s works as expected.", {
+
+  check_length <- function(y, s, k) {
+    ind <- .include_datarep(y, s, k)
+    expect_equal((k - 1) * length(y), length(ind))
+  }
+
+  check_length(1:3, s = 1, k = 3)
+  check_length(1:3, s = 1, k = 4)
+  check_length(1:5, s = 1, k = 5)
+  check_length(1:5, s = 2, k = 5)
+  check_length(1:5, s = 4, k = 5)
+  check_length(c(rep(1, 5), rep(2, 3), rep(3, 2)), s = 2, k = 3)
+
+  # At most 2 * s points included for replication
+  check_n_points <- function(y, s, k) {
+    ind <- .include_datarep(y, s, k)
+    n_points <- rowSums(matrix(ind, ncol = (k-1)))
+    expect_lte(max(n_points), 2 * s)
+  }
+
+  check_n_points(1:7, s = 1, k = 7)
+  check_n_points(1:6, s = 1, k = 6)
+  check_n_points(1:6, s = 2, k = 6)
+  check_n_points(1:6, s = 4, k = 6)
+  check_n_points(1:6, s = 5, k = 6)
+  check_n_points(1:3, s = 2, k = 3)
+  check_n_points(c(rep(1, 5), rep(2, 3), rep(3, 2)), s = 1, k = 3)
+  check_n_points(c(rep(1, 5), rep(2, 3), rep(3, 2)), s = 2, k = 3)
+})
 
 test_that("data repliation on y works as expected.", {
 
