@@ -676,9 +676,8 @@ misvm_heuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
     }
   }
   if (n_selections == max_step) {
-    message = paste0("Number of iterations of heuristic algorithm reached threshold of ", max_step, ". Stopping with current selection.")
-    warning(message)
-    cat(message, "Value of c is ", c, "\n")
+    msg = paste0("Number of iterations of heuristic algorithm reached threshold of ", max_step, ". Stopping with current selection.")
+    warning(msg)
   }
 
   # vector representing selected positive instances

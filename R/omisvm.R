@@ -106,14 +106,27 @@ omisvm.default <- function(x, y, bags,
 
   # remove NaN columns and columns with no variance, store col names, scale
   x_info <- .convert_x(x, control$scale)
-  # x_info <- .convert_x(x, FALSE)
   x <- x_info$x
   col_x <- x_info$col_x
   x_scale <- x_info$x_scale
 
   weights <- .warn_no_weights(weights, "omisvm")
 
-  if (method == "qp-heuristic") {
+  if (method == "qp-heuristic" & control$kernel == "linear") {
+    res <- omisvm_qpheuristic_fit(y, bags, x,
+                                  c = cost,
+                                  h = h,
+                                  rescale = control$scale,
+                                  weights = weights,
+                                  verbose = control$verbose,
+                                  time_limit = control$time_limit,
+                                  max_step = control$max_step)
+  } else if (method == "qp-heuristic") {
+    # must reorder before fitting to ensure data order doesn't affect results
+    r <- .reorder(y, bags, x)
+    y <- r$y
+    bags <- r$b
+    x <- r$X
 
     # Perform data replication on `y`, `bags`, `kernel`, `x`
     y <- .y_datarep(y, k)
@@ -122,7 +135,6 @@ omisvm.default <- function(x, y, bags,
     kernel <- .kernel_datarep(kernel, k, h)
     x <- .x_datarep(x, k, h)
 
-    # browser()
     # Run misvm on replicated data, passing in kernel for faster computation
     res <- misvm_dualqpheuristic_fit(y, bags$.repl, x,
                                      c = cost,
@@ -134,17 +146,8 @@ omisvm.default <- function(x, y, bags,
                                      time_limit = control$time_limit,
                                      max_step = control$max_step)
     res$gurobi_fit$kernel <- control$kernel
-    # res <- omisvm_qpheuristic_fit(y, bags, x,
-    #                               c = cost,
-    #                               h = h,
-    #                               rescale = control$scale,
-    #                               weights = weights,
-    #                               verbose = control$verbose,
-    #                               time_limit = control$time_limit,
-    #                               max_step = control$max_step)
   }
 
-  # browser()
   out <- res[1]
   out$call_type <- "misvm.default"
   out$x <- res$x
@@ -230,25 +233,29 @@ predict.omisvm <- function(object,
 
   k <- length(object$lev)
   h <- object$h
-
-
   new_x <- .get_new_x(object, new_data)
-  new_x_dr <- .x_datarep(new_x, k, h)
 
-  kernel_dr <- .compute_kernel_datarep(
-    as.matrix(new_x_dr),
-    object$gurobi_fit$xmatrix,
-    k = k,
-    h = h,
-    type = object$gurobi_fit$kernel,
-    sigma = object$gurobi_fit$sigma
-  )
+  if (method == "qp-heuristic" & object$gurobi_fit$kernel == "linear") {
+    scores <- as.matrix(new_x) %*% object$gurobi_fit$w
+    scores_matrix <- outer(as.vector(scores), object$gurobi_fit$b, `+`)
 
-  scores_dr <- kernel_dr %*% object$gurobi_fit$ay + object$gurobi_fit$b
-  scores_matrix <- matrix(scores_dr, nrow = nrow(new_x), ncol = k-1)
+  } else if (method == "qp-heuristic") {
+    new_x_dr <- .x_datarep(new_x, k, h)
+    kernel_dr <- .compute_kernel_datarep(
+      as.matrix(new_x_dr),
+      object$gurobi_fit$xmatrix,
+      k = k,
+      h = h,
+      type = object$gurobi_fit$kernel,
+      sigma = object$gurobi_fit$sigma
+    )
 
-  scores <- scores_matrix[, 1, drop = TRUE]
+    scores_dr <- kernel_dr %*% object$gurobi_fit$ay + object$gurobi_fit$b
+    scores_matrix <- matrix(scores_dr, nrow = nrow(new_x), ncol = k-1)
+    scores <- scores_matrix[, 1, drop = TRUE]
+  }
   class_ <- rowSums(scores_matrix > 0) + 1
+
 
   if (layer == "bag") {
     bags <- .get_bags(object, new_data, new_bags)
@@ -257,12 +264,7 @@ predict.omisvm <- function(object,
   }
   class_ <- factor(class_, levels = seq_along(object$levels), labels = object$levels)
 
-  res <- switch(
-    type,
-    "raw" = tibble::tibble(.pred = as.numeric(scores)),
-    "class" = tibble::tibble(.pred_class = class_)
-  )
-
+  res <- .pred_output(type, scores, class_)
   attr(res, "layer") <- layer
   res
 }
@@ -371,11 +373,8 @@ omisvm_qpheuristic_fit <- function(y, bags, X, c, h, rescale = TRUE, weights = N
   # # Alternatively, can just pick a random instance
   # selected <- sapply(unique(bags), function(bag) { sample(which(bags == bag), 1) })
   # X_selected <- X[selected, , drop = FALSE]
-
-  params <- list()
-  params$OutputFlag = 1*verbose
-  params$IntFeasTol = 1e-5
-  if (time_limit) params$TimeLimit = time_limit
+  params <- .gurobi_params(verbose, time_limit)
+  params[["PSDTol"]] <- NULL
 
   selection_changed <- TRUE
   itercount = 0
@@ -402,9 +401,8 @@ omisvm_qpheuristic_fit <- function(y, bags, X, c, h, rescale = TRUE, weights = N
     }
   }
   if (n_selections == max_step) {
-    message = paste0("Number of iterations of heuristic algorithm reached threshold of ", max_step, ". Stopping with current selection.")
-    warning(message)
-    cat(message, "Value of c is ", c, "\n")
+    msg = paste0("Number of iterations of heuristic algorithm reached threshold of ", max_step, ". Stopping with current selection.")
+    warning(msg)
   }
 
   if (rescale) { # TODO: edit this to work
@@ -421,6 +419,7 @@ omisvm_qpheuristic_fit <- function(y, bags, X, c, h, rescale = TRUE, weights = N
       w = w,
       b = b_,
       xi = gurobi_result$x[grepl("xi", model$varnames)],
+      kernel = "linear",
       status = gurobi_result$status,
       itercount = itercount,
       baritercount = baritercount,
