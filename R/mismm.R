@@ -478,14 +478,7 @@ predict.mismm <- function(object, new_data,
     }
     pos <- factor(pos, levels = c(-1, 1), labels = object$levels)
 
-    res <- switch(
-        type,
-        "raw" = tibble::tibble(.pred = as.numeric(scores)),
-        "class" = tibble::tibble(.pred_class = pos)
-    )
-
-    # TODO: consider returning the AUC here as an attribute.  Can only do if we have the true bag labels
-    # attr(res, "AUC") <- calculated_auc
+    res <- .pred_output(type, scores, pos)
     attr(res, "layer") <- layer
     return(res)
 }

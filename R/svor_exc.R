@@ -218,13 +218,9 @@ predict.svor_exc <- function(object,
   }
   class_ <- factor(class_, levels = seq_along(object$levels), labels = object$levels)
 
-  res <- switch(type,
-                "raw" = tibble::tibble(.pred = as.numeric(scores)),
-                "class" = tibble::tibble(.pred_class = class_))
-
+  res <- .pred_output(type, scores, class_)
   # TODO: remember, for adding an SI-svor_exc option, I can add a bags option to
   # the predict function, but also need perhaps an updated fit.
-
   return(res)
 }
 

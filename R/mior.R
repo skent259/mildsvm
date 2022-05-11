@@ -307,12 +307,7 @@ predict.mior <- function(object,
 
   class_ <- factor(class_, levels = seq_along(object$levels), labels = object$levels)
 
-  res <- switch(type,
-                "raw" = tibble::tibble(.pred = as.numeric(scores)),
-                "class" = tibble::tibble(.pred_class = class_))
-
-  # TODO: consider returning the AUC here as an attribute.  Can only do if we have the true bag labels
-  # attr(res, "AUC") <- calculated_auc
+  res <- .pred_output(type, scores, class_)
   attr(res, "layer") <- layer
   attr(res, "midpoints") <- midpoints
   return(res)

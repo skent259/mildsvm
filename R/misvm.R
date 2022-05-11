@@ -393,17 +393,12 @@ predict.misvm <- function(object,
   }
   pos <- factor(pos, levels = c(-1, 1), labels = object$levels)
 
-  res <- switch(type,
-                "raw" = tibble::tibble(.pred = as.numeric(scores)),
-                "class" = tibble::tibble(.pred_class = pos))
-
+  res <- .pred_output(type, scores, pos)
   if (object$call_type == "misvm.mild_df") {
     # bring back the predictions from instance level to the sample level
     ind <- match(mil_info$instance_name, new_data$instance_name)
     res <- res[ind, , drop = FALSE]
   }
-  # TODO: consider returning the AUC here as an attribute.  Can only do if we have the true bag labels
-  # attr(res, "AUC") <- calculated_auc
   attr(res, "layer") <- layer
   return(res)
 }

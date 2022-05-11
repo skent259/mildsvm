@@ -287,6 +287,18 @@ x_from_mild_formula <- function(formula, data) {
   new_x
 }
 
+#' Return prediction output
+#' @inheritParams predict.misvm
+#' @param scores A vector of raw output scores
+#' @param class_ A vector of class labels
+#' @noRd
+.pred_output <- function(type, scores, class_) {
+  switch(
+    type,
+    "raw" = tibble::tibble(.pred = as.numeric(scores)),
+    "class" = tibble::tibble(.pred_class = class_)
+  )
+}
 
 #' Default gurobi parameters
 #' @inheritParams misvm_mip_fit

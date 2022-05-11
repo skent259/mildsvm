@@ -138,6 +138,9 @@ misvm_orova.formula <- function(formula, data, ...) {
 #'   names match the original function call.
 #'
 #' @param object An object of class `misvm_orova`
+#' @param type If `'class'`, return predicted values based on the highest output
+#'   of an individual model.  If `'raw'`, return the raw predicted scores for
+#'   each model.
 #' @inheritParams predict.misvm
 #'
 #' @return A tibble with `nrow(new_data)` rows.  If `type = 'class'`, the tibble
@@ -176,24 +179,21 @@ predict.misvm_orova <- function(object,
   type <- match.arg(type, c("class", "raw"))
   layer <- match.arg(layer, c("bag", "instance"))
   method <- attr(object, "method")
+  levels <- object$levels
 
   preds <- lapply(object$fits, predict,
                   new_data = new_data, type = "raw", layer = layer,
                   new_bags = new_bags, ...)
 
   scores_df <- do.call(cbind, preds)
-  colnames(scores_df) <- paste0(".pred_", object$levels)
+  colnames(scores_df) <- paste0(".pred_", levels)
 
   class_ <- apply(scores_df, 1, which.max)
-  class_ <- factor(class_, levels = seq_along(object$levels), labels = object$levels)
+  class_ <- factor(class_, levels = seq_along(levels), labels = levels)
 
   res <- switch(type,
                 "raw" = tibble::as_tibble(scores_df),
                 "class" = tibble::tibble(.pred_class = class_))
-
-
-  # TODO: consider returning the AUC here as an attribute.  Can only do if we have the true bag labels
-  # attr(res, "AUC") <- calculated_auc
   attr(res, "layer") <- layer
   return(res)
 }
