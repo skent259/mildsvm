@@ -287,6 +287,22 @@ x_from_mild_formula <- function(formula, data) {
   new_x
 }
 
+
+#' Default gurobi parameters
+#' @inheritParams misvm_mip_fit
+#' @noRd
+.gurobi_params <- function(verbose, time_limit) {
+  params <- list()
+  params[["OutputFlag"]] = 1*verbose
+  params[["IntFeasTol"]] = 1e-5
+  params[["PSDTol"]] <- 1e-4
+  if (time_limit) {
+    params[["TimeLimit"]] = time_limit
+  }
+
+  params
+}
+
 #' Initialize Instance Selection
 #'
 #' Use bag_label and instance_name information to initialize the selected

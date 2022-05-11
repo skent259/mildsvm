@@ -749,11 +749,6 @@ misvm_qpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
                            function(bag) { apply(X[bags == bag, , drop = FALSE], 2, mean) }))
   }
 
-  params <- list()
-  params$OutputFlag = 1*verbose
-  params$IntFeasTol = 1e-5
-  if (time_limit) params$TimeLimit = time_limit
-
   selection_changed <- TRUE
   itercount = 0
   baritercount = 0
@@ -765,7 +760,7 @@ misvm_qpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
     X_model <- rbind(X[y == -1, , drop = FALSE],
                      X_selected)
     model <- misvm_qpheuristic_model(y_model, b_model, X_model, c, weights)
-    gurobi_result <- gurobi::gurobi(model, params = params)
+    gurobi_result <- gurobi::gurobi(model, .gurobi_params(verbose, time_limit))
 
     w <- gurobi_result$x[grepl("w", model$varnames)]
     b_ <- gurobi_result$x[grepl("b", model$varnames)]
@@ -867,12 +862,6 @@ misvm_dualqpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = N
 
   K <- .convert_kernel(X, kernel, sigma = sigma)
 
-  params <- list()
-  params[["OutputFlag"]] <- 1 * verbose
-  params[["IntFeasTol"]] <- 1e-5
-  params[["PSDTol"]] <- 1e-4
-  if (time_limit) params[["TimeLimit"]] <- time_limit
-
   selection_changed <- TRUE
   itercount <- 0
   baritercount <- 0
@@ -886,11 +875,12 @@ misvm_dualqpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = N
 
     gurobi_result <-
       tryCatch({
-        gurobi::gurobi(opt_model, params = params)
+        gurobi::gurobi(opt_model, .gurobi_params(verbose, time_limit))
       },
       error = function(e) {
         rlang::warn(paste0("Warning from gurobi: ", conditionMessage(e)))
         rlang::inform("Trying NonConvex version")
+        params <- .gurobi_params(verbose, time_limit)
         params[["NonConvex"]] <- 2
         return(gurobi::gurobi(opt_model, params = params))
       })
