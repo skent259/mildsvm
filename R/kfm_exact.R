@@ -64,7 +64,7 @@ kfm_exact <- function(kernel = "polynomial", degree = 2, const = 1) {
 #' @export
 build_fm.kfm_exact <- function(kfm_fit, new_data, ...) {
   if (inherits(new_data, "mild_df")) {
-    info <- new_data[ , c("bag_label", "bag_name", "instance_name"), drop = FALSE]
+    info <- new_data[, c("bag_label", "bag_name", "instance_name"), drop = FALSE]
     new_data$bag_label <- new_data$bag_name <- new_data$instance_name <- NULL
   } else {
     info <- NULL
@@ -75,25 +75,25 @@ build_fm.kfm_exact <- function(kfm_fit, new_data, ...) {
     const <- kfm_fit$const
 
     if (degree == 2) {
-      X <- as.matrix(new_data)
-      d <- ncol(X)
+      x <- as.matrix(new_data)
+      d <- ncol(x)
 
-      x_squared <- X^2
-      colnames(x_squared) <- paste0(colnames(X), "_sq")
+      x_squared <- x^2
+      colnames(x_squared) <- paste0(colnames(x), "_sq")
 
-      x_crossterms <- matrix(NA, nrow(X), choose(d,2))
-      names_crossterrms <- rep(NA, choose(d,2))
+      x_crossterms <- matrix(NA, nrow(x), choose(d, 2))
+      names_crossterrms <- rep(NA, choose(d, 2))
       col <- 1
       for (k in 2:d) {
         for (l in 1:(k-1)) {
-          x_crossterms[, col] <- sqrt(2) * X[,k] * X[,l]
-          names_crossterrms[col] <- paste0(colnames(X)[l], ".", colnames(X)[k])
+          x_crossterms[, col] <- sqrt(2) * x[, k] * x[, l]
+          names_crossterrms[col] <- paste0(colnames(x)[l], ".", colnames(x)[k])
           col <- col + 1
         }
       }
       colnames(x_crossterms) <- names_crossterrms
 
-      x_linear <- sqrt(2*const) * X
+      x_linear <- sqrt(2*const) * x
 
       fm <- cbind(x_squared, x_crossterms, x_linear)
       # TODO: consider passing the constant term in here, especially if not going to rescale after

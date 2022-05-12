@@ -60,13 +60,15 @@ build_fm <- function(kfm_fit, new_data, ...) {
 #'
 #' @export
 #' @author Yifei Liu
-build_instance_feature <- function(data, qtls = seq(0.05, 0.95, length.out = 10),
-                                   mean = TRUE, sd = TRUE) {
+build_instance_feature <- function(data,
+                                   qtls = seq(0.05, 0.95, length.out = 10),
+                                   mean = TRUE,
+                                   sd = TRUE) {
 
   instance_name <- unique(data$instance_name)
   df <- NULL
   for (i in seq_along(instance_name)) {
-    data_i <- data[data$instance_name == instance_name[i], -(1:3), drop = FALSE]
+    data_i <- data[data$instance_name == instance_name[i], - (1:3), drop = FALSE]
     qtls_i <- as.vector(apply(data_i, 2, function(x) stats::quantile(x,
                                                                      probs = qtls)))
     if (mean) {
@@ -80,13 +82,13 @@ build_instance_feature <- function(data, qtls = seq(0.05, 0.95, length.out = 10)
     }
     df <- rbind(df, qtls_i)
   }
-  col_name <- as.vector(sapply(colnames(data[, -(1:3), drop = FALSE]), function(x) paste0(x,
+  col_name <- as.vector(sapply(colnames(data[, - (1:3), drop = FALSE]), function(x) paste0(x,
                                                                             "_", qtls)))
   if (mean) {
-    col_name <- c(col_name, paste0(colnames(data[, -(1:3), drop = FALSE]), "_mean"))
+    col_name <- c(col_name, paste0(colnames(data[, - (1:3), drop = FALSE]), "_mean"))
   }
   if (sd) {
-    col_name <- c(col_name, paste0(colnames(data[, -(1:3), drop = FALSE]), "_sd"))
+    col_name <- c(col_name, paste0(colnames(data[, - (1:3), drop = FALSE]), "_sd"))
   }
 
   colnames(df) <- col_name

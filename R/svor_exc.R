@@ -66,18 +66,18 @@ svor_exc <- function(x, ...) {
 
 #' @describeIn svor_exc Method for data.frame-like objects
 #' @export
-svor_exc.default <- function(x, y,
-                             cost = 1,
-                             method = c("smo"),
-                             weights = NULL,
-                             control = list(kernel = "linear",
-                                            sigma = if (is.vector(x)) 1 else 1 / ncol(x),
-                                            max_step = 500,
-                                            scale = TRUE,
-                                            verbose = FALSE
-                             ),
-                             ...)
-{
+svor_exc.default <- function(
+    x,
+    y,
+    cost = 1,
+    method = c("smo"),
+    weights = NULL,
+    control = list(kernel = "linear",
+                   sigma = if (is.vector(x)) 1 else 1 / ncol(x),
+                   max_step = 500,
+                   scale = TRUE,
+                   verbose = FALSE),
+    ...) {
   method <- match.arg(method, c("smo"))
 
   defaults <- list(
@@ -174,8 +174,7 @@ predict.svor_exc <- function(object,
                              type = c("class", "raw"),
                              layer = c("instance", "bag"),
                              new_bags = "bag_name",
-                             ...)
-{
+                             ...) {
   type <- match.arg(type, c("class", "raw"))
   layer <- match.arg(layer, c("instance", "bag"))
 
@@ -230,18 +229,24 @@ predict.svor_exc <- function(object,
 #' INTERNAL fit function for SVOR-EXC
 #' @author Sean Kent
 #' @noRd
-svor_exc_fit <- function(y, X, c, rescale = TRUE, weights = NULL,
-                         kernel = "linear", sigma = NULL,
-                         verbose = FALSE, max_step = 500) {
-  r <- .reorder(y, y, X)
+svor_exc_fit <- function(y,
+                         x,
+                         c,
+                         rescale = TRUE,
+                         weights = NULL,
+                         kernel = "linear",
+                         sigma = NULL,
+                         verbose = FALSE,
+                         max_step = 500) {
+  r <- .reorder(y, y, x)
   y <- r$y
-  X <- r$X
-  if (rescale) X <- scale(X)
+  x <- r$X
+  if (rescale) x <- scale(x)
   unorder <- match(seq_along(r$order), r$order)
 
-  K <- .convert_kernel(X, kernel, sigma = sigma)
+  kern_mat <- .convert_kernel(x, kernel, sigma = sigma)
 
-  smo_fit <- smo(y, K, c, max_step)
+  smo_fit <- smo(y, kern_mat, c, max_step)
 
   # unorder the alpha values
   smo_fit$alpha$reg <- unname(smo_fit$alpha$reg[unorder])
@@ -255,10 +260,10 @@ svor_exc_fit <- function(y, X, c, rescale = TRUE, weights = NULL,
   res <- list(
     smo_fit = smo_fit,
     n_step = smo_fit$i,
-    x = X[unorder, ],
+    x = x[unorder, ],
     x_scale = list(
-      "center" = attr(X, "scaled:center"),
-      "scale" = attr(X, "scaled:scale")
+      "center" = attr(x, "scaled:center"),
+      "scale" = attr(x, "scaled:scale")
     )
   )
   if (!rescale) res$x_scale <- NULL
@@ -268,20 +273,20 @@ svor_exc_fit <- function(y, X, c, rescale = TRUE, weights = NULL,
 #' INTERNAL smo algorithm for ordinal regression
 #' @author Sean Kent
 #' @noRd
-smo <- function(y, K, c, max_step) {
+smo <- function(y, kernel, c, max_step) {
   tau <- 1e-3
 
   opt <- .find_initial_point(y, c)
-  f <- .calculate_f(opt$alpha, K)
+  f <- .calculate_f(opt$alpha, kernel)
   b_info <- .calculate_b(opt$alpha, opt$mu, f, c, y)
 
   i <- 0
-  while(max(b_info$B_low - b_info$B_up) > tau & i < max_step) {
+  while (max(b_info$B_low - b_info$B_up) > tau & i < max_step) {
 
-    J <- which.max(b_info$B_low - b_info$B_up) # active threshold
+    j_thresh <- which.max(b_info$B_low - b_info$B_up) # active threshold
 
-    opt <- .update_alpha_mu(b_info, opt$alpha, opt$mu, J, f, c, y, K)
-    f <- .calculate_f(opt$alpha, K)
+    opt <- .update_alpha_mu(b_info, opt$alpha, opt$mu, j_thresh, f, c, y, kernel)
+    f <- .calculate_f(opt$alpha, kernel)
     b_info <- .calculate_b(opt$alpha, opt$mu, f, c, y)
 
     i <- i + 1
@@ -310,7 +315,7 @@ smo <- function(y, K, c, max_step) {
     "star" = rep(0, length(y))
   )
   names(alpha$reg) <- seq_along(alpha$reg)
-  names(alpha$star) <- -1*(seq_along(alpha$star))
+  names(alpha$star) <- -1 * (seq_along(alpha$star))
 
   mu <- rep(1, j_max)
 
@@ -320,14 +325,14 @@ smo <- function(y, K, c, max_step) {
   ))
 }
 
-.calculate_f <- function(alpha, K) {
-  as.numeric(K %*% (alpha$star - alpha$reg))
+.calculate_f <- function(alpha, kernel) {
+  as.numeric(kernel %*% (alpha$star - alpha$reg))
 }
 
 .calculate_b <- function(alpha, mu, f, c, y) {
   j_max <- max(y) - 1 # r-1
 
-  I <- lapply(1:j_max, function(j) {
+  cap_i <- lapply(1:j_max, function(j) {
     a_reg <- alpha[["reg"]][which(y == j)]
     a_st <- alpha[["star"]][which(y == j+1)]
 
@@ -345,8 +350,8 @@ smo <- function(y, K, c, max_step) {
     ind1 <- which(y == j)
     ind2 <- which(y == j+1)
 
-    set1 <- c(I[[j]][["0a"]], I[[j]][["3"]])
-    set2 <- c(I[[j]][["0b"]], I[[j]][["1"]])
+    set1 <- c(cap_i[[j]][["0a"]], cap_i[[j]][["3"]])
+    set2 <- c(cap_i[[j]][["0b"]], cap_i[[j]][["1"]])
 
     f_up <- c(f[ind1][set1] + 1,
               f[ind2][set2] - 1)
@@ -366,8 +371,8 @@ smo <- function(y, K, c, max_step) {
     ind1 <- which(y == j)
     ind2 <- which(y == j+1)
 
-    set1 <- c(I[[j]][["0a"]], I[[j]][["2"]])
-    set2 <- c(I[[j]][["0b"]], I[[j]][["4"]])
+    set1 <- c(cap_i[[j]][["0a"]], cap_i[[j]][["2"]])
+    set2 <- c(cap_i[[j]][["0b"]], cap_i[[j]][["4"]])
 
     f_low <- c(f[ind1][set1] + 1,
                f[ind2][set2] - 1)
@@ -383,39 +388,39 @@ smo <- function(y, K, c, max_step) {
     }
   })
 
-  B_tilde_low <- sapply(1:j_max, function(j) .max(b_low[1:j]))
-  B_tilde_up <- sapply(1:j_max, function(j) .min(b_up[j:j_max]))
+  cap_b_tilde_low <- sapply(1:j_max, function(j) .max(b_low[1:j]))
+  cap_b_tilde_up <- sapply(1:j_max, function(j) .min(b_up[j:j_max]))
 
-  B_low <- sapply(1:j_max, function(j) {
+  cap_b_low <- sapply(1:j_max, function(j) {
     # when j == j_max, mu[j+1] == 0
     if (mu[j+1] > 0 & j != j_max) {
-      B_tilde_low[j+1]
+      cap_b_tilde_low[j+1]
     } else {
-      B_tilde_low[j]
+      cap_b_tilde_low[j]
     }
   })
-  B_up <- sapply(1:j_max, function(j) {
+  cap_b_up <- sapply(1:j_max, function(j) {
     # when j == 1, mu[0] == 0
     if (mu[j] > 0 & j != 1) {
-      B_tilde_up[j-1]
+      cap_b_tilde_up[j-1]
     } else {
-      B_tilde_up[j]
+      cap_b_tilde_up[j]
     }
   })
-  B_low <= B_up
+  cap_b_low <= cap_b_up
   return(list(
-    I = I,
+    I = cap_i,
     b_low = b_low,
     b_up = b_up,
-    B_low = B_low,
-    B_up = B_up
+    B_low = cap_b_low,
+    B_up = cap_b_up
   ))
 }
 
-.update_alpha_mu <- function(self, alpha, mu, J, f, c, y, K) {
+.update_alpha_mu <- function(self, alpha, mu, j_thresh, f, c, y, kernel) {
 
-  o <- names(which(self$B_low[J] == self$b_low)[1])
-  u <- names(which(self$B_up[J] == self$b_up)[1])
+  o <- names(which(self$B_low[j_thresh] == self$b_low)[1])
+  u <- names(which(self$B_up[j_thresh] == self$b_up)[1])
   o_ <- abs(as.numeric(o)) # for indexing f, y, X, or K
   u_ <- abs(as.numeric(u))
 
@@ -435,7 +440,7 @@ smo <- function(y, K, c, max_step) {
                   u %in% names(self$I[[j_u]][["3"]]),
                 -1, 1)
 
-  denom <- K[o_, o_] + K[u_, u_] - 2 * K[o_, u_]
+  denom <- kernel[o_, o_] + kernel[u_, u_] - 2 * kernel[o_, u_]
   delta_mu <- -f[o_] + f[u_] + s_o - s_u
   if (denom != 0) {
     delta_mu <- delta_mu / denom

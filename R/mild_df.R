@@ -112,8 +112,7 @@ mild_df <- function(bag_label = character(),
                     bag_name = character(),
                     instance_name = character(),
                     ...,
-                    instance_label = NULL)
-{
+                    instance_label = NULL) {
   x <- data.frame(
     bag_label = bag_label,
     bag_name = bag_name,
@@ -158,8 +157,7 @@ as_mild_df <- function(x,
                        bag_name = "bag_name",
                        instance_name = "instance_name",
                        instance_label = "instance_label",
-                       ...)
-{
+                       ...) {
   UseMethod("as_mild_df")
 }
 
@@ -170,8 +168,7 @@ as_mild_df.default <- function(x,
                                bag_name = "bag_name",
                                instance_name = "instance_name",
                                instance_label = "instance_label",
-                               ...)
-{
+                               ...) {
   # TODO: allow `bag_label` to be passed as a vector
   if (!inherits(x, "data.frame")) {
     x <- as.data.frame(x)

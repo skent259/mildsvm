@@ -68,22 +68,23 @@ omisvm <- function(x, ...) {
 
 #' @describeIn omisvm Method for data.frame-like objects
 #' @export
-omisvm.default <- function(x, y, bags,
-                           cost = 1,
-                           h = 1,
-                           s = Inf,
-                           method = c("qp-heuristic"),
-                           weights = TRUE,
-                           control = list(kernel = "linear",
-                                          sigma = if (is.vector(x)) 1 else 1 / ncol(x),
-                                          max_step = 500,
-                                          type = "C-classification",
-                                          scale = TRUE,
-                                          verbose = FALSE,
-                                          time_limit = 60
-                           ),
-                           ...)
-{
+omisvm.default <- function(
+    x,
+    y,
+    bags,
+    cost = 1,
+    h = 1,
+    s = Inf,
+    method = c("qp-heuristic"),
+    weights = TRUE,
+    control = list(kernel = "linear",
+                   sigma = if (is.vector(x)) 1 else 1 / ncol(x),
+                   max_step = 500,
+                   type = "C-classification",
+                   scale = TRUE,
+                   verbose = FALSE,
+                   time_limit = 60),
+    ...) {
 
   method <- match.arg(method, c("qp-heuristic"))
 
@@ -230,8 +231,7 @@ predict.omisvm <- function(object,
                            type = c("class", "raw"),
                            layer = c("bag", "instance"),
                            new_bags = "bag_name",
-                           ...)
-{
+                           ...) {
   type <- match.arg(type, c("class", "raw"))
   layer <- match.arg(layer, c("bag", "instance"))
   method <- attr(object, "method")
@@ -277,19 +277,19 @@ predict.omisvm <- function(object,
 
 # Specific implementation methods below ----------------------------------------
 
-omisvm_qpheuristic_model <- function(y, bags, X, Xs, c, h, weights = NULL) {
+omisvm_qpheuristic_model <- function(y, bags, x, x_s, c, h, weights = NULL) {
 
-  K <- max(y) # assumes that y contains values from 1, ... K
+  k <- max(y) # assumes that y contains values from 1, ... K
   n_bags <- length(unique(bags))
   yb <- classify_bags(y, bags)
 
   # create versions of x, y, bags corresponding to the number of constraints
   x_ <- y_ <- bags_ <- q_ <- list()
-  for (q in 1:(K-1)) {
+  for (q in 1:(k-1)) {
     ind1 <- y <= q  # similar constraint to y_I = -1, need all i in I
     ind2 <- yb > q  # similar constraint to y_I = +1, need only s(I)
 
-    x_[[q]] <- rbind(X[ind1, , drop = FALSE], Xs[ind2, , drop = FALSE])
+    x_[[q]] <- rbind(x[ind1, , drop = FALSE], x_s[ind2, , drop = FALSE])
     y_[[q]] <- c(y[ind1], yb[ind2])
     bags_[[q]] <- c(bags[ind1], unique(bags)[ind2])
     q_[[q]] <- rep(q, sum(ind1) + sum(ind2))
@@ -300,14 +300,14 @@ omisvm_qpheuristic_model <- function(y, bags, X, Xs, c, h, weights = NULL) {
 
   # Build constraint matrix
   # order of variables is [w, b, xi]
-  n_w <- ncol(X)
-  n_b <- K-1
-  n_xi <- (K-1) * n_bags
-  sgn <- 2*(y_ > q_) - 1
+  n_w <- ncol(x)
+  n_b <- k-1
+  n_xi <- (k-1) * n_bags
+  sgn <- 2 * (y_ > q_) - 1
   # w constraints (n_col(X) columns)
   w_constraint <- sgn * do.call(rbind, x_)
   # b constraints (K-1 columns)
-  b_blocks <- lapply(1:(K-1), function(q) sgn[q_ == q])
+  b_blocks <- lapply(1:(k-1), function(q) sgn[q_ == q])
   b_constraint <- Matrix::bdiag(b_blocks)
   # xi_constraints ((K-1) * n_bags columns)
   xi_col <- function(b, n_xi) {
@@ -316,7 +316,7 @@ omisvm_qpheuristic_model <- function(y, bags, X, Xs, c, h, weights = NULL) {
     vec[b] <- 1
     return(vec)
   }
-  xi_blocks <- lapply(1:(K-1), function(q) {
+  xi_blocks <- lapply(1:(k-1), function(q) {
     t(sapply(bags_[q_ == q], xi_col, n_xi = n_bags))
   })
   xi_constraint <- Matrix::bdiag(xi_blocks)
@@ -330,89 +330,99 @@ omisvm_qpheuristic_model <- function(y, bags, X, Xs, c, h, weights = NULL) {
 
   # Build quadratic objective
   # ||w||^2
-  w_Q <- diag(rep(1, n_w))
+  w_q_mat <- diag(rep(1, n_w))
   # sum_{q=2}^{K-1} (b_q - b1)^2
-  b_Q <- matrix(0, n_b, n_b)
-  diag(b_Q) <- 1
-  b_Q[1, ] <- -1
-  b_Q[, 1] <- -1
-  b_Q[1, 1] <- K-2
+  b_q_mat <- matrix(0, n_b, n_b)
+  diag(b_q_mat) <- 1
+  b_q_mat[1, ] <- -1
+  b_q_mat[, 1] <- -1
+  b_q_mat[1, 1] <- k-2
   # no terms
-  xi_Q <- diag(rep(0, n_xi))
+  xi_q_mat <- diag(rep(0, n_xi))
 
-  Q <- Matrix::bdiag(1/2 * w_Q, 1 / (2*h^2) * b_Q, xi_Q)
+  q_mat <- Matrix::bdiag(1/2 * w_q_mat, 1 / (2*h^2) * b_q_mat, xi_q_mat)
 
   model <- list()
   # Objective
-  model$modelsense <- "min"
-  model$obj <- c(rep(0, n_w + n_b), c_vec) # linear portion of objective
-  model$Q <- Q # quadratic portion of objective
+  model[["modelsense"]] <- "min"
+  model[["obj"]] <- c(rep(0, n_w + n_b), c_vec) # linear portion of objective
+  model[["Q"]] <- q_mat # quadratic portion of objective
   # Constraints
-  model$varnames <- c(paste0("w",1:n_w), paste0("b",1:n_b), paste0("xi",1:n_xi))
-  model$A <- constraint
-  model$sense <- rep(">=", nrow(constraint))
-  model$rhs <- rep(1, nrow(constraint))
-  model$lb <- c(rep(-Inf, n_w + n_b), rep(0, n_xi))
+  model[["varnames"]] <- c(paste0("w", 1:n_w), paste0("b", 1:n_b), paste0("xi", 1:n_xi))
+  model[["A"]] <- constraint
+  model[["sense"]] <- rep(">=", nrow(constraint))
+  model[["rhs"]] <- rep(1, nrow(constraint))
+  model[["lb"]] <- c(rep(-Inf, n_w + n_b), rep(0, n_xi))
 
   return(model)
 }
 
-omisvm_qpheuristic_fit <- function(y, bags, X, c, h, rescale = TRUE, weights = NULL,
-                                   verbose = FALSE, time_limit = FALSE, max_step = 500) {
-  r <- .reorder(y, bags, X)
+omisvm_qpheuristic_fit <- function(y,
+                                   bags,
+                                   x,
+                                   c,
+                                   h,
+                                   rescale = TRUE,
+                                   weights = NULL,
+                                   verbose = FALSE,
+                                   time_limit = FALSE,
+                                   max_step = 500) {
+  r <- .reorder(y, bags, x)
   y <- r$y
   bags <- r$b
-  X <- r$X
-  if (rescale) X <- scale(X)
+  x <- r$X
+  if (rescale) x <- scale(x)
 
   # Compute initial selections for all bags as mean within that bag
   # TODO: evaluate whether this is a smart choice in the ordinal procedure
-  if (ncol(X) == 1) {
-    X_selected <- sapply(unique(bags), function(bag) { mean(X[bags == bag, ]) })
-    X_selected <- as.matrix(X_selected)
+  if (ncol(x) == 1) {
+    x_selected <- sapply(unique(bags), function(bag) {
+      mean(x[bags == bag, ])
+    })
+    x_selected <- as.matrix(x_selected)
   } else {
-    X_selected <- t(sapply(unique(bags),
-                           function(bag) { apply(X[bags == bag, , drop = FALSE], 2, mean) }))
+    x_selected <- t(sapply(unique(bags),
+                           function(bag) {
+                             apply(x[bags == bag, , drop = FALSE], 2, mean)
+                           }))
   }
 
-  # # Alternatively, can just pick a random instance
-  # selected <- sapply(unique(bags), function(bag) { sample(which(bags == bag), 1) })
-  # X_selected <- X[selected, , drop = FALSE]
   params <- .gurobi_params(verbose, time_limit)
   params[["PSDTol"]] <- NULL
 
   selection_changed <- TRUE
-  itercount = 0
-  baritercount = 0
-  n_selections = 0
+  itercount <- 0
+  baritercount <- 0
+  n_selections <- 0
 
   while (selection_changed & n_selections < max_step) {
-    model <- omisvm_qpheuristic_model(y, bags, X, X_selected, c, h, weights)
+    model <- omisvm_qpheuristic_model(y, bags, x, x_selected, c, h, weights)
     gurobi_result <- gurobi::gurobi(model, params = params)
 
     w <- gurobi_result$x[grepl("w", model$varnames)]
     b_ <- gurobi_result$x[grepl("b", model$varnames)]
-    f <- as.matrix(X) %*% w # + b_
+    f <- as.matrix(x) %*% w
     itercount <- itercount + gurobi_result$itercount
     baritercount <- baritercount + gurobi_result$baritercount
 
     selected <- sapply(unique(bags), function(bag) {
       which(f == max(f[bags == bag]))[1]
     })
-    selection_changed <- !identical(X_selected, X[selected, , drop = FALSE])
+    selection_changed <- !identical(x_selected, x[selected, , drop = FALSE])
     if (selection_changed) {
-      X_selected <- X[selected, , drop = FALSE]
-      n_selections = n_selections + 1
+      x_selected <- x[selected, , drop = FALSE]
+      n_selections <- n_selections + 1
     }
   }
   if (n_selections == max_step) {
-    msg = paste0("Number of iterations of heuristic algorithm reached threshold of ", max_step, ". Stopping with current selection.")
+    msg <- paste0("Number of iterations of heuristic algorithm reached threshold",
+                  "of ", max_step, ". Stopping with current selection.")
     warning(msg)
   }
 
   if (rescale) { # TODO: edit this to work
-    b_ <- b_ - sum(attr(X, "scaled:center") * w / attr(X, "scaled:scale"))
-    w <- w / attr(X, "scaled:scale")
+    b_ <- b_ - sum(attr(x, "scaled:center") * w / attr(x, "scaled:scale"))
+    w <- w / attr(x, "scaled:scale")
   }
   # vector representing selected positive instances
   selected_vec <- rep(0, length(y))
@@ -435,11 +445,11 @@ omisvm_qpheuristic_fit <- function(y, bags, X, c, h, rescale = TRUE, weights = N
     repr_inst = selected_vec,
     x = NULL,
     x_scale = list(
-      "center" = attr(X, "scaled:center"),
-      "scale" = attr(X, "scaled:scale")
+      "center" = attr(x, "scaled:center"),
+      "scale" = attr(x, "scaled:scale")
     )
   )
-  names(res$gurobi_fit$w) <- colnames(X)
+  names(res$gurobi_fit$w) <- colnames(x)
   if (!rescale) res$x_scale <- NULL
   return(res)
 }

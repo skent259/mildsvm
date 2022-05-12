@@ -108,21 +108,22 @@ mior <- function(x, ...) {
 
 #' @describeIn mior Method for data.frame-like objects
 #' @export
-mior.default <- function(x, y, bags,
-                         cost = 1,
-                         cost_eta = 1,
-                         method = "qp-heuristic",
-                         weights = NULL,
-                         control = list(kernel = "linear",
-                                        sigma = if (is.vector(x)) 1 else 1 / ncol(x),
-                                        max_step = 500,
-                                        scale = TRUE,
-                                        verbose = FALSE,
-                                        time_limit = 60,
-                                        option = c("corrected", "xiao")
-                         ),
-                         ...)
-{
+mior.default <- function(
+    x,
+    y,
+    bags,
+    cost = 1,
+    cost_eta = 1,
+    method = "qp-heuristic",
+    weights = NULL,
+    control = list(kernel = "linear",
+                   sigma = if (is.vector(x)) 1 else 1 / ncol(x),
+                   max_step = 500,
+                   scale = TRUE,
+                   verbose = FALSE,
+                   time_limit = 60,
+                   option = c("corrected", "xiao")),
+    ...) {
   method <- match.arg(method, c("qp-heuristic"))
 
   defaults <- list(
@@ -256,8 +257,7 @@ predict.mior <- function(object,
                          type = c("class", "raw"),
                          layer = c("bag", "instance"),
                          new_bags = "bag_name",
-                         ...)
-{
+                         ...) {
   type <- match.arg(type, c("class", "raw"))
   layer <- match.arg(layer, c("bag", "instance"))
 
@@ -315,10 +315,20 @@ predict.mior <- function(object,
 
 # Specific implementation methods below ----------------------------------------
 
-mior_dual_fit <- function(y, bags, x, c0, c1, rescale = TRUE, weights = NULL,
-                          kernel = "linear", sigma = NULL,
-                          verbose = FALSE, time_limit = FALSE, max_step = 500,
-                          option = "xiao") {
+mior_dual_fit <- function(
+    y,
+    bags,
+    x,
+    c0,
+    c1,
+    rescale = TRUE,
+    weights = NULL,
+    kernel = "linear",
+    sigma = NULL,
+    verbose = FALSE,
+    time_limit = FALSE,
+    max_step = 500,
+    option = "xiao") {
 
   r <- .reorder(y, bags, x)
   y <- r$y
@@ -326,42 +336,28 @@ mior_dual_fit <- function(y, bags, x, c0, c1, rescale = TRUE, weights = NULL,
   x <- r$X
   if (rescale) x <- scale(x)
 
-  # kernel
-  # if (!is.matrix(kernel)) {
-  #   K <- compute_kernel(X, type = kernel, sigma = sigma)
-  # } else {
-  #   K <- kernel
-  # }
-
-  # pre-specified parameters
-  # x, y, bags,
-  # max_step <- 500
-  # c0 <- 1
-  # c1 <- 1
   threshold <- 0.1
-  # verbose <- FALSE
 
   params <- .gurobi_params(verbose == 2, time_limit)
-  params[["IntFeasTol"]] = min(1e-5, 1e-5*c0, 1e-5*c1)
-  params[["IntFeasTol"]] = max(params[["IntFeasTol"]], 1e-9) # 1e-9 is smallest gurobi will accept
-  params[["BarQCPConvTol"]] = 1e-9
+  params[["IntFeasTol"]] <- min(1e-5, 1e-5*c0, 1e-5*c1)
+  params[["IntFeasTol"]] <- max(params[["IntFeasTol"]], 1e-9) # 1e-9 is smallest gurobi will accept
+  params[["BarQCPConvTol"]] <-  1e-9
 
   # initialize parameters
-  K <- max(y)
+  k <- max(y)
   t <- 0
   delta_j <- 1e-3
   j <- numeric(max_step+2)
   j_ <- function(t) {
     j[t+2] # let j_ start at index -1, so j[1] = j_(-1), j[2] = j_(0), etc.
   }
-  j[1] <- 1e-3 # j(-1)
+  j[1] <- 1e-3 # i.e. j(-1)
 
   w_t <- stats::rnorm(ncol(x)) # check to see if there is a suggested initialization
-  b_t <- sort(stats::rnorm(K+1))
+  b_t <- sort(stats::rnorm(k+1))
 
   while (abs(delta_j / j_(t-1)) > threshold && t < max_step) {
-    if (min(abs(j[t+1] - j[-(t+1)])) / j[t+1] < 1e-5) {
-      # print(min(abs(j[t+1] - j)))
+    if (min(abs(j[t+1] - j[- (t+1)])) / j[t+1] < 1e-5) {
       rlang::warn(c(
         "Optimization appears to be repeating solutions.",
         i = "Stopping with best solution."
@@ -372,8 +368,6 @@ mior_dual_fit <- function(y, bags, x, c0, c1, rescale = TRUE, weights = NULL,
     # compute theta and lambda
     scores <- as.matrix(x) %*% w_t - (b_t[y] + b_t[y+1]) / 2
     scores <- as.numeric(scores)
-    # g <- abs(scores)
-    # h <- -classify_bags(-abs(scores), bags, condense = FALSE)
     theta <- compute_theta(g = abs(scores), bags)
     lambda <- sign(scores)
     delta <- theta*lambda
@@ -440,14 +434,13 @@ mior_dual_fit <- function(y, bags, x, c0, c1, rescale = TRUE, weights = NULL,
       "scale" = attr(x, "scaled:scale")
     )
   }
-  # names(res$model$w) <- colnames(X)
   return(res)
 }
 
 mior_dual_model <- function(x, y, bags, delta, c0, c1, option = "xiao") {
 
   n_a <- length(unique(bags))
-  n_mu <- K <- max(y)
+  n_mu <- k <- max(y)
   n_rho <- 1
 
   y_bag <- classify_bags(y, bags) # TODO: make sure that the bag label is passed here still
@@ -474,31 +467,31 @@ mior_dual_model <- function(x, y, bags, delta, c0, c1, option = "xiao") {
     alpha_constr[p, i] <- alpha_constr[p, i] - sum_delta_plus[i] / 2
     alpha_constr[p-1, i] <- alpha_constr[p-1, i] + sum_delta_minus[i] / 2
   }
-  mu_constr <- sapply(1:(K), .e_vec, len = n_mu+1) - sapply(2:(K+1), .e_vec, len = n_mu+1)
-  rho_constr <- .e_vec(K+1, n_mu+1) - .e_vec(1, n_mu+1)
+  mu_constr <- sapply(1:(k), .e_vec, len = n_mu+1) - sapply(2:(k+1), .e_vec, len = n_mu+1)
+  rho_constr <- .e_vec(k+1, n_mu+1) - .e_vec(1, n_mu+1)
 
   constraints <- cbind(alpha_constr, mu_constr, rho_constr)
 
   # Quadratic objective matrix
   ind <- delta != 0
   kernel <- x[ind, , drop = FALSE] %*% t(x[ind, , drop = FALSE])
-  alpha_Q <- - 0.5 * (delta[ind] %*% t(delta[ind])) * kernel
-  mu_rho_Q <- matrix(0, n_mu + n_rho, n_mu + n_rho)
-  Q <- Matrix::bdiag(alpha_Q, mu_rho_Q)
+  alpha_q <- - 0.5 * (delta[ind] %*% t(delta[ind])) * kernel
+  mu_rho_q <- matrix(0, n_mu + n_rho, n_mu + n_rho)
+  q_mat <- Matrix::bdiag(alpha_q, mu_rho_q)
   # worry about bags that are unordered, maybe take care of this at the beginning of the function
 
   model <- list()
   # Objective
-  model$modelsense <- "max"
-  model$obj <- c(rep(1, n_a), rep(0, n_mu + n_rho))
-  model$Q <- Q # TODO: replace this with kernel at some point
+  model[["modelsense"]] <- "max"
+  model[["obj"]] <- c(rep(1, n_a), rep(0, n_mu + n_rho))
+  model[["Q"]] <- q_mat # TODO: replace this with kernel at some point
   # Constraints
-  model$varnames <- c(paste0("a", 1:n_a), paste0("mu", 1:n_mu), "rho")
-  model$A <- constraints
-  model$sense <- rep("=", nrow(constraints))
-  model$rhs <- rep(0, nrow(constraints))
-  model$lb <- rep(0, n_a + n_mu + n_rho)
-  model$ub <- c(rep(c1, n_a), rep(Inf, n_mu), c0)
+  model[["varnames"]] <- c(paste0("a", 1:n_a), paste0("mu", 1:n_mu), "rho")
+  model[["A"]] <- constraints
+  model[["sense"]] <- rep("=", nrow(constraints))
+  model[["rhs"]] <- rep(0, nrow(constraints))
+  model[["lb"]] <- rep(0, n_a + n_mu + n_rho)
+  model[["ub"]] <- c(rep(c1, n_a), rep(Inf, n_mu), c0)
 
   return(model)
 }
@@ -516,7 +509,6 @@ compute_theta <- function(g, bags) {
 }
 
 compute_b <- function(gurobi_result, model, delta, y, bags, c0, c1, option = "xiao", t) {
-  # names(gurobi_result$x) <- model$varnames
   a <- gurobi_result$x[grepl("a", model$varnames)]
   mu <- gurobi_result$x[grepl("mu", model$varnames)]
   rho <- gurobi_result$x[grepl("rho", model$varnames)]
@@ -535,7 +527,7 @@ compute_b <- function(gurobi_result, model, delta, y, bags, c0, c1, option = "xi
   support_bags <- unique(bags)[ind]
   y_support <- classify_bags(y, bags)[ind]
 
-  Q_tilde <- -2 * model$Q[seq_along(a), seq_along(a), drop = FALSE] # recovers delta * kernel
+  q_tilde_mat <- -2 * model$Q[seq_along(a), seq_along(a), drop = FALSE] # recovers delta * kernel
   if (option == "xiao") {
     b_q <- - 0.5 * sapply(unique(bags)[ind], function(bag) sum(delta[bags == bag] + 1))
     b_q1 <- - 0.5 * sapply(unique(bags)[ind], function(bag) sum(delta[bags == bag] - 1))
@@ -544,8 +536,7 @@ compute_b <- function(gurobi_result, model, delta, y, bags, c0, c1, option = "xi
     b_q1 <- - 0.5 * sapply(unique(bags)[ind], function(bag) sum(delta[bags == bag]) - 1)
   }
   # linear model using complementary slackness constraints: resp ~ pred_matrix
-  resp <- as.numeric(- a %*% Q_tilde[, ind, drop = FALSE] ) + 1
-  # resp <- as.numeric(- a %*% Q_tilde ) + 1
+  resp <- as.numeric(- a %*% q_tilde_mat[, ind, drop = FALSE]) + 1
   resp <- c(resp, rep(0, length(mu) + 1))
   pred_matrix <- matrix(0, nrow = length(ind) + length(mu) + 1, ncol = n_b)
   # information from alpha
@@ -558,7 +549,8 @@ compute_b <- function(gurobi_result, model, delta, y, bags, c0, c1, option = "xi
   for (q in seq_along(mu)) {
     if (mu[q] > 0 + eps) {
       rlang::inform(c(
-        paste0("[Step ", t, "] The optimization solution suggests that two intercepts are equal: b[", q-1, "] == b[", q, "].")
+        paste0("[Step ", t, "] The optimization solution suggests that two intercepts are equal: ",
+               "b[", q-1, "] == b[", q, "].")
       ))
       start <- length(ind)
       pred_matrix[start + q, q] <- 1
