@@ -156,8 +156,7 @@ misvm.default <- function(x, y, bags,
                                          verbose = FALSE,
                                          time_limit = 60,
                                          start = FALSE),
-                          ...)
-{
+                          ...) {
 
   method <- match.arg(method, c("heuristic", "mip", "qp-heuristic"))
 
@@ -198,7 +197,7 @@ misvm.default <- function(x, y, bags,
   }
 
   if (method == "heuristic") {
-    y = 2*y - 1 # convert {0,1} to {-1, 1}
+    y <- 2*y - 1 # convert {0,1} to {-1, 1}
     res <- misvm_heuristic_fit(y, bags, x,
                                c = cost,
                                rescale = control$scale,
@@ -209,7 +208,7 @@ misvm.default <- function(x, y, bags,
                                type = control$type,
                                scale = control$scale)
   } else if (method == "mip") {
-    y = 2*y - 1 # convert {0,1} to {-1, 1}
+    y <- 2*y - 1 # convert {0,1} to {-1, 1}
     res <- misvm_mip_fit(y, bags, x,
                          c = cost,
                          rescale = control$scale,
@@ -218,7 +217,7 @@ misvm.default <- function(x, y, bags,
                          time_limit = control$time_limit,
                          start = control$start)
   } else if (method == "qp-heuristic") {
-    y = 2*y - 1 # convert {0,1} to {-1, 1}
+    y <- 2*y - 1 # convert {0,1} to {-1, 1}
     res <- misvm_dualqpheuristic_fit(y, bags, x,
                                      c = cost,
                                      rescale = control$scale,
@@ -276,8 +275,7 @@ misvm.formula <- function(formula, data, ...) {
 #'   instance level based on specified functions, then perform `misvm()` on
 #'   instance level data.
 #' @export
-misvm.mild_df <- function(x, .fns = list(mean = mean, sd = stats::sd), cor = FALSE, ...)
-{
+misvm.mild_df <- function(x, .fns = list(mean = mean, sd = stats::sd), cor = FALSE, ...) {
   x <- summarize_samples(x, .fns, cor) # instance level data
   y <- x$bag_label
   bags <- x$bag_name
@@ -344,8 +342,7 @@ predict.misvm <- function(object,
                           type = c("class", "raw"),
                           layer = c("bag", "instance"),
                           new_bags = "bag_name",
-                          ...)
-{
+                          ...) {
   type <- match.arg(type, c("class", "raw"))
   layer <- match.arg(layer, c("bag", "instance"))
   method <- attr(object, "method")
@@ -376,11 +373,11 @@ predict.misvm <- function(object,
 
   } else if (method == "mip") {
     scores <- as.matrix(new_x) %*% object$gurobi_fit$w + object$gurobi_fit$b
-    pos <- 2*(scores > 0) - 1
+    pos <- 2 * (scores > 0) - 1
 
   } else if (method == "qp-heuristic") {
     scores <- kernel %*% object$gurobi_fit$ay + object$gurobi_fit$b
-    pos <- 2*(scores > 0) - 1
+    pos <- 2 * (scores > 0) - 1
 
   } else {
     stop("predict.misvm requires method = 'heuristic' or 'mip'.")
@@ -451,33 +448,30 @@ predict.misvm <- function(object,
 #'
 #' @author Sean Kent
 #' @noRd
-misvm_mip_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
+misvm_mip_fit <- function(y, bags, x, c, rescale = TRUE, weights = NULL,
                           verbose = FALSE, time_limit = FALSE, start = FALSE) {
   # TODO: maybe change function call to y, X, bags?
-  if (rescale) X <- scale(X)
+  if (rescale) x <- scale(x)
   bags <- as.numeric(factor(bags, levels = unique(bags)))
 
   warm_start <- NULL
   if (start) {
-    qp_fit <- misvm_qpheuristic_fit(y, bags, X, c, rescale, weights, verbose = FALSE, time_limit)
+    qp_fit <- misvm_qpheuristic_fit(y, bags, x, c, rescale, weights, verbose = FALSE, time_limit)
     warm_start <- list(
       opt = c(qp_fit$model$w, qp_fit$model$b, rep(NA, length(qp_fit$model$xi))),
       selected = qp_fit$representative_inst
     )
   }
 
-  model <- misvm_mip_model(y, bags, X, c, weights, warm_start)
-  params <- list()
-  params$OutputFlag = 1*verbose
-  params$IntFeasTol = 1e-5
-  if (time_limit) params$TimeLimit = time_limit
+  model <- misvm_mip_model(y, bags, x, c, weights, warm_start)
+  params <- .gurobi_params(verbose, time_limit)
   gurobi_result <- gurobi::gurobi(model, params = params)
 
   w <- gurobi_result$x[grepl("w", model$varnames)]
   b_ <- gurobi_result$x[grepl("b", model$varnames)]
   if (rescale) {
-    b_ <- b_ - sum(attr(X, "scaled:center") * w / attr(X, "scaled:scale"))
-    w <- w / attr(X, "scaled:scale")
+    b_ <- b_ - sum(attr(x, "scaled:center") * w / attr(x, "scaled:scale"))
+    w <- w / attr(x, "scaled:scale")
   }
 
   res <- list(
@@ -497,12 +491,12 @@ misvm_mip_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
     repr_inst = NULL
   )
   if (rescale) {
-    res$x_scale = list(
-      "center" = attr(X, "scaled:center"),
-      "scale" = attr(X, "scaled:scale")
+    res$x_scale <- list(
+      "center" = attr(x, "scaled:center"),
+      "scale" = attr(x, "scaled:scale")
     )
   }
-  names(res$gurobi_fit$w) <- colnames(X)
+  names(res$gurobi_fit$w) <- colnames(x)
   return(res)
 }
 
@@ -520,23 +514,23 @@ misvm_mip_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
 #'
 #' @author Sean Kent
 #' @noRd
-misvm_mip_model <- function(y, bags, X, c, weights = NULL, warm_start = NULL) {
-  L <- 1e2 * sum(abs(X) / nrow(X))
+misvm_mip_model <- function(y, bags, x, c, weights = NULL, warm_start = NULL) {
+  lim <- 1e2 * sum(abs(x) / nrow(x))
   # TODO: check that y has only -1 and 1
-  r <- .reorder(y, bags, X)
+  r <- .reorder(y, bags, x)
   y <- r$y
   bags <- r$b
-  X <- r$X
+  x <- r$X
 
   # Build constraint matrix
   # order of variables is [w, b, xi, z]
-  n_w <- ncol(X)
+  n_w <- ncol(x)
   n_b <- 1
   n_xi <- length(unique(bags))
   n_z <- sum(y == 1)
 
   # constraint1 is related to the data
-  w_constraint <- y*X
+  w_constraint <- y*x
   b_constraint <- y*1
   xi_col <- function(b, n_xi) {
     # puts a 1 in the `b`th entry of a n_xi-length 0 vector
@@ -546,17 +540,17 @@ misvm_mip_model <- function(y, bags, X, c, weights = NULL, warm_start = NULL) {
   }
   xi_constraint <- t(sapply(bags, xi_col, n_xi = n_xi))
   z_constraint <- rbind(matrix(0, nrow = sum(y == -1), ncol = n_z),
-                        L*diag(nrow = n_z, ncol = n_z))
+                        lim*diag(nrow = n_z, ncol = n_z))
 
   constraint1 <- as.matrix(cbind(w_constraint, b_constraint, xi_constraint, z_constraint))
-  rhs1 <- rep(1, nrow(X))
+  rhs1 <- rep(1, nrow(x))
 
   # constraint2 is related to how many z can be non-zero
   pos_bags <- unique(bags[y == 1])
   pos_bag_counts <- as.data.frame(table(bags[y==1]))$Freq
-  z_constraint <- matrix(NA , nrow = length(pos_bags), ncol = n_z)
+  z_constraint <- matrix(NA, nrow = length(pos_bags), ncol = n_z)
   for (bag in pos_bags) {
-    row <- unlist(mapply(rep, x = 1*(bag == pos_bags), times = pos_bag_counts))
+    row <- unlist(mapply(rep, x = 1 * (bag == pos_bags), times = pos_bag_counts))
     z_constraint[bag == pos_bags, ] <- row
   }
   wbxi_constraint <- matrix(0, nrow = length(pos_bags), ncol = n_w + n_b + n_xi)
@@ -574,16 +568,16 @@ misvm_mip_model <- function(y, bags, X, c, weights = NULL, warm_start = NULL) {
 
   model <- list()
   # Objective
-  model$modelsense <- "min"
-  model$obj <- c(rep(0, n_w + n_b), c_vec, rep(0, n_z)) # linear portion of objective
-  model$Q <- diag(c(rep(1, n_w), rep(0, n_b + n_xi + n_z))) # quadratic portion of objective
+  model[["modelsense"]] <- "min"
+  model[["obj"]] <- c(rep(0, n_w + n_b), c_vec, rep(0, n_z)) # linear portion of objective
+  model[["Q"]] <- diag(c(rep(1, n_w), rep(0, n_b + n_xi + n_z))) # quadratic portion of objective
   # Constraints
-  model$varnames <- c(paste0("w",1:n_w), "b", paste0("xi",1:n_xi), paste0("z",1:n_z))
-  model$A <- rbind(constraint1, constraint2)
-  model$sense <- c(rep(">=", length(rhs1)), rep("<=", length(rhs2))) # rep("<=", length(model$rhs))
-  model$rhs <- c(rhs1, rhs2)
-  model$vtype <- c(rep("C", n_w + n_b + n_xi), rep("B", n_z))
-  model$lb <- c(rep(-Inf, n_w + n_b), rep(0, n_xi + n_z))
+  model[["varnames"]] <- c(paste0("w", 1:n_w), "b", paste0("xi", 1:n_xi), paste0("z", 1:n_z))
+  model[["A"]] <- rbind(constraint1, constraint2)
+  model[["sense"]] <- c(rep(">=", length(rhs1)), rep("<=", length(rhs2)))
+  model[["rhs"]] <- c(rhs1, rhs2)
+  model[["vtype"]] <- c(rep("C", n_w + n_b + n_xi), rep("B", n_z))
+  model[["lb"]] <- c(rep(-Inf, n_w + n_b), rep(0, n_xi + n_z))
   # Advanced
   if (!is.null(warm_start)) model$start <- c(warm_start[["opt"]], warm_start[["selected"]][r$order][y == 1])
   return(model)
@@ -611,42 +605,40 @@ misvm_mip_model <- function(y, bags, X, c, weights = NULL, warm_start = NULL) {
 #' mdl <- MI_SVM(data = df1, cost = 1, kernel = 'radial')
 #' @author Yifei Liu, Sean Kent
 #' @noRd
-misvm_heuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
+misvm_heuristic_fit <- function(y, bags, x, c, rescale = TRUE, weights = NULL,
                                 kernel = "radial", sigma = 1, max_step = 500, type = "C-classification",
                                 scale = TRUE) {
-  r <- .reorder(y, bags, X)
+  r <- .reorder(y, bags, x)
   y <- r$y
   bags <- r$b
-  X <- r$X
-  # if (rescale) X <- scale(X)
+  x <- r$X
 
   # compute initial selection variables for the positively labeled bags as mean within each bag
   pos_bags <- unique(bags[y==1])
-  if (ncol(X) == 1) {
-    X_selected <- sapply(pos_bags, function(bag) { mean(X[bags == bag, ]) })
-    X_selected <- as.matrix(X_selected)
+  if (ncol(x) == 1) {
+    x_selected <- sapply(pos_bags, function(bag) {
+      mean(x[bags == bag, ])
+    })
+    x_selected <- as.matrix(x_selected)
   } else {
-    X_selected <- t(sapply(pos_bags,
-                           function(bag) { apply(X[bags == bag, , drop = FALSE], 2, mean) }))
+    x_selected <- t(sapply(pos_bags,
+                           function(bag) {
+                             apply(x[bags == bag, , drop = FALSE], 2, mean)
+                           }))
   }
 
   past_selection <- matrix(NA, length(pos_bags), max_step+1)
   past_selection[, 1] <- rep(0, length(pos_bags))
   selection_changed <- TRUE
-  n_selections = 0
+  n_selections <- 0
 
   while (selection_changed & n_selections < max_step) {
-    y_model <- c(rep(1, nrow(X_selected)), y[y == -1])
+    y_model <- c(rep(1, nrow(x_selected)), y[y == -1])
     b_model <- c(pos_bags, bags[y == -1])
-    X_model <- rbind(X_selected,
-                     X[y == -1, , drop = FALSE])
+    x_model <- rbind(x_selected,
+                     x[y == -1, , drop = FALSE])
 
-    # y_model <- c(y[y == -1], rep(1, nrow(X_selected)))
-    # b_model <- c(bags[y == -1], pos_bags)
-    # X_model <- rbind(X[y == -1, , drop = FALSE],
-    #                  X_selected)
-
-    svm_fit <- e1071::svm(x = X_model,
+    svm_fit <- e1071::svm(x = x_model,
                           y = y_model,
                           class.weights = weights,
                           cost = c,
@@ -655,28 +647,28 @@ misvm_heuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
                           scale = rescale,
                           type = type)
 
-    pred_all_inst <- predict(object = svm_fit, newdata = X, decision.values = TRUE)
+    pred_all_inst <- predict(object = svm_fit, newdata = x, decision.values = TRUE)
     pred_all_score <- attr(pred_all_inst, "decision.values")
 
     # update selections and check for repeats
-    selected <- sapply(pos_bags, function(bag) { which(pred_all_score == max(pred_all_score[bags == bag]))[1] })
-    n_selections = n_selections + 1
-    # selection_changed <- !identical(X_selected, X[selected, , drop = FALSE])
+    selected <- sapply(pos_bags, function(bag) {
+      which(pred_all_score == max(pred_all_score[bags == bag]))[1]
+    })
+    n_selections <- n_selections + 1
     for (i in 1:n_selections) {
-      # cat("Selected:", selected)
       selection_changed <- !all(selected == past_selection[, i])
       if (!selection_changed) {
         break
       }
-      # cat("n_selections", n_selections, "Selection changed", selection_changed, "selection", selected, "\n")
     }
     if (selection_changed) {
-      X_selected <- X[selected, , drop = FALSE]
+      x_selected <- x[selected, , drop = FALSE]
       past_selection[, (n_selections+1)] <- selected
     }
   }
   if (n_selections == max_step) {
-    msg = paste0("Number of iterations of heuristic algorithm reached threshold of ", max_step, ". Stopping with current selection.")
+    msg <- paste0("Number of iterations of heuristic algorithm reached threshold",
+                  "of ", max_step, ". Stopping with current selection.")
     warning(msg)
   }
 
@@ -725,59 +717,65 @@ misvm_heuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
 #'
 #' @author Sean Kent
 #' @noRd
-misvm_qpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
+misvm_qpheuristic_fit <- function(y, bags, x, c, rescale = TRUE, weights = NULL,
                                   verbose = FALSE, time_limit = FALSE, max_step = 500) {
-  r <- .reorder(y, bags, X)
+  r <- .reorder(y, bags, x)
   y <- r$y
   bags <- r$b
-  X <- r$X
-  if (rescale) X <- scale(X)
+  x <- r$X
+  if (rescale) x <- scale(x)
 
   # compute initial selection variables for the positively labeled bags as mean within each bag
   pos_bags <- unique(bags[y==1])
-  if (ncol(X) == 1) {
-    X_selected <- sapply(pos_bags, function(bag) { mean(X[bags == bag, ]) })
-    X_selected <- as.matrix(X_selected)
+  if (ncol(x) == 1) {
+    x_selected <- sapply(pos_bags, function(bag) {
+      mean(x[bags == bag, ])
+    })
+    x_selected <- as.matrix(x_selected)
   } else {
-    X_selected <- t(sapply(pos_bags,
-                           function(bag) { apply(X[bags == bag, , drop = FALSE], 2, mean) }))
+    x_selected <- t(sapply(pos_bags,
+                           function(bag) {
+                             apply(x[bags == bag, , drop = FALSE], 2, mean)
+                           }))
   }
 
   selection_changed <- TRUE
-  itercount = 0
-  baritercount = 0
-  n_selections = 0
+  itercount <- 0
+  baritercount <- 0
+  n_selections <- 0
 
   while (selection_changed & n_selections < max_step) {
-    y_model <- c(y[y == -1], rep(1, nrow(X_selected)))
+    y_model <- c(y[y == -1], rep(1, nrow(x_selected)))
     b_model <- c(bags[y == -1], pos_bags)
-    X_model <- rbind(X[y == -1, , drop = FALSE],
-                     X_selected)
-    model <- misvm_qpheuristic_model(y_model, b_model, X_model, c, weights)
+    x_model <- rbind(x[y == -1, , drop = FALSE],
+                     x_selected)
+    model <- misvm_qpheuristic_model(y_model, b_model, x_model, c, weights)
     gurobi_result <- gurobi::gurobi(model, .gurobi_params(verbose, time_limit))
 
     w <- gurobi_result$x[grepl("w", model$varnames)]
     b_ <- gurobi_result$x[grepl("b", model$varnames)]
-    f <- as.matrix(X) %*% w + b_
+    f <- as.matrix(x) %*% w + b_
     itercount <- itercount + gurobi_result$itercount
     baritercount <- baritercount + gurobi_result$baritercount
 
-    selected <- sapply(pos_bags, function(bag) { which(f == max(f[bags == bag]))[1] })
-    selection_changed <- !identical(X_selected, X[selected, , drop = FALSE])
+    selected <- sapply(pos_bags, function(bag) {
+      which(f == max(f[bags == bag]))[1]
+    })
+    selection_changed <- !identical(x_selected, x[selected, , drop = FALSE])
     if (selection_changed) {
-      X_selected <- X[selected, , drop = FALSE]
-      n_selections = n_selections + 1
+      x_selected <- x[selected, , drop = FALSE]
+      n_selections <- n_selections + 1
     }
   }
   if (n_selections == max_step) {
-    message = paste0("Number of iterations of heuristic algorithm reached threshold of ", max_step, ". Stopping with current selection.")
-    warning(message)
-    cat(message, "Value of c is ", c, "\n")
+    msg <- paste0("Number of iterations of heuristic algorithm reached threshold",
+                  "of ", max_step, ". Stopping with current selection.")
+    warning(msg)
   }
 
   if (rescale) {
-    b_ <- b_ - sum(attr(X, "scaled:center") * w / attr(X, "scaled:scale"))
-    w <- w / attr(X, "scaled:scale")
+    b_ <- b_ - sum(attr(x, "scaled:center") * w / attr(x, "scaled:scale"))
+    w <- w / attr(x, "scaled:scale")
   }
   # vector representing selected positive instances
   selected_vec <- rep(0, length(y))
@@ -799,11 +797,11 @@ misvm_qpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
     repr_inst = selected_vec,
     x = NULL,
     x_scale = list(
-      "center" = attr(X, "scaled:center"),
-      "scale" = attr(X, "scaled:scale")
+      "center" = attr(x, "scaled:center"),
+      "scale" = attr(x, "scaled:scale")
     )
   )
-  names(res$gurobi_fit$w) <- colnames(X)
+  names(res$gurobi_fit$w) <- colnames(x)
   return(res)
 }
 
@@ -839,22 +837,22 @@ misvm_qpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
 #'
 #' @author Sean Kent
 #' @noRd
-misvm_dualqpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = NULL,
+misvm_dualqpheuristic_fit <- function(y, bags, x, c, rescale = TRUE, weights = NULL,
                                       kernel = "linear", sigma = NULL,
                                       verbose = FALSE, time_limit = FALSE, max_step = 500) {
-  r <- .reorder(y, bags, X)
+  r <- .reorder(y, bags, x)
   y <- r$y
   bags <- r$b
-  X <- r$X
-  if (rescale) X <- scale(X)
-  # browser()
+  x <- r$X
+  if (rescale) x <- scale(x)
+
   # randomly select initial representative instances
   pos_bags <- unique(bags[y==1])
   selected <- sapply(pos_bags, function(bag) {
     .resample(which(bags == bag), size = 1)
   })
 
-  K <- .convert_kernel(X, kernel, sigma = sigma)
+  kern_mat <- .convert_kernel(x, kernel, sigma = sigma)
 
   selection_changed <- TRUE
   itercount <- 0
@@ -863,9 +861,9 @@ misvm_dualqpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = N
 
   while (selection_changed & n_selections < max_step) {
     ind <- c(which(y == -1), selected) # effective set for this iteration
-    K_ind <- K[ind, ind, drop = FALSE]
+    kern_ind <- kern_mat[ind, ind, drop = FALSE]
 
-    opt_model <- misvm_dualqpheuristic_model(y[ind], bags[ind], K_ind, c, weights)
+    opt_model <- misvm_dualqpheuristic_model(y[ind], bags[ind], kern_ind, c, weights)
 
     gurobi_result <-
       tryCatch({
@@ -883,9 +881,9 @@ misvm_dualqpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = N
     # TODO: need a better way to figure out which a to compute b_ over
     # want to exclude those where sum a_i = C in each bag
 
-    b_ <- as.vector(1 / y[ind] - K_ind %*% (a * y[ind]))
+    b_ <- as.vector(1 / y[ind] - kern_ind %*% (a * y[ind]))
     b_ <- mean(b_[(a > 1e-9) & (a < c)])
-    f <- K[, ind, drop = FALSE] %*% (a * y[ind]) + b_
+    f <- kern_mat[, ind, drop = FALSE] %*% (a * y[ind]) + b_
 
     itercount <- itercount + gurobi_result$itercount
     baritercount <- baritercount + gurobi_result$baritercount
@@ -902,9 +900,9 @@ misvm_dualqpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = N
     }
   }
   if (n_selections == max_step) {
-    message = paste0("Number of iterations of heuristic algorithm reached threshold of ", max_step, ". Stopping with current selection.")
-    warning(message)
-    cat(message, "Value of c is ", c, "\n")
+    msg <- paste0("Number of iterations of heuristic algorithm reached threshold",
+                  "of ", max_step, ". Stopping with current selection.")
+    warning(msg)
   }
 
   # vector representing selected positive instances
@@ -917,7 +915,7 @@ misvm_dualqpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = N
     gurobi_fit = list(
       # w = w,
       b = b_,
-      xmatrix = X[ind, , drop = FALSE],
+      xmatrix = x[ind, , drop = FALSE],
       ay = a * y[ind],
       kernel = kernel,
       sigma = sigma,
@@ -935,11 +933,10 @@ misvm_dualqpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = N
   )
   if (rescale) {
     res$x_scale <- list(
-      "center" = attr(X, "scaled:center"),
-      "scale" = attr(X, "scaled:scale")
+      "center" = attr(x, "scaled:center"),
+      "scale" = attr(x, "scaled:scale")
     )
   }
-  # names(res$model$w) <- colnames(X)
   return(res)
 }
 
@@ -955,16 +952,16 @@ misvm_dualqpheuristic_fit <- function(y, bags, X, c, rescale = TRUE, weights = N
 #'
 #' @author Sean Kent
 #' @noRd
-misvm_qpheuristic_model <- function(y, bags, X, c, weights = NULL) {
+misvm_qpheuristic_model <- function(y, bags, x, c, weights = NULL) {
   # assumes that the data is already re-ordered to save time
 
   # Build constraint matrix
   # order of variables is [w, b, xi]
-  n_w <- ncol(X)
+  n_w <- ncol(x)
   n_b <- 1
   n_xi <- length(unique(bags))
 
-  w_constraint <- y*X
+  w_constraint <- y*x
   b_constraint <- y*1
   xi_col <- function(b, n_xi) {
     # puts a 1 in the `b`th entry of a n_xi-length 0 vector
@@ -986,16 +983,16 @@ misvm_qpheuristic_model <- function(y, bags, X, c, weights = NULL) {
 
   model <- list()
 
-  # Objective
-  model$modelsense <- "min"
-  model$obj <- c(rep(0, n_w + n_b), c_vec) # linear portion of objective
-  model$Q <- diag(c(rep(1, n_w), rep(0, n_b + n_xi))) # quadratic portion of objective
   # Constraints
-  model$varnames <- c(paste0("w",1:n_w), "b", paste0("xi",1:n_xi))
-  model$A <- constraint
-  model$sense <- rep(">=", nrow(X))
-  model$rhs <- rep(1, nrow(X))
-  model$lb <- c(rep(-Inf, n_w + n_b), rep(0, n_xi))
+  model[["modelsense"]] <- "min"
+  model[["obj"]] <- c(rep(0, n_w + n_b), c_vec) # linear portion of objective
+  model[["Q"]] <- diag(c(rep(1, n_w), rep(0, n_b + n_xi))) # quadratic portion of objective
+  # Objective
+  model[["varnames"]] <- c(paste0("w", 1:n_w), "b", paste0("xi", 1:n_xi))
+  model[["A"]] <- constraint
+  model[["sense"]] <- rep(">=", nrow(x))
+  model[["rhs"]] <- rep(1, nrow(x))
+  model[["lb"]] <- c(rep(-Inf, n_w + n_b), rep(0, n_xi))
 
   return(model)
 }
@@ -1007,14 +1004,14 @@ misvm_qpheuristic_model <- function(y, bags, X, c, weights = NULL) {
 #' representative instances in the dual
 #'
 #' @inheritParams misvm_mip_fit
-#' @param K kernel matrix.  This represents `X %*% t(X)` in the linear kernel,
+#' @param kernel kernel matrix.  This represents `X %*% t(X)` in the linear kernel,
 #'   and has a more complicated form for other kernels.
 #' @return a model that can be passed to `gurobi::gurobi` that contains the dual
 #'   QP problem defined by MI-SVM in Andrews et al. (2003)
 #'
 #' @author Sean Kent
 #' @noRd
-misvm_dualqpheuristic_model <- function(y, bags, K, c, weights = NULL) {
+misvm_dualqpheuristic_model <- function(y, bags, kernel, c, weights = NULL) {
   # assumes that the data is already re-ordered to save time
 
   n_a <- length(y)
@@ -1042,15 +1039,15 @@ misvm_dualqpheuristic_model <- function(y, bags, K, c, weights = NULL) {
   model <- list()
 
   # Objective
-  model$modelsense <- "max"
-  model$obj <- rep(1, n_a)
-  model$Q <- - 1/2 * y %*% t(y) * K
+  model[["modelsense"]] <- "max"
+  model[["obj"]] <- rep(1, n_a)
+  model[["Q"]] <- - 1/2 * y %*% t(y) * kernel
   # Constraints
-  model$varnames <- c(paste0("a", 1:n_a))
-  model$A <- constraint
-  model$sense <- rep(">=", nrow(constraint))
-  model$rhs <- c(rep(0, n_bags), -c_vec, 0, 0)
-  model$lb <- c(rep(0, n_a))
+  model[["varnames"]] <- c(paste0("a", 1:n_a))
+  model[["A"]] <- constraint
+  model[["sense"]] <- rep(">=", nrow(constraint))
+  model[["rhs"]] <- c(rep(0, n_bags), -c_vec, 0, 0)
+  model[["lb"]] <- c(rep(0, n_a))
 
   return(model)
 }

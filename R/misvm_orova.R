@@ -69,8 +69,7 @@ misvm_orova.default <- function(x, y, bags,
                                                verbose = FALSE,
                                                time_limit = 60,
                                                start = FALSE),
-                                ...)
-{
+                                ...) {
   # store the levels of y and convert to numeric format.
   y_info <- .convert_y_ordinal(y)
   y <- y_info$y
@@ -79,7 +78,7 @@ misvm_orova.default <- function(x, y, bags,
   labels <- unique(y)
   fits <- list()
   for (k in sort(labels)) {
-    fits[[as.character(k)]] <- misvm(x, 1*(y==k), bags,
+    fits[[as.character(k)]] <- misvm(x, 1 * (y==k), bags,
                                      method = method,
                                      weights = weights,
                                      control = control,
@@ -92,8 +91,6 @@ misvm_orova.default <- function(x, y, bags,
   out$levels <- lev
   out$features <- fits[[1]]$features
   return(new_misvm_orova(out, method = method))
-  # out$cost <- cost
-  # out$x_scale <- res$x_scale
 }
 
 #' @describeIn misvm_orova Method for passing formula
@@ -174,8 +171,7 @@ predict.misvm_orova <- function(object,
                                 type = c("class", "raw"),
                                 layer = c("bag", "instance"),
                                 new_bags = "bag_name",
-                                ...)
-{
+                                ...) {
   type <- match.arg(type, c("class", "raw"))
   layer <- match.arg(layer, c("bag", "instance"))
   method <- attr(object, "method")

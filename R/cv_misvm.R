@@ -95,17 +95,16 @@ cv_misvm.default <- function(x, y, bags, cost_seq, n_fold, fold_id,
                              weights = TRUE,
                              control = list(kernel = "linear",
                                             sigma = 1,
-                                            nystrom_args = list(m = nrow(x), r = nrow(x), sampling = 'random'),
+                                            nystrom_args = list(m = nrow(x), r = nrow(x), sampling = "random"),
                                             max_step = 500,
                                             type = "C-classification",
                                             scale = TRUE,
                                             verbose = FALSE,
                                             time_limit = 60,
                                             start = FALSE),
-                             ...)
-{
+                             ...) {
 
-  method = match.arg(method, c("heuristic", "mip", "qp-heuristic"))
+  method <- match.arg(method, c("heuristic", "mip", "qp-heuristic"))
   if (!missing(n_fold) & !missing(fold_id)) {
     message("Both n_fold and fold_id are supplied, ignoring n_fold in favor of fold_id")
   }
@@ -134,7 +133,6 @@ cv_misvm.default <- function(x, y, bags, cost_seq, n_fold, fold_id,
 
   aucs <- matrix(NA, nrow = length(cost_seq), ncol = n_fold)
   for (i in seq_along(cost_seq)) {
-    # auc_sum <- 0
     for (fold in 1:n_fold) {
       train <- fold_id != fold
       val <- fold_id == fold
@@ -152,7 +150,7 @@ cv_misvm.default <- function(x, y, bags, cost_seq, n_fold, fold_id,
       } else {
         aucs[i, fold] <- pROC::auc(response = classify_bags(y[val], bags[val]),
                                    predictor = classify_bags(pred_i_fold$.pred, bags[val]),
-                                   levels = c(0,1), direction = "<")
+                                   levels = c(0, 1), direction = "<")
       }
     }
   }
@@ -234,8 +232,7 @@ predict.cv_misvm <- function(object, new_data,
                              type = c("class", "raw"),
                              layer = c("bag", "instance"),
                              new_bags = "bag_name",
-                             ...)
-{
+                             ...) {
   type <- match.arg(type, c("class", "raw"))
   layer <- match.arg(layer, c("bag", "instance"))
 

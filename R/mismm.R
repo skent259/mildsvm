@@ -131,8 +131,7 @@ mismm.default <- function(x, y, bags, instances, cost = 1,
                                            verbose = FALSE,
                                            time_limit = 60,
                                            start = FALSE),
-                            ...)
-{
+                            ...) {
     method <- match.arg(method, c("heuristic", "mip", "qp-heuristic"))
 
     defaults <- list(
@@ -215,7 +214,7 @@ mismm.default <- function(x, y, bags, instances, cost = 1,
             scale <- attr(x, "scaled:scale")
             x <- as.data.frame(x)
         }
-        y = 2*y - 1 # convert {0,1} to {-1, 1}
+        y <- 2*y - 1 # convert {0,1} to {-1, 1}
 
         r <- .reorder(y, bags, x, instances)
 
@@ -259,7 +258,7 @@ mismm.default <- function(x, y, bags, instances, cost = 1,
         bags <- classify_bags(bags, instances)
         ind <- sapply(unique(instances), function(i) min(which(instances == i)))
 
-        y = 2*y - 1 # convert {0,1} to {-1, 1}
+        y <- 2*y - 1 # convert {0,1} to {-1, 1}
         res <- misvm_dualqpheuristic_fit(y, bags, x[ind, , drop = FALSE],
                                          c = cost,
                                          rescale = control$scale,
@@ -397,8 +396,7 @@ predict.mismm <- function(object, new_data,
                             new_bags = "bag_name",
                             new_instances = "instance_name",
                             kernel = NULL,
-                            ...)
-{
+                            ...) {
     type <- match.arg(type)
     layer <- match.arg(layer)
     method <- attr(object, "method")
@@ -462,7 +460,7 @@ predict.mismm <- function(object, new_data,
     } else {
         stop("predict.mismm requires method = 'heuristic', 'mip', 'qp-heuristic'.")
     }
-    pos <- 2*(scores > 0) - 1
+    pos <- 2 * (scores > 0) - 1
 
     if (layer == "bag") {
         if (object$call_type == "mismm.formula" & new_bags[1] == "bag_name" & length(new_bags) == 1) {
@@ -637,7 +635,7 @@ mil_distribution <- function(data, cost, weights, max.step = 500, sigma = 0.05, 
     # initialize the feature
     instance_selection <- initialize_instance_selection(data)
     useful_inst_idx = instance_selection[["useful_inst_idx"]]
-    yy = instance_selection[["yy"]]
+    yy <- instance_selection[["yy"]]
 
     num_neg_inst <- length(useful_inst_idx) - length(positive_bag_name)  # calculate the number of negative instances.
 

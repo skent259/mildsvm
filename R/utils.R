@@ -20,23 +20,23 @@
 #' column
 #' @param y A vector of labels.
 #' @param b A vector of bags.
-#' @param X A data.frame of covariates.
+#' @param x A data.frame of covariates.
 #' @param i A vector of instances.
 #' @noRd
-.reorder <- function(y, b, X, i = NULL) {
+.reorder <- function(y, b, x, i = NULL) {
   b <- as.numeric(as.factor(b))
-  X <- as.data.frame(X)
+  x <- as.data.frame(x)
   # order by bag label (negative first), and then order data by bag
   if (is.null(i)) {
-    data_order <- order(y, b, X[,1])
+    data_order <- order(y, b, x[, 1])
   } else {
     i <- as.numeric(as.factor(i))
-    data_order <- order(y, b, i, X[,1])
+    data_order <- order(y, b, i, x[, 1])
   }
 
   list(y = y[data_order],
        b = b[data_order],
-       X = as.matrix(X[data_order, , drop = FALSE]),
+       X = as.matrix(x[data_order, , drop = FALSE]),
        inst = i,
        order = data_order)
 }
@@ -144,7 +144,7 @@ bag_instance_sampling <- function(data, size) {
 
   bags <- unique(data$bag_name)
   sampled_bags <- .resample(c(rep(bags, size %/% length(bags)),
-                             .resample(bags, size %% length(bags))))
+                              .resample(bags, size %% length(bags))))
   sampled_instances <- character(size)
   sampled_rows <- numeric(size)
 
@@ -153,14 +153,14 @@ bag_instance_sampling <- function(data, size) {
     k <- length(ind)
     instances <- unique(data$instance_name[which(data$bag_name == bag)])
     sampled_instances[ind] <- .resample(c(rep(instances, k %/% length(instances)),
-                                         .resample(instances, k %% length(instances))))
+                                          .resample(instances, k %% length(instances))))
 
     for (instance in instances) {
       ind2 <- which(instance == sampled_instances)
       l <- length(ind2)
       rows <- which(data$instance_name == instance)
       sampled_rows[ind2] <- .resample(c(rep(rows, l %/% length(rows)),
-                                       .resample(rows, l %% length(rows))))
+                                        .resample(rows, l %% length(rows))))
     }
   }
   return(sampled_rows)

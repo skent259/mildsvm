@@ -69,7 +69,7 @@ kfm_nystrom.default <- function(df, m = nrow(df), r = m, kernel = "radial", samp
       warning("Length of input 'sampling' is not equal to 'm', reverting to sampling = 'random'.")
       sampling <- .resample(seq_len(nrow(df)), m)
     }
-  } else if (sampling == 'random') {
+  } else if (sampling == "random") {
     sampling <- .resample(seq_len(nrow(df)), m)
   } else {
     stop("parameter 'sampling' must be a numeric vector or the character 'random'. ")
@@ -85,12 +85,12 @@ kfm_nystrom.default <- function(df, m = nrow(df), r = m, kernel = "radial", samp
     r <- r - n_rep
     warning(paste0("Data chosen in subsample appears to be duplicated, reducing number of features to ", r))
   }
-  D <- diag(1 / sqrt(e$values[1:r]))
-  V <- t(e$vectors[, 1:r, drop = FALSE])
+  d_mat <- diag(1 / sqrt(e$values[1:r]))
+  v_mat <- t(e$vectors[, 1:r, drop = FALSE])
 
   return(new_kfm_nystrom(list(
     df_sub = df_sub,
-    dv = D %*% V,
+    dv = d_mat %*% v_mat,
     method = "nystrom",
     kernel = kernel,
     kernel_params = kernel_params
@@ -102,7 +102,7 @@ kfm_nystrom.default <- function(df, m = nrow(df), r = m, kernel = "radial", samp
 #' @export
 kfm_nystrom.mild_df <- function(df, m = nrow(df), r = m, kernel = "radial", sampling = "random", ...) {
 
-  if (all(sampling == 'stratified')) {
+  if (all(sampling == "stratified")) {
     sampling <- bag_instance_sampling(df, m)
   }
   df$bag_label <- df$bag_name <- df$instance_name <- NULL
@@ -115,7 +115,7 @@ kfm_nystrom.mild_df <- function(df, m = nrow(df), r = m, kernel = "radial", samp
 #' @export
 build_fm.kfm_nystrom <- function(kfm_fit, new_data, ...) {
   if (inherits(new_data, "mild_df")) {
-    info <- new_data[ , c("bag_label", "bag_name", "instance_name"), drop = FALSE]
+    info <- new_data[, c("bag_label", "bag_name", "instance_name"), drop = FALSE]
     new_data$bag_label <- new_data$bag_name <- new_data$instance_name <- NULL
   } else {
     info <- NULL

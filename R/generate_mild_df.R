@@ -131,20 +131,7 @@ generate_mild_df <- function(
   neg <- 2
   rem <- 3
 
-  # Check arguments
-  for (k in c(pos, neg, rem)) {
-    if (dist[k] == "mvt" & is.na(degree[k])) {
-      msg <- paste0("Must specify `degree[", k, "]` when `dist[", k, "] == 'mvt'`.")
-      stop(msg, call. = FALSE)
-    }
-  }
-  if (length(nimp_pos) > ncov) {
-    stop("The number of important variables `length(nimp_pos)` can't exceed `ncov`.", call. = FALSE)
-  }
-  if (length(nimp_neg) > ncov) {
-    stop("The number of important variables `length(nimp_neg)` can't exceed `ncov`.", call. = FALSE)
-  }
-
+  .check_args(dist, degree, nimp_pos, nimp_neg, ncov)
   dist[pos] <- match.arg(dist[pos], c("mvnormal", "mvt"))
   dist[neg] <- match.arg(dist[neg], c("mvnormal", "mvt"))
   dist[rem] <- match.arg(dist[rem], c("mvnormal", "mvt"))
@@ -175,8 +162,8 @@ generate_mild_df <- function(
   }
 
   # Sample features for each instance
-  generate_instance_samples <- function(j) {
-    X_ij <- matrix(NA, nsample, ncov)
+  .generate_instance_samples <- function(j) {
+    x_ij <- matrix(NA, nsample, ncov)
 
     if (inst_label[j] == 1) {
       imp <- pos
@@ -189,7 +176,7 @@ generate_mild_df <- function(
     dist_mean <- sapply(mean[[imp]], stats::rnorm, n = 1, sd = sd_of_mean[[imp]])
     if (sample_cov) {
       dist_cov <- stats::rWishart(1, df_wishart_cov[[imp]], cov[[imp]])
-      dist_cov <- dist_cov[ , , 1] / df_wishart_cov[[imp]]
+      dist_cov <- dist_cov[, , 1] / df_wishart_cov[[imp]]
     } else {
       dist_cov <- cov[[imp]]
     }
@@ -197,7 +184,7 @@ generate_mild_df <- function(
     imp_features <- switch(
       dist[imp],
       mvt = mvtnorm::rmvt(n = nsample,
-                          sigma = dist_cov/(degree[imp]/(degree[imp] - 2)),
+                          sigma = dist_cov / (degree[imp] / (degree[imp] - 2)),
                           df = degree[imp],
                           delta = dist_mean,
                           type = "shifted"),
@@ -212,7 +199,7 @@ generate_mild_df <- function(
       dist_mean <- stats::rnorm(p_rem, mean[[rem]], sd_of_mean[[rem]])
       if (sample_cov) {
         dist_cov <- stats::rWishart(1, df_wishart_cov[[rem]], diag(cov[[rem]], p_rem))
-        dist_cov <- dist_cov[ , , 1] / df_wishart_cov[[rem]]
+        dist_cov <- dist_cov[, , 1] / df_wishart_cov[[rem]]
       } else {
         dist_cov <- diag(cov[[rem]], p_rem)
       }
@@ -220,7 +207,7 @@ generate_mild_df <- function(
       rem_features <- switch(
         dist[rem],
         mvt = mvtnorm::rmvt(n = nsample,
-                            sigma = dist_cov/(degree[rem]/(degree[rem] - 2)),
+                            sigma = dist_cov / (degree[rem] / (degree[rem] - 2)),
                             df = degree[rem],
                             delta = dist_mean,
                             type = "shifted"),
@@ -232,14 +219,14 @@ generate_mild_df <- function(
       rem_features <- numeric(nsample)
     }
 
-    X_ij[, nimp] <- imp_features
-    X_ij[, -nimp] <- rem_features
-    colnames(X_ij) <- paste0("X", 1:ncov)
-    return(as.data.frame(X_ij))
+    x_ij[, nimp] <- imp_features
+    x_ij[, -nimp] <- rem_features
+    colnames(x_ij) <- paste0("X", 1:ncov)
+    return(as.data.frame(x_ij))
   }
 
-  X <- lapply(1:(nbag*ninst), generate_instance_samples)
-  X <- do.call(rbind, X)
+  x <- lapply(1:(nbag*ninst), .generate_instance_samples)
+  x <- do.call(rbind, x)
 
   # Combine for output
   bag_label <- rep(bag_label, each = nsample)
@@ -252,10 +239,30 @@ generate_mild_df <- function(
   out <- data.frame(bag_label,
                     bag_name,
                     instance_name = inst_name,
-                    X,
+                    x,
                     instance_label = inst_label,
                     stringsAsFactors = FALSE)
 
   return(as_mild_df(out))
 }
 
+#' Check arguments for `generate_mild_df()`
+#' @inheritParams generate_mild_df
+#' @param pos Index of positive distribution (default = 1)
+#' @param neg Index of positive distribution (default = 2)
+#' @param rem Index of positive distribution (default = 3)
+#' @noRd
+.check_args <- function(dist, degree, nimp_pos, nimp_neg, ncov, pos = 1, neg = 2, rem = 3) {
+  for (k in c(pos, neg, rem)) {
+    if (dist[k] == "mvt" & is.na(degree[k])) {
+      msg <- paste0("Must specify `degree[", k, "]` when `dist[", k, "] == 'mvt'`.")
+      stop(msg, call. = FALSE)
+    }
+  }
+  if (length(nimp_pos) > ncov) {
+    stop("The number of important variables `length(nimp_pos)` can't exceed `ncov`.", call. = FALSE)
+  }
+  if (length(nimp_neg) > ncov) {
+    stop("The number of important variables `length(nimp_neg)` can't exceed `ncov`.", call. = FALSE)
+  }
+}

@@ -85,8 +85,7 @@ smm.default <- function(x, y, instances,
                         control = list(kernel = "radial",
                                        sigma = if (is.vector(x)) 1 else 1 / ncol(x),
                                        scale = TRUE),
-                        ...)
-{
+                        ...) {
     defaults <- list(
       kernel = "radial",
       sigma = if (is.vector(x)) 1 else 1 / ncol(x)
@@ -165,8 +164,7 @@ smm.default <- function(x, y, instances,
 
 #' @describeIn smm Method for passing formula
 #' @export
-smm.formula <- function(formula, data, instances = "instance_name", ...)
-{
+smm.formula <- function(formula, data, instances = "instance_name", ...) {
     # instance information
     if (length(instances) == 1 && is.character(instances)) {
         instance_name <- instances
@@ -189,8 +187,7 @@ smm.formula <- function(formula, data, instances = "instance_name", ...)
 #' @describeIn smm Method for `mild_df` objects. Use the `bag_label` as `y` at
 #'   the instance level, then perform `smm()` ignoring the MIL structure.
 #' @export
-smm.mild_df <- function(x, ...)
-{
+smm.mild_df <- function(x, ...) {
     y <- x$bag_label
     instances <- x$instance_name
     x$bag_label <- x$bag_name <- x$instance_name <- NULL
@@ -269,8 +266,7 @@ predict.smm <- function(object,
                         new_instances = "instance_name",
                         new_bags = NULL,
                         kernel = NULL,
-                        ...)
-{
+                        ...) {
     type <- match.arg(type)
     layer <- match.arg(layer, c("instance", "bag"))
 
@@ -334,7 +330,7 @@ predict.smm <- function(object,
         raw <- classify_bags(raw, bags, condense = FALSE)
     }
 
-    pos <- 2*(raw > 0) - 1
+    pos <- 2 * (raw > 0) - 1
     pos <- factor(pos, levels = c(-1, 1), labels = object$levels)
 
     res <- .pred_output(type, raw, pos)

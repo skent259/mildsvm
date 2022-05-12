@@ -341,11 +341,11 @@ x_from_mild_formula <- function(formula, data) {
 #' @noRd
 .gurobi_params <- function(verbose, time_limit) {
   params <- list()
-  params[["OutputFlag"]] = 1*verbose
-  params[["IntFeasTol"]] = 1e-5
+  params[["OutputFlag"]] <- 1*verbose
+  params[["IntFeasTol"]] <- 1e-5
   params[["PSDTol"]] <- 1e-4
   if (time_limit) {
-    params[["TimeLimit"]] = time_limit
+    params[["TimeLimit"]] <- time_limit
   }
 
   params
@@ -365,9 +365,11 @@ x_from_mild_formula <- function(formula, data) {
 #' @noRd
 initialize_instance_selection <- function(data) {
   s_bag <- split(data, factor(data$bag_name, levels = unique(data$bag_name)))
-  unique_bag_label <- function(x) { unique(x$bag_label) }
-  unique_instance_name <- function(x) { unique(x$instance_name) }
-  select_useful_inst <- function(label, name) { if (label == 1) {name[1]} else {name}}
+  unique_bag_label <- function(x) unique(x$bag_label)
+  unique_instance_name <- function(x) unique(x$instance_name)
+  select_useful_inst <- function(label, name) {
+    if (label == 1) name[1] else name
+  }
 
   labels <- lapply(s_bag, FUN = unique_bag_label)
   instance_names <- lapply(s_bag, FUN = unique_instance_name)
@@ -403,8 +405,8 @@ initialize_instance_selection <- function(data) {
 #' @noRd
 select_cv_folds <- function(data, n_fold, fold_id) {
   # TODO: I think I can make this a lot cleaner with the following idea from my other code
-  # bags_for_train <- which(foldid != fold)
-  # ind <- bags %in% unique(bags)[bags_for_train]
+  # L1 bags_for_train <- which(foldid != fold)
+  # L2 ind <- bags %in% unique(bags)[bags_for_train]
   # # The last line goes from the bag index to the instance index, avoiding right joins
 
   bag_info <- unique(data[, c("bag_label", "bag_name"), drop = FALSE])
