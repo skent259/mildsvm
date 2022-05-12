@@ -57,7 +57,12 @@ kfm_nystrom <- function(df, m, r, kernel, sampling, ...) {
 
 #' @describeIn kfm_nystrom For use on objects of class `data.frame` or `matrix`.
 #' @export
-kfm_nystrom.default <- function(df, m = nrow(df), r = m, kernel = "radial", sampling = "random", ...) {
+kfm_nystrom.default <- function(df,
+                                m = nrow(df),
+                                r = m,
+                                kernel = "radial",
+                                sampling = "random",
+                                ...) {
   # TODO: check all columns are numeric
   `%ni%` <- Negate(`%in%`)
   kernel_params <- list(...)
@@ -100,7 +105,12 @@ kfm_nystrom.default <- function(df, m = nrow(df), r = m, kernel = "radial", samp
 #' @describeIn kfm_nystrom Ignore the information columns `'bag_label'`,
 #'   `'bag_name'`, and `'instance_name'` when calculating kernel approximation.
 #' @export
-kfm_nystrom.mild_df <- function(df, m = nrow(df), r = m, kernel = "radial", sampling = "random", ...) {
+kfm_nystrom.mild_df <- function(df,
+                                m = nrow(df),
+                                r = m,
+                                kernel = "radial",
+                                sampling = "random",
+                                ...) {
 
   if (all(sampling == "stratified")) {
     sampling <- bag_instance_sampling(df, m)

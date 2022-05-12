@@ -143,20 +143,25 @@ misvm <- function(x, ...) {
 
 #' @describeIn misvm Method for data.frame-like objects
 #' @export
-misvm.default <- function(x, y, bags,
-                          cost = 1,
-                          method = c("heuristic", "mip", "qp-heuristic"),
-                          weights = TRUE,
-                          control = list(kernel = "linear",
-                                         sigma = if (is.vector(x)) 1 else 1 / ncol(x),
-                                         nystrom_args = list(m = nrow(x), r = nrow(x), sampling = "random"),
-                                         max_step = 500,
-                                         type = "C-classification",
-                                         scale = TRUE,
-                                         verbose = FALSE,
-                                         time_limit = 60,
-                                         start = FALSE),
-                          ...) {
+misvm.default <- function(
+    x,
+    y,
+    bags,
+    cost = 1,
+    method = c("heuristic", "mip", "qp-heuristic"),
+    weights = TRUE,
+    control = list(kernel = "linear",
+                   sigma = if (is.vector(x)) 1 else 1 / ncol(x),
+                   nystrom_args = list(m = nrow(x),
+                                       r = nrow(x),
+                                       sampling = "random"),
+                   max_step = 500,
+                   type = "C-classification",
+                   scale = TRUE,
+                   verbose = FALSE,
+                   time_limit = 60,
+                   start = FALSE),
+    ...) {
 
   method <- match.arg(method, c("heuristic", "mip", "qp-heuristic"))
 
@@ -448,8 +453,15 @@ predict.misvm <- function(object,
 #'
 #' @author Sean Kent
 #' @noRd
-misvm_mip_fit <- function(y, bags, x, c, rescale = TRUE, weights = NULL,
-                          verbose = FALSE, time_limit = FALSE, start = FALSE) {
+misvm_mip_fit <- function(y,
+                          bags,
+                          x,
+                          c,
+                          rescale = TRUE,
+                          weights = NULL,
+                          verbose = FALSE,
+                          time_limit = FALSE,
+                          start = FALSE) {
   # TODO: maybe change function call to y, X, bags?
   if (rescale) x <- scale(x)
   bags <- as.numeric(factor(bags, levels = unique(bags)))
@@ -605,8 +617,16 @@ misvm_mip_model <- function(y, bags, x, c, weights = NULL, warm_start = NULL) {
 #' mdl <- MI_SVM(data = df1, cost = 1, kernel = 'radial')
 #' @author Yifei Liu, Sean Kent
 #' @noRd
-misvm_heuristic_fit <- function(y, bags, x, c, rescale = TRUE, weights = NULL,
-                                kernel = "radial", sigma = 1, max_step = 500, type = "C-classification",
+misvm_heuristic_fit <- function(y,
+                                bags,
+                                x,
+                                c,
+                                rescale = TRUE,
+                                weights = NULL,
+                                kernel = "radial",
+                                sigma = 1,
+                                max_step = 500,
+                                type = "C-classification",
                                 scale = TRUE) {
   r <- .reorder(y, bags, x)
   y <- r$y
@@ -717,8 +737,15 @@ misvm_heuristic_fit <- function(y, bags, x, c, rescale = TRUE, weights = NULL,
 #'
 #' @author Sean Kent
 #' @noRd
-misvm_qpheuristic_fit <- function(y, bags, x, c, rescale = TRUE, weights = NULL,
-                                  verbose = FALSE, time_limit = FALSE, max_step = 500) {
+misvm_qpheuristic_fit <- function(y,
+                                  bags,
+                                  x,
+                                  c,
+                                  rescale = TRUE,
+                                  weights = NULL,
+                                  verbose = FALSE,
+                                  time_limit = FALSE,
+                                  max_step = 500) {
   r <- .reorder(y, bags, x)
   y <- r$y
   bags <- r$b
@@ -837,9 +864,17 @@ misvm_qpheuristic_fit <- function(y, bags, x, c, rescale = TRUE, weights = NULL,
 #'
 #' @author Sean Kent
 #' @noRd
-misvm_dualqpheuristic_fit <- function(y, bags, x, c, rescale = TRUE, weights = NULL,
-                                      kernel = "linear", sigma = NULL,
-                                      verbose = FALSE, time_limit = FALSE, max_step = 500) {
+misvm_dualqpheuristic_fit <- function(y,
+                                      bags,
+                                      x,
+                                      c,
+                                      rescale = TRUE,
+                                      weights = NULL,
+                                      kernel = "linear",
+                                      sigma = NULL,
+                                      verbose = FALSE,
+                                      time_limit = FALSE,
+                                      max_step = 500) {
   r <- .reorder(y, bags, x)
   y <- r$y
   bags <- r$b

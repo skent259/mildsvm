@@ -90,19 +90,27 @@ cv_misvm <- function(x, ...) {
 
 #' @describeIn cv_misvm Method for data.frame-like objects
 #' @export
-cv_misvm.default <- function(x, y, bags, cost_seq, n_fold, fold_id,
-                             method = c("heuristic", "mip", "qp-heuristic"),
-                             weights = TRUE,
-                             control = list(kernel = "linear",
-                                            sigma = 1,
-                                            nystrom_args = list(m = nrow(x), r = nrow(x), sampling = "random"),
-                                            max_step = 500,
-                                            type = "C-classification",
-                                            scale = TRUE,
-                                            verbose = FALSE,
-                                            time_limit = 60,
-                                            start = FALSE),
-                             ...) {
+cv_misvm.default <- function(
+    x,
+    y,
+    bags,
+    cost_seq,
+    n_fold,
+    fold_id,
+    method = c("heuristic", "mip", "qp-heuristic"),
+    weights = TRUE,
+    control = list(kernel = "linear",
+                   sigma = 1,
+                   nystrom_args = list(m = nrow(x),
+                                       r = nrow(x),
+                                       sampling = "random"),
+                   max_step = 500,
+                   type = "C-classification",
+                   scale = TRUE,
+                   verbose = FALSE,
+                   time_limit = 60,
+                   start = FALSE),
+    ...) {
 
   method <- match.arg(method, c("heuristic", "mip", "qp-heuristic"))
   if (!missing(n_fold) & !missing(fold_id)) {

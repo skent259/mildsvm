@@ -66,17 +66,18 @@ svor_exc <- function(x, ...) {
 
 #' @describeIn svor_exc Method for data.frame-like objects
 #' @export
-svor_exc.default <- function(x, y,
-                             cost = 1,
-                             method = c("smo"),
-                             weights = NULL,
-                             control = list(kernel = "linear",
-                                            sigma = if (is.vector(x)) 1 else 1 / ncol(x),
-                                            max_step = 500,
-                                            scale = TRUE,
-                                            verbose = FALSE
-                             ),
-                             ...) {
+svor_exc.default <- function(
+    x,
+    y,
+    cost = 1,
+    method = c("smo"),
+    weights = NULL,
+    control = list(kernel = "linear",
+                   sigma = if (is.vector(x)) 1 else 1 / ncol(x),
+                   max_step = 500,
+                   scale = TRUE,
+                   verbose = FALSE),
+    ...) {
   method <- match.arg(method, c("smo"))
 
   defaults <- list(
@@ -228,9 +229,15 @@ predict.svor_exc <- function(object,
 #' INTERNAL fit function for SVOR-EXC
 #' @author Sean Kent
 #' @noRd
-svor_exc_fit <- function(y, x, c, rescale = TRUE, weights = NULL,
-                         kernel = "linear", sigma = NULL,
-                         verbose = FALSE, max_step = 500) {
+svor_exc_fit <- function(y,
+                         x,
+                         c,
+                         rescale = TRUE,
+                         weights = NULL,
+                         kernel = "linear",
+                         sigma = NULL,
+                         verbose = FALSE,
+                         max_step = 500) {
   r <- .reorder(y, y, x)
   y <- r$y
   x <- r$X

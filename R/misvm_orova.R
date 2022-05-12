@@ -56,20 +56,25 @@ misvm_orova <- function(x, ...) {
 
 #' @describeIn misvm_orova Method for data.frame-like objects
 #' @export
-misvm_orova.default <- function(x, y, bags,
-                                cost = 1,
-                                method = c("heuristic", "mip", "qp-heuristic"),
-                                weights = TRUE,
-                                control = list(kernel = "linear",
-                                               sigma = if (is.vector(x)) 1 else 1 / ncol(x),
-                                               nystrom_args = list(m = nrow(x), r = nrow(x), sampling = "random"),
-                                               max_step = 500,
-                                               type = "C-classification",
-                                               scale = TRUE,
-                                               verbose = FALSE,
-                                               time_limit = 60,
-                                               start = FALSE),
-                                ...) {
+misvm_orova.default <- function(
+    x,
+    y,
+    bags,
+    cost = 1,
+    method = c("heuristic", "mip", "qp-heuristic"),
+    weights = TRUE,
+    control = list(kernel = "linear",
+                   sigma = if (is.vector(x)) 1 else 1 / ncol(x),
+                   nystrom_args = list(m = nrow(x),
+                                       r = nrow(x),
+                                       sampling = "random"),
+                   max_step = 500,
+                   type = "C-classification",
+                   scale = TRUE,
+                   verbose = FALSE,
+                   time_limit = 60,
+                   start = FALSE),
+    ...) {
   # store the levels of y and convert to numeric format.
   y_info <- .convert_y_ordinal(y)
   y <- y_info$y

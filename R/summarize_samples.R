@@ -33,7 +33,11 @@ summarize_samples <- function(data, group_cols, .fns, cor = FALSE, ...) {
 
 #' @describeIn summarize_samples Method for data.frame-like objects.
 #' @export
-summarize_samples.default <- function(data, group_cols, .fns = list(mean = mean), cor = FALSE, ...) {
+summarize_samples.default <- function(data,
+                                      group_cols,
+                                      .fns = list(mean = mean),
+                                      cor = FALSE,
+                                      ...) {
   df <- data %>%
     dplyr::group_by(dplyr::all_of(dplyr::across(group_cols))) %>%
     dplyr::summarize_all(.fns) %>%

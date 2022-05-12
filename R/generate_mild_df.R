@@ -109,24 +109,23 @@
 #' @export
 #' @author Yifei Liu, Sean Kent
 generate_mild_df <- function(
-  nbag = 50,
-  ninst = 4,
-  nsample = 50,
-  ncov = 10,
-  nimp_pos = 1:ncov,
-  nimp_neg = 1:ncov,
-  positive_prob = 0.2,
-  dist = c("mvt", "mvnormal", "mvnormal"),
-  mean = list(rep(0, length(nimp_pos)), rep(0, length(nimp_neg)), 0),
-  sd_of_mean = c(0.5, 0.5, 0.5),
-  cov = list(diag(1, nrow = length(nimp_pos)), diag(1, nrow = length(nimp_neg)), 1),
-  sample_cov = FALSE,
-  df_wishart_cov = c(length(nimp_pos), length(nimp_neg), ncov - length(nimp_pos)),
-  degree = c(3, NA, NA),
-  positive_bag_prob = NULL,
-  n_noise_inst = NULL,
-  ...
-) {
+    nbag = 50,
+    ninst = 4,
+    nsample = 50,
+    ncov = 10,
+    nimp_pos = 1:ncov,
+    nimp_neg = 1:ncov,
+    positive_prob = 0.2,
+    dist = c("mvt", "mvnormal", "mvnormal"),
+    mean = list(rep(0, length(nimp_pos)), rep(0, length(nimp_neg)), 0),
+    sd_of_mean = c(0.5, 0.5, 0.5),
+    cov = list(diag(1, nrow = length(nimp_pos)), diag(1, nrow = length(nimp_neg)), 1),
+    sample_cov = FALSE,
+    df_wishart_cov = c(length(nimp_pos), length(nimp_neg), ncov - length(nimp_pos)),
+    degree = c(3, NA, NA),
+    positive_bag_prob = NULL,
+    n_noise_inst = NULL,
+    ...) {
   pos <- 1
   neg <- 2
   rem <- 3

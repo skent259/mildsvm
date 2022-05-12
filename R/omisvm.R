@@ -68,21 +68,23 @@ omisvm <- function(x, ...) {
 
 #' @describeIn omisvm Method for data.frame-like objects
 #' @export
-omisvm.default <- function(x, y, bags,
-                           cost = 1,
-                           h = 1,
-                           s = Inf,
-                           method = c("qp-heuristic"),
-                           weights = TRUE,
-                           control = list(kernel = "linear",
-                                          sigma = if (is.vector(x)) 1 else 1 / ncol(x),
-                                          max_step = 500,
-                                          type = "C-classification",
-                                          scale = TRUE,
-                                          verbose = FALSE,
-                                          time_limit = 60
-                           ),
-                           ...) {
+omisvm.default <- function(
+    x,
+    y,
+    bags,
+    cost = 1,
+    h = 1,
+    s = Inf,
+    method = c("qp-heuristic"),
+    weights = TRUE,
+    control = list(kernel = "linear",
+                   sigma = if (is.vector(x)) 1 else 1 / ncol(x),
+                   max_step = 500,
+                   type = "C-classification",
+                   scale = TRUE,
+                   verbose = FALSE,
+                   time_limit = 60),
+    ...) {
 
   method <- match.arg(method, c("qp-heuristic"))
 
@@ -355,8 +357,16 @@ omisvm_qpheuristic_model <- function(y, bags, x, x_s, c, h, weights = NULL) {
   return(model)
 }
 
-omisvm_qpheuristic_fit <- function(y, bags, x, c, h, rescale = TRUE, weights = NULL,
-                                   verbose = FALSE, time_limit = FALSE, max_step = 500) {
+omisvm_qpheuristic_fit <- function(y,
+                                   bags,
+                                   x,
+                                   c,
+                                   h,
+                                   rescale = TRUE,
+                                   weights = NULL,
+                                   verbose = FALSE,
+                                   time_limit = FALSE,
+                                   max_step = 500) {
   r <- .reorder(y, bags, x)
   y <- r$y
   bags <- r$b

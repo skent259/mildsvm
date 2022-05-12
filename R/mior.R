@@ -108,20 +108,22 @@ mior <- function(x, ...) {
 
 #' @describeIn mior Method for data.frame-like objects
 #' @export
-mior.default <- function(x, y, bags,
-                         cost = 1,
-                         cost_eta = 1,
-                         method = "qp-heuristic",
-                         weights = NULL,
-                         control = list(kernel = "linear",
-                                        sigma = if (is.vector(x)) 1 else 1 / ncol(x),
-                                        max_step = 500,
-                                        scale = TRUE,
-                                        verbose = FALSE,
-                                        time_limit = 60,
-                                        option = c("corrected", "xiao")
-                         ),
-                         ...) {
+mior.default <- function(
+    x,
+    y,
+    bags,
+    cost = 1,
+    cost_eta = 1,
+    method = "qp-heuristic",
+    weights = NULL,
+    control = list(kernel = "linear",
+                   sigma = if (is.vector(x)) 1 else 1 / ncol(x),
+                   max_step = 500,
+                   scale = TRUE,
+                   verbose = FALSE,
+                   time_limit = 60,
+                   option = c("corrected", "xiao")),
+    ...) {
   method <- match.arg(method, c("qp-heuristic"))
 
   defaults <- list(
@@ -313,10 +315,20 @@ predict.mior <- function(object,
 
 # Specific implementation methods below ----------------------------------------
 
-mior_dual_fit <- function(y, bags, x, c0, c1, rescale = TRUE, weights = NULL,
-                          kernel = "linear", sigma = NULL,
-                          verbose = FALSE, time_limit = FALSE, max_step = 500,
-                          option = "xiao") {
+mior_dual_fit <- function(
+    y,
+    bags,
+    x,
+    c0,
+    c1,
+    rescale = TRUE,
+    weights = NULL,
+    kernel = "linear",
+    sigma = NULL,
+    verbose = FALSE,
+    time_limit = FALSE,
+    max_step = 500,
+    option = "xiao") {
 
   r <- .reorder(y, bags, x)
   y <- r$y
@@ -537,7 +549,7 @@ compute_b <- function(gurobi_result, model, delta, y, bags, c0, c1, option = "xi
   for (q in seq_along(mu)) {
     if (mu[q] > 0 + eps) {
       rlang::inform(c(
-        paste0("[Step ", t, "] The optimization solution suggests that two intercepts are equal: ", 
+        paste0("[Step ", t, "] The optimization solution suggests that two intercepts are equal: ",
                "b[", q-1, "] == b[", q, "].")
       ))
       start <- length(ind)

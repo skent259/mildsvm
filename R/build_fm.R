@@ -60,8 +60,10 @@ build_fm <- function(kfm_fit, new_data, ...) {
 #'
 #' @export
 #' @author Yifei Liu
-build_instance_feature <- function(data, qtls = seq(0.05, 0.95, length.out = 10),
-                                   mean = TRUE, sd = TRUE) {
+build_instance_feature <- function(data,
+                                   qtls = seq(0.05, 0.95, length.out = 10),
+                                   mean = TRUE,
+                                   sd = TRUE) {
 
   instance_name <- unique(data$instance_name)
   df <- NULL
