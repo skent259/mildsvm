@@ -1,36 +1,96 @@
-# mior() internal functions work on simple examples
+# `mior()` has reasonable performance
 
     Code
-      (mzoe <- mean(y[1:300] != y_pred))
+      print(roc$auc)
     Output
-      [1] 0.8866667
+      Multi-class area under the curve: 0.6775
     Code
-      (mae <- mean(abs(y[1:300] - y_pred)))
+      print(mzoe)
     Output
-      [1] 1.476667
+      [1] 0.8466667
     Code
-      table(y_pred, y[1:300])
+      print(mae)
     Output
-            
-      y_pred   1   2   3
-           1  23  12 100
-           2   0  11   0
-           3  77  77   0
+      [1] 1.373333
     Code
-      pROC::multiclass.roc(response = y[1:300], predictor = y_pred)
-    Message <simpleMessage>
-      Setting direction: controls < cases
-      Setting direction: controls > cases
-      Setting direction: controls > cases
+      print(table(true, pred))
     Output
-      
-      Call:
-      multiclass.roc.default(response = y[1:300], predictor = y_pred)
-      
-      Data: y_pred with 3 levels of y[1:300]: 1, 2, 3.
-      Multi-class area under the curve: 0.7792
+          pred
+      true  1  3
+         1 18 30
+         2 24 24
+         3 49  5
 
-# mior() works for data-frame-like inputs
+---
+
+    Code
+      print(roc$auc)
+    Output
+      Multi-class area under the curve: 0.5973
+    Code
+      print(mzoe)
+    Output
+      [1] 0.76
+    Code
+      print(mae)
+    Output
+      [1] 1.173333
+    Code
+      print(table(true, pred))
+    Output
+          pred
+      true  1  3
+         1 22 30
+         2 21 31
+         3 32 14
+
+---
+
+    Code
+      print(roc$auc)
+    Output
+      Multi-class area under the curve: 0.6057
+    Code
+      print(mzoe)
+    Output
+      [1] 0.7
+    Code
+      print(mae)
+    Output
+      [1] 0.7733333
+    Code
+      print(table(true, pred))
+    Output
+          pred
+      true  1  2
+         1 22 26
+         2 25 23
+         3 11 43
+
+---
+
+    Code
+      print(roc$auc)
+    Output
+      Multi-class area under the curve: 0.5268
+    Code
+      print(mzoe)
+    Output
+      [1] 0.68
+    Code
+      print(mae)
+    Output
+      [1] 0.7733333
+    Code
+      print(table(true, pred))
+    Output
+          pred
+      true  1  2
+         1 20 32
+         2 24 28
+         3 14 32
+
+# `mior()` works for data-frame-like inputs
 
     Code
       predict(mdl2, new_data = df1, type = "class", layer = "bag")
@@ -38,16 +98,16 @@
       # A tibble: 450 x 1
          .pred_class
          <fct>      
-       1 2          
-       2 -1         
+       1 1          
+       2 1          
        3 2          
-       4 2          
-       5 -1         
-       6 -1         
-       7 -1         
-       8 -1         
-       9 2          
-      10 2          
+       4 1          
+       5 2          
+       6 1          
+       7 2          
+       8 1          
+       9 1          
+      10 1          
       # ... with 440 more rows
     Code
       predict(mdl2, new_data = df1, type = "class", layer = "instance")
@@ -55,16 +115,16 @@
       # A tibble: 450 x 1
          .pred_class
          <fct>      
-       1 2          
-       2 2          
-       3 2          
-       4 2          
-       5 2          
-       6 -1         
-       7 -1         
-       8 2          
-       9 2          
-      10 2          
+       1 1          
+       2 1          
+       3 1          
+       4 1          
+       5 1          
+       6 1          
+       7 1          
+       8 1          
+       9 1          
+      10 1          
       # ... with 440 more rows
     Code
       predict(mdl2, new_data = df1, type = "raw", layer = "bag")
@@ -72,16 +132,16 @@
       # A tibble: 450 x 1
           .pred
           <dbl>
-       1  0.836
-       2 -0.226
-       3  0.431
-       4  1.13 
-       5 -1.18 
-       6 -0.408
-       7 -0.263
-       8 -0.722
-       9  2.25 
-      10  1.32 
+       1  1.84 
+       2  0.455
+       3 -1.56 
+       4  0.566
+       5 -2.61 
+       6  0.622
+       7 -1.13 
+       8  2.78 
+       9  0.403
+      10  2.48 
       # ... with 440 more rows
     Code
       predict(mdl2, new_data = df1, type = "raw", layer = "instance")
@@ -89,16 +149,16 @@
       # A tibble: 450 x 1
           .pred
           <dbl>
-       1  0.836
-       2  0.772
-       3  8.71 
-       4  3.23 
-       5  4.09 
-       6 -0.408
-       7 -0.575
-       8  2.58 
-       9  4.68 
-      10  2.54 
+       1  1.84 
+       2 10.9  
+       3  3.44 
+       4  0.566
+       5  2.38 
+       6  5.63 
+       7  2.85 
+       8  2.78 
+       9  0.681
+      10  2.48 
       # ... with 440 more rows
 
 # `mior()` value returns make sense

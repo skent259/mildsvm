@@ -1,8 +1,10 @@
-new_mior <- function(x = list()) {
+new_mior <- function(x = list(), method = c("heuristic", "mip", "qp-heuristic")) {
   stopifnot(is.list(x))
+  method <- match.arg(method, c("heuristic", "mip", "qp-heuristic"))
   structure(
     x,
-    class = "mior"
+    class = "mior",
+    method = method
   )
 }
 
@@ -25,7 +27,7 @@ validate_mior <- function(x) {
 #'
 #' It appears as though an error in Equation (12) persists to the dual form in
 #' (21). A corrected version of this dual formulation can be used with
-#' `control$option = 'corrected'`, or the formulation as writted can be used
+#' `control$option = 'corrected'`, or the formulation as written can be used
 #' with `control$option = 'xiao'`.
 #'
 #'
@@ -138,10 +140,12 @@ mior.default <- function(
   control <- .set_default(control, defaults)
   control$option <- match.arg(control$option, c("corrected", "xiao"))
 
+  # browser()
   # store the levels of y and convert to 0,1 numeric format.
   y_info <- .convert_y_ordinal(y)
   y <- y_info$y
   lev <- y_info$lev
+
 
   # store colnames of x
   x <- as.data.frame(x)
@@ -177,7 +181,7 @@ mior.default <- function(
   out$repr_inst <- res$repr_inst
   out$n_step <- res$n_step
   out$x_scale <- res$x_scale
-  new_mior(out)
+  new_mior(out, method = method)
 }
 
 #' @describeIn mior Method for passing formula
@@ -264,13 +268,19 @@ predict.mior <- function(object,
   if (is.matrix(new_data)) {
     new_data <- as.data.frame(new_data)
   }
-  if (object$call_type == "mior.formula") {
-    new_x <- x_from_mi_formula(object$formula, new_data)
-  } else {
-    new_x <- new_data[, object$features, drop = FALSE]
-  }
+  # if (object$call_type == "mior.formula") {
+  #   new_x <- x_from_mi_formula(object$formula, new_data)
+  # } else {
+  #   new_x <- new_data[, object$features, drop = FALSE]
+  # }
+  new_x <- .get_new_x(object, new_data)
+  kernel <- compute_kernel(as.matrix(new_x),
+                           object$gurobi_fit$xmatrix,
+                           type = object$gurobi_fit$kernel,
+                           sigma = object$gurobi_fit$sigma)
 
-  scores <- as.matrix(new_x) %*% object$gurobi_fit$w
+  scores <- kernel %*% object$gurobi_fit$ay
+  # scores <- as.matrix(new_x) %*% object$gurobi_fit$w
   b_ <- object$gurobi_fit$b
   ind <- 2:length(b_)
   midpoints <- (b_[ind-1] + b_[ind]) / 2
@@ -278,15 +288,7 @@ predict.mior <- function(object,
   dist_from_mp <- abs(outer(as.vector(scores), midpoints, `-`))
 
   if (layer == "bag") {
-    if (object$call_type == "mior.formula" & new_bags[1] == "bag_name" & length(new_bags) == 1) {
-      new_bags <- object$bag_name
-    }
-    if (length(new_bags) == 1 & new_bags[1] %in% colnames(new_data)) {
-      bags <- new_data[[new_bags]]
-    } else {
-      bags <- new_bags
-    }
-
+    bags <- .get_bags(object, new_data, new_bags)
     class_ <- rep(NA, length(bags))
     for (b in unique(bags)) {
       ind <- which(bags == b)
@@ -305,6 +307,7 @@ predict.mior <- function(object,
     class_ <- apply(dist_from_mp, by_col, which.min)
   }
 
+  # browser()
   class_ <- factor(class_, levels = seq_along(object$levels), labels = object$levels)
 
   res <- .pred_output(type, scores, class_)
@@ -336,6 +339,8 @@ mior_dual_fit <- function(
   x <- r$X
   if (rescale) x <- scale(x)
 
+  kern_mat <- .convert_kernel(x, kernel, sigma = sigma)
+
   threshold <- 0.1
 
   params <- .gurobi_params(verbose == 2, time_limit)
@@ -366,20 +371,25 @@ mior_dual_fit <- function(
     }
 
     # compute theta and lambda
-    scores <- as.matrix(x) %*% w_t - (b_t[y] + b_t[y+1]) / 2
+    if (t == 0) {
+      # hard to guess what `a_t` and `delta` are initially, use random `w_t` in linear space
+      scores <- as.matrix(x) %*% w_t - (b_t[y] + b_t[y+1]) / 2
+    } else {
+      scores <- kern_mat[, ind, drop = FALSE] %*% (a_t * delta[ind]) - (b_t[y] + b_t[y+1]) / 2
+    }
     scores <- as.numeric(scores)
     theta <- compute_theta(g = abs(scores), bags)
     lambda <- sign(scores)
     delta <- theta*lambda
 
-    model <- mior_dual_model(x, y, bags, delta, c0, c1, option)
+    model <- mior_dual_model(kern_mat, y, bags, delta, c0, c1, option)
     gurobi_result <- gurobi::gurobi(model, params = params)
 
-    ind <- delta != 0
-    a <- gurobi_result$x[grepl("a", model$varnames)]
+    ind <- delta != 0 # or theta
     # update w, b, j
     t <- t + 1
-    w_t <- - colSums(a * delta[ind] * x[ind, , drop = FALSE])
+    a_t <- gurobi_result$x[grepl("a", model$varnames)]
+    w_t <- - colSums(a_t * delta[ind] * x[ind, , drop = FALSE]) # X_i^T (a_t * delta[ind])
     b_t <- compute_b(gurobi_result, model, delta, y, bags, c0, c1, option, t)
     j[t+1] <- gurobi_result$objval # or, sum(a) + t(gurobi_result$x) %*% model$Q %*% gurobi_result$x
     delta_j <- j_(t-2) - j_(t-1)
@@ -400,21 +410,16 @@ mior_dual_fit <- function(
   # TODO: figure out why this doesn't converge.  Might be an error in my
   # implementation... But it seems to find something that's fairly reasonable.
 
-  if (rescale) { # TODO: edit this to work
-    # NOTE: this differs from other rescaling because we use wx-b instead of wx+b
-    b_t <- b_t + sum(attr(x, "scaled:center") * w_t / attr(x, "scaled:scale"))
-    w_t <- w_t / attr(x, "scaled:scale")
-  }
 
   res <- list(
     gurobi_fit = list(
-      w = w_t,
+      # w = w_t,
       b = b_t,
       xmatrix = x[ind, , drop = FALSE],
-      a = a,
-      # ay = a * y[ind],
-      # kernel = kernel,
-      # sigma = sigma,
+      a = a_t,
+      ay = a_t * delta[ind],
+      kernel = kernel,
+      sigma = sigma,
       # xi = gurobi_result$x[grepl("xi", model$varnames)],
       status = gurobi_result$status,
       itercount = gurobi_result$itercount,
@@ -437,7 +442,7 @@ mior_dual_fit <- function(
   return(res)
 }
 
-mior_dual_model <- function(x, y, bags, delta, c0, c1, option = "xiao") {
+mior_dual_model <- function(kern_mat, y, bags, delta, c0, c1, option = "xiao") {
 
   n_a <- length(unique(bags))
   n_mu <- k <- max(y)
@@ -474,17 +479,16 @@ mior_dual_model <- function(x, y, bags, delta, c0, c1, option = "xiao") {
 
   # Quadratic objective matrix
   ind <- delta != 0
-  kernel <- x[ind, , drop = FALSE] %*% t(x[ind, , drop = FALSE])
+  kernel <- kern_mat[ind, ind, drop = FALSE]
   alpha_q <- - 0.5 * (delta[ind] %*% t(delta[ind])) * kernel
   mu_rho_q <- matrix(0, n_mu + n_rho, n_mu + n_rho)
   q_mat <- Matrix::bdiag(alpha_q, mu_rho_q)
-  # worry about bags that are unordered, maybe take care of this at the beginning of the function
 
   model <- list()
   # Objective
   model[["modelsense"]] <- "max"
   model[["obj"]] <- c(rep(1, n_a), rep(0, n_mu + n_rho))
-  model[["Q"]] <- q_mat # TODO: replace this with kernel at some point
+  model[["Q"]] <- q_mat
   # Constraints
   model[["varnames"]] <- c(paste0("a", 1:n_a), paste0("mu", 1:n_mu), "rho")
   model[["A"]] <- constraints

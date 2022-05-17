@@ -114,7 +114,7 @@ distance.
 
 It appears as though an error in Equation (12) persists to the dual form in
 (21). A corrected version of this dual formulation can be used with
-\code{control$option = 'corrected'}, or the formulation as writted can be used
+\code{control$option = 'corrected'}, or the formulation as written can be used
 with \code{control$option = 'xiao'}.
 }
 \section{Methods (by class)}{

@@ -23,26 +23,7 @@ test_that("omisvm() has reasonable performance", {
     bag_resp <- with(df, classify_bags(bag_label, bag_name))
     bag_pred <- with(df, classify_bags(pred_vec, bag_name))
 
-    # roc
-    suppressMessages({
-      roc <- pROC::multiclass.roc(response = bag_resp, predictor = bag_pred)
-    })
-    expect_gt(roc$auc, roc_cutoff)
-
-    # mean zero-one error
-    mzoe <- mean(bag_resp != bag_pred)
-    expect_lte(mzoe, mzoe_cutoff)
-
-    # mean absolute error
-    mae <- mean(abs(bag_resp - bag_pred))
-    expect_lte(mae, mae_cutoff)
-
-    expect_snapshot({
-      print(roc$auc)
-      print(mzoe)
-      print(mae)
-      print(table(bag_resp, bag_pred))
-    })
+    .evaluate_ordinal_predictions(bag_resp, bag_pred, roc_cutoff, mzoe_cutoff, mae_cutoff)
   }
 
   set.seed(9)

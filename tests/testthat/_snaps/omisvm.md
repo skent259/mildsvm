@@ -13,15 +13,15 @@
     Output
       [1] 0.06
     Code
-      print(table(bag_resp, bag_pred))
+      print(table(true, pred))
     Output
-              bag_pred
-      bag_resp  1  2  3  4  5
-             1  9  1  0  0  0
-             2  1 33  0  0  0
-             3  0  0 22  1  0
-             4  0  0  0 18  2
-             5  0  0  0  1 12
+          pred
+      true  1  2  3  4  5
+         1  9  1  0  0  0
+         2  1 33  0  0  0
+         3  0  0 22  1  0
+         4  0  0  0 18  2
+         5  0  0  0  1 12
 
 ---
 
@@ -38,15 +38,15 @@
     Output
       [1] 0.05
     Code
-      print(table(bag_resp, bag_pred))
+      print(table(true, pred))
     Output
-              bag_pred
-      bag_resp  1  2  3  4  5
-             1 16  1  0  0  0
-             2  0 31  0  0  0
-             3  0  0 23  2  0
-             4  0  0  0 13  1
-             5  0  0  0  1 12
+          pred
+      true  1  2  3  4  5
+         1 16  1  0  0  0
+         2  0 31  0  0  0
+         3  0  0 23  2  0
+         4  0  0  0 13  1
+         5  0  0  0  1 12
 
 ---
 
@@ -63,15 +63,15 @@
     Output
       [1] 0.99
     Code
-      print(table(bag_resp, bag_pred))
+      print(table(true, pred))
     Output
-              bag_pred
-      bag_resp  1  2  3
-             1 10  0  0
-             2 28  6  0
-             3  2 20  1
-             4  0  1 19
-             5  0  0 13
+          pred
+      true  1  2  3
+         1 10  0  0
+         2 28  6  0
+         3  2 20  1
+         4  0  1 19
+         5  0  0 13
 
 ---
 
@@ -88,15 +88,15 @@
     Output
       [1] 0.9
     Code
-      print(table(bag_resp, bag_pred))
+      print(table(true, pred))
     Output
-              bag_pred
-      bag_resp  1  2  3
-             1 17  0  0
-             2 23  8  0
-             3  3 20  2
-             4  0  1 13
-             5  0  0 13
+          pred
+      true  1  2  3
+         1 17  0  0
+         2 23  8  0
+         3  3 20  2
+         4  0  1 13
+         5  0  0 13
 
 ---
 
@@ -113,15 +113,15 @@
     Output
       [1] 1.05
     Code
-      print(table(bag_resp, bag_pred))
+      print(table(true, pred))
     Output
-              bag_pred
-      bag_resp  1  2  3
-             1  5  5  0
-             2  8 26  0
-             3  0 23  0
-             4  0 18  2
-             5  0  5  8
+          pred
+      true  1  2  3
+         1  5  5  0
+         2  8 26  0
+         3  0 23  0
+         4  0 18  2
+         5  0  5  8
 
 ---
 
@@ -138,15 +138,15 @@
     Output
       [1] 0.89
     Code
-      print(table(bag_resp, bag_pred))
+      print(table(true, pred))
     Output
-              bag_pred
-      bag_resp  1  2  3
-             1  8  9  0
-             2  4 27  0
-             3  0 24  1
-             4  0  8  6
-             5  0  4  9
+          pred
+      true  1  2  3
+         1  8  9  0
+         2  4 27  0
+         3  0 24  1
+         4  0  8  6
+         5  0  4  9
 
 # `omisvm()` value returns make sense
 
