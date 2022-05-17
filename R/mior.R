@@ -140,7 +140,6 @@ mior.default <- function(
   control <- .set_default(control, defaults)
   control$option <- match.arg(control$option, c("corrected", "xiao"))
 
-  # browser()
   # store the levels of y and convert to 0,1 numeric format.
   y_info <- .convert_y_ordinal(y)
   y <- y_info$y
@@ -268,11 +267,6 @@ predict.mior <- function(object,
   if (is.matrix(new_data)) {
     new_data <- as.data.frame(new_data)
   }
-  # if (object$call_type == "mior.formula") {
-  #   new_x <- x_from_mi_formula(object$formula, new_data)
-  # } else {
-  #   new_x <- new_data[, object$features, drop = FALSE]
-  # }
   new_x <- .get_new_x(object, new_data)
   kernel <- compute_kernel(as.matrix(new_x),
                            object$gurobi_fit$xmatrix,
@@ -280,7 +274,6 @@ predict.mior <- function(object,
                            sigma = object$gurobi_fit$sigma)
 
   scores <- kernel %*% object$gurobi_fit$ay
-  # scores <- as.matrix(new_x) %*% object$gurobi_fit$w
   b_ <- object$gurobi_fit$b
   ind <- 2:length(b_)
   midpoints <- (b_[ind-1] + b_[ind]) / 2
@@ -307,7 +300,6 @@ predict.mior <- function(object,
     class_ <- apply(dist_from_mp, by_col, which.min)
   }
 
-  # browser()
   class_ <- factor(class_, levels = seq_along(object$levels), labels = object$levels)
 
   res <- .pred_output(type, scores, class_)
@@ -389,7 +381,7 @@ mior_dual_fit <- function(
     # update w, b, j
     t <- t + 1
     a_t <- gurobi_result$x[grepl("a", model$varnames)]
-    w_t <- - colSums(a_t * delta[ind] * x[ind, , drop = FALSE]) # X_i^T (a_t * delta[ind])
+    w_t <- - colSums(a_t * delta[ind] * x[ind, , drop = FALSE]) # i.e. X_i^T (a_t * delta[ind])
     b_t <- compute_b(gurobi_result, model, delta, y, bags, c0, c1, option, t)
     j[t+1] <- gurobi_result$objval # or, sum(a) + t(gurobi_result$x) %*% model$Q %*% gurobi_result$x
     delta_j <- j_(t-2) - j_(t-1)
