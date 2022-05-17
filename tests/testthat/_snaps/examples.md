@@ -474,11 +474,11 @@
     Warning <warning>
       [Step 1] There were NA values in `b`.  Replacing with 0.
     Message <message>
+      [Step 2] The optimization solution suggests that two intercepts are equal: b[0] == b[1].
       [Step 2] The optimization solution suggests that two intercepts are equal: b[1] == b[2].
       [Step 2] The optimization solution suggests that two intercepts are equal: b[2] == b[3].
-    Warning <warning>
-      [Step 2] There were NA values in `b`.  Replacing with 0.
-    Message <message>
+      [Step 2] The optimization solution suggests that endpoints are equal: b[0] == b[K].
+      [Step 3] The optimization solution suggests that two intercepts are equal: b[1] == b[2].
       [Step 3] The optimization solution suggests that two intercepts are equal: b[2] == b[3].
     Warning <warning>
       [Step 3] There were NA values in `b`.  Replacing with 0.
@@ -488,15 +488,15 @@
       # A tibble: 45 x 1
          .pred_class
          <fct>      
-       1 3          
-       2 3          
+       1 2          
+       2 2          
        3 1          
-       4 3          
-       5 1          
-       6 1          
-       7 3          
-       8 3          
-       9 3          
+       4 2          
+       5 2          
+       6 2          
+       7 2          
+       8 1          
+       9 1          
       10 1          
       # ... with 35 more rows
     Code
@@ -506,21 +506,21 @@
         bags, .pred_class, .pred)
     Output
          y bags .pred_class       .pred
-      1  3    1           3  0.90124158
-      2  3    2           3  1.04883866
-      3  3    3           1 -0.49073166
-      4  3    4           3  1.61050422
-      5  3    5           1 -2.15203379
-      6  1    6           1 -0.69258966
-      7  2    7           3  1.14459624
-      8  2    8           3  0.09219952
-      9  2    9           3 -0.06936906
-      10 2   10           1 -1.01712520
-      11 1   11           1 -1.58425706
-      12 1   12           1 -0.85540376
-      13 2   13           1 -0.39651685
-      14 1   14           1 -1.08037692
-      15 1   15           3 -0.17273959
+      1  3    1           2 -1.27106961
+      2  3    2           2 -1.46009539
+      3  3    3           1  0.55859958
+      4  3    4           2 -2.14449120
+      5  3    5           2 -2.39500843
+      6  1    6           2 -1.35396484
+      7  2    7           2 -1.52776943
+      8  2    8           1 -0.27197967
+      9  2    9           1 -0.03922016
+      10 2   10           1  1.13574924
+      11 1   11           1  1.81787187
+      12 1   12           1  0.86516230
+      13 2   13           1  0.33191616
+      14 1   14           2 -1.86835119
+      15 1   15           1  0.03157952
 
 # `mismm()` example works
 
