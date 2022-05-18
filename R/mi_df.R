@@ -199,21 +199,24 @@ as_mi_df.default <- function(x,
 #' allows for additional arguments that can be passed to `print.tbl()` when the
 #' subclass is a tibble (`tbl_df`, `tbl`), documented below.
 #'
-# Copied from pillar::format.tbl()
-#' @param x Object to format or print.
-#' @param ... Passed on to [tbl_format_setup()].
-#' @param n Number of rows to show. If `NULL`, the default, will print all rows
+#' @details
+#' The following extra arguments are available when `x` has subclass `tbl`:
+#' - `n`: Number of rows to show. If `NULL`, the default, will print all rows
 #'   if less than the `print_max` [option][pillar::pillar_options]. Otherwise,
 #'   will print as many rows as specified by the `print_min`
 #'   [option][pillar::pillar_options].
-#' @param width Width of text output to generate. This defaults to `NULL`, which
+#' - `width`: Width of text output to generate. This defaults to `NULL`, which
 #'   means use the `width` [option][pillar::pillar_options].
-#' @param max_extra_cols Number of extra columns to print abbreviated
+#' - `max_extra_cols`: Number of extra columns to print abbreviated
 #'   information for, if the width is too small for the entire tibble. If
 #'   `NULL`, the `max_extra_cols` [option][pillar::pillar_options] is used. The
 #'   previously defined `n_extra` argument is soft-deprecated.
-#' @param max_footer_lines Maximum number of footer lines. If `NULL`, the
+#' - `max_footer_lines`: Maximum number of footer lines. If `NULL`, the
 #'   `max_footer_lines` [option][pillar::pillar_options] is used.
+#'
+#' @param x Object to format or print.
+#' @param ... Passed to other methods.  See [print.tbl()] or details for more
+#'   information.
 #'
 #' @examples
 #' data("ordmvnorm")

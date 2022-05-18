@@ -9,34 +9,39 @@
 \arguments{
 \item{x}{Object to format or print.}
 
-\item{...}{Passed on to \code{\link[=tbl_format_setup]{tbl_format_setup()}}.}
-
-\item{n}{Number of rows to show. If \code{NULL}, the default, will print all rows
-if less than the \code{print_max} \link[pillar:pillar_options]{option}. Otherwise,
-will print as many rows as specified by the \code{print_min}
-\link[pillar:pillar_options]{option}.}
-
-\item{width}{Width of text output to generate. This defaults to \code{NULL}, which
-means use the \code{width} \link[pillar:pillar_options]{option}.}
-
-\item{max_extra_cols}{Number of extra columns to print abbreviated
-information for, if the width is too small for the entire tibble. If
-\code{NULL}, the \code{max_extra_cols} \link[pillar:pillar_options]{option} is used. The
-previously defined \code{n_extra} argument is soft-deprecated.}
-
-\item{max_footer_lines}{Maximum number of footer lines. If \code{NULL}, the
-\code{max_footer_lines} \link[pillar:pillar_options]{option} is used.}
+\item{...}{Passed to other methods.  See \code{\link[=print.tbl]{print.tbl()}} or details for more
+information.}
 }
 \description{
 Specialized print methods for the \code{mi_df}, \code{mild_df} classes. These return
 helpful information such as the number of rows, columns, bags, and instances
-(for \code{mild_df} objects). After that information, it prints the data frame
-based on the underlying subclass. This allows for additional arguments that
-can be passed to \code{print.tbl()} when the subclass is a tibble, documented
-below.
+(for \code{mild_df} objects).
+
+These methods print the data frame based on the underlying subclass. This
+allows for additional arguments that can be passed to \code{print.tbl()} when the
+subclass is a tibble (\code{tbl_df}, \code{tbl}), documented below.
+}
+\details{
+The following extra arguments are available when \code{x} has subclass \code{tbl}:
+\itemize{
+\item \code{n}: Number of rows to show. If \code{NULL}, the default, will print all rows
+if less than the \code{print_max} \link[pillar:pillar_options]{option}. Otherwise,
+will print as many rows as specified by the \code{print_min}
+\link[pillar:pillar_options]{option}.
+\item \code{width}: Width of text output to generate. This defaults to \code{NULL}, which
+means use the \code{width} \link[pillar:pillar_options]{option}.
+\item \code{max_extra_cols}: Number of extra columns to print abbreviated
+information for, if the width is too small for the entire tibble. If
+\code{NULL}, the \code{max_extra_cols} \link[pillar:pillar_options]{option} is used. The
+previously defined \code{n_extra} argument is soft-deprecated.
+\item \code{max_footer_lines}: Maximum number of footer lines. If \code{NULL}, the
+\code{max_footer_lines} \link[pillar:pillar_options]{option} is used.
+}
 }
 \examples{
 data("ordmvnorm")
-head(as_mi_df(ordmvnorm, instance_label = "inst_label"))
+print(as_mi_df(ordmvnorm, instance_label = "inst_label"))
+
+print(as_mi_df(ordmvnorm, instance_label = "inst_label"), n = 2)
 
 }
