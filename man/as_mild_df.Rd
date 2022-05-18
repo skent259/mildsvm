@@ -37,7 +37,7 @@ data frame, a data frame with 'mild_df'. This is in contrast with
 \code{\link[=mild_df]{mild_df()}}, which builds a MILD data frame from individual columns.
 }
 \examples{
-x = data.frame('bag_LABEL' = factor(c(1, 1, 0)),
+x <- data.frame('bag_LABEL' = factor(c(1, 1, 0)),
                'bag_name' = c(rep('bag_1', 2), 'bag_2'),
                'instance_name' = c('bag_1_inst_1', 'bag_1_inst_2', 'bag_2_inst_1'),
                'X1' = c(-0.4, 0.5, 2),

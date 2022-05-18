@@ -3,8 +3,8 @@ new_mild_df <- function(x = data.frame(), instance_label = NULL) {
   stopifnot(is.vector(instance_label) || is.null(instance_label))
 
   structure(x,
-    class = c("mild_df", "data.frame"),
-    instance_label = instance_label
+            class = c("mild_df", class(x)),
+            instance_label = instance_label
   )
 }
 
@@ -142,7 +142,7 @@ mild_df <- function(bag_label = character(),
 #'
 #' @seealso [mild_df()] to build a `mild_df` object.
 #' @examples
-#' x = data.frame('bag_LABEL' = factor(c(1, 1, 0)),
+#' x <- data.frame('bag_LABEL' = factor(c(1, 1, 0)),
 #'                'bag_name' = c(rep('bag_1', 2), 'bag_2'),
 #'                'instance_name' = c('bag_1_inst_1', 'bag_1_inst_2', 'bag_2_inst_1'),
 #'                'X1' = c(-0.4, 0.5, 2),
@@ -161,7 +161,6 @@ as_mild_df <- function(x,
   UseMethod("as_mild_df")
 }
 
-
 #' @export
 as_mild_df.default <- function(x,
                                bag_label = "bag_label",
@@ -169,7 +168,6 @@ as_mild_df.default <- function(x,
                                instance_name = "instance_name",
                                instance_label = "instance_label",
                                ...) {
-  # TODO: allow `bag_label` to be passed as a vector
   if (!inherits(x, "data.frame")) {
     x <- as.data.frame(x)
   }
@@ -206,3 +204,57 @@ as_mild_df.default <- function(x,
 
   return(validate_mild_df(new_mild_df(x, instance_label = instance_label)))
 }
+
+#' @rdname formatting
+#' @export
+print.mild_df <- function(x, ...) {
+  if (!inherits(x, "tbl")) {
+    str <- .make_mild_df_header(x)
+    cat(str[1])
+    if (!is.null(attr(x, "instance_label"))) {
+      cat(str[2])
+    }
+  }
+  NextMethod()
+}
+
+#' @export
+#' @importFrom pillar tbl_sum
+tbl_sum.mild_df <- function(x, ...) {
+  .make_mild_df_header(x)
+}
+
+## Utility functions below ----------------------------------------------------#
+
+#' Make header for printing
+#'
+#' Should look like:
+#' ```
+#' An MILD data frame: 4 x 3 with 2 bags, 3 instances
+#' and instance labels: 0, 1, 0
+#' ```
+#' @param x An `mild_df` object
+#' @noRd
+.make_mild_df_header <- function(x) {
+  n_bag <- length(unique(x$bag_name))
+  n_inst <- length(unique(x$instance_name))
+  str1 <- paste("An MILD data frame:", pillar::dim_desc(x),
+                "with", n_bag, "bags,", n_inst, "instances", "\n")
+
+  if (!is.null(attr(x, "instance_label"))) {
+    inst <- attr(x, "instance_label")
+    if (length(inst) > 5) {
+      inst_str <- paste0(inst[1:5], collapse = ", ")
+      inst_str <- paste0(inst_str, ", ...")
+    } else if (length(inst) == 5) {
+      inst_str <- paste0(inst[1:5], collapse = ", ")
+    } else {
+      inst_str <- paste0(inst, collapse = ", ")
+    }
+    str2 <- paste("and instance labels:", inst_str, "\n")
+  } else {
+    str2 <- NULL
+  }
+  c(str1, str2)
+}
+

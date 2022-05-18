@@ -79,6 +79,7 @@
       library(dplyr)
       distinct(mild_data, bag_label, bag_name, instance_name)
     Output
+      An MILD data frame: 21 x 3 with 7 bags, 21 instances 
          bag_label bag_name instance_name
       1          0     bag1     bag1inst1
       2          0     bag1     bag1inst2
@@ -389,6 +390,19 @@
       [39,] 0.2660560 0.3398438 0.3349206 0.3967751 0.3664759
       [40,] 0.4066057 0.4231177 0.4348109 0.3664759 0.6118455
 
+# `mi_df()` examples work
+
+    Code
+      mi_df(bag_label = factor(c(1, 1, 0)), bag_name = c(rep("bag_1", 2), "bag_2"),
+      X1 = c(-0.4, 0.5, 2), instance_label = c(0, 1, 0))
+    Output
+      An MI data frame: 3 x 3 with 2 bags 
+      and instance labels: 0, 1, 0 
+        bag_label bag_name   X1
+      1         1    bag_1 -0.4
+      2         1    bag_1  0.5
+      3         0    bag_2  2.0
+
 # `mi()` examples work
 
     Code
@@ -421,6 +435,8 @@
       instance_name = c("bag_1_inst_1", "bag_1_inst_2", "bag_2_inst_1"), X1 = c(-0.4,
         0.5, 2), instance_label = c(0, 1, 0))
     Output
+      An MILD data frame: 3 x 4 with 2 bags, 3 instances 
+      and instance labels: 0, 1, 0 
         bag_label bag_name instance_name   X1
       1         1    bag_1  bag_1_inst_1 -0.4
       2         1    bag_1  bag_1_inst_2  0.5
@@ -572,6 +588,7 @@
         predict(mdl2, mil_data, type = "raw")) %>% distinct(bag_name, bag_label,
         .pred_class, .pred)
     Output
+      An MILD data frame: 15 x 4 with 15 bags, 0 instances 
          bag_label bag_name .pred_class       .pred
       1          0     bag1           0 -0.11956070
       2          1     bag2           1  0.21090014
@@ -599,6 +616,7 @@
         predict(mdl1, mil_data, type = "raw")) %>% distinct(bag_name, bag_label,
         .pred_class, .pred)
     Output
+      An MILD data frame: 15 x 4 with 15 bags, 0 instances 
          bag_label bag_name .pred_class       .pred
       1          0     bag1           0 -0.37740255
       2          1     bag2           1  0.28344679
@@ -620,6 +638,7 @@
         bind_cols(predict(mdl1, mil_data, type = "raw", layer = "instance")) %>%
         distinct(bag_name, instance_name, bag_label, .pred_class, .pred)
     Output
+      An MILD data frame: 60 x 5 with 15 bags, 60 instances 
          bag_label bag_name instance_name .pred_class       .pred
       1          0     bag1     bag1inst1           0 -0.38021259
       2          0     bag1     bag1inst2           0 -0.42078066

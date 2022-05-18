@@ -224,6 +224,10 @@ as_mi_df.default <- function(x,
 #'
 #' print(as_mi_df(ordmvnorm, instance_label = "inst_label"), n = 2)
 #'
+#' @name formatting
+#' @aliases print.mi_df print.mild_df
+NULL
+
 #' @rdname formatting
 #' @export
 print.mi_df <- function(x, ...) {
@@ -271,8 +275,9 @@ tbl_sum.mi_df <- function(x, ...) {
 #' @param x An `mi_df` object
 #' @noRd
 .make_mi_df_header <- function(x) {
-  n_bag <- length(unique(x$bag_label))
-  str1 <- paste("An MI data frame:", nrow(x), "x", ncol(x), "with", n_bag, "bags", "\n")
+  n_bag <- length(unique(x$bag_name))
+  str1 <- paste("An MI data frame:", pillar::dim_desc(x),
+                "with", n_bag, "bags", "\n")
 
   if (!is.null(attr(x, "instance_label"))) {
     inst <- attr(x, "instance_label")

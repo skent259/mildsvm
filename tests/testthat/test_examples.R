@@ -98,6 +98,17 @@ test_that("`kme()` examples work", {
   expect_true(TRUE)
 })
 
+test_that("`mi_df()` examples work", {
+  expect_snapshot({
+    mi_df('bag_label' = factor(c(1, 1, 0)),
+          'bag_name' = c(rep('bag_1', 2), 'bag_2'),
+          'X1' = c(-0.4, 0.5, 2),
+          'instance_label' = c(0, 1, 0))
+  })
+
+  expect_true(TRUE)
+})
+
 test_that("`mi()` examples work", {
   expect_snapshot({
     mil_data <- generate_mild_df(positive_degree = 3, nbag = 10)
