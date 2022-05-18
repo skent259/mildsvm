@@ -1,20 +1,20 @@
-new_mild_df <- function(x = data.frame(), instance_label = NULL) {
+new_mi_df <- function(x = data.frame(), instance_label = NULL) {
   stopifnot(is.data.frame(x))
   stopifnot(is.vector(instance_label) || is.null(instance_label))
 
   structure(x,
-    class = c("mild_df", "data.frame"),
-    instance_label = instance_label
+            class = c("mi_df", "data.frame"),
+            instance_label = instance_label
   )
 }
 
-validate_mild_df <- function(x) {
+validate_mi_df <- function(x) {
   instance_label <- attr(x, "instance_label")
 
   # Check column names
-  if (any(colnames(x)[1:3] != c("bag_label", "bag_name", "instance_name"))) {
+  if (any(colnames(x)[1:2] != c("bag_label", "bag_name"))) {
     rlang::abort(
-      "The first three columns of `x` must be 'bag_label', 'bag_name', 'instance_name'"
+      "The first two columns of `x` must be 'bag_label', 'bag_name'"
     )
   }
 
@@ -55,11 +55,11 @@ validate_mild_df <- function(x) {
     }
   }
 
-  # Check the there are two labels for bag_label
+  # Check the there are at least two labels for bag_label
   n_lev <- length(unique(x$bag_label))
-  if (n_lev != 2) {
+  if (n_lev < 2) {
     rlang::warn(c(
-      "`bag_label` should have two levels.",
+      "`bag_label` should have at least two levels.",
       x = paste("`bag_label` has", n_lev, "level(s).")
     ))
   }
@@ -67,109 +67,92 @@ validate_mild_df <- function(x) {
   return(x)
 }
 
-#' Build a MILD data frame
+#' Build a multiple instance (MI) data frame
 #'
-#' `mild_df()` constructs a data frame that corresponds to Multiple Instance
-#' Learning with Distributional Instances (MILD) data.  A `mild_df` object must
-#' have three special columns:
+#' `mi_df()` constructs a data frame that corresponds to Multiple Instance (MI)
+#' data.  A `mi_df` object must have two special columns:
 #' * `bag_label`, determines the label of each bag, typically from `c(0, 1)`
 #' * `bag_name`, character or factor that specifies the bag that each sample
 #'   belongs to.
-#' * `instance_name`, character or factor that specifies the instance that
-#'   each sample belongs to.
 #'
-#' We refer to the rows of a `mild_df` as \emph{samples}, since they are
-#' thought of as draws from the distribution that determines each instance.
-#' Each instance is contained in a bag, with a corresponding label.  Instance
-#' labels can be provided, but they will be pulled in as an attribute.
+#' We refer to the rows of a `mi_df` as \emph{instances}. Each instance is
+#' contained in a bag, with a corresponding label. Bags will typically have
+#' several instances within them. Instance labels can be provided, but they will
+#' be pulled in as an attribute.
 #'
 #' @param bag_label A `character`, `factor`, or `numeric` vector.
 #' @param bag_name A `character` or `factor` vector.
-#' @param instance_name A `character` or `factor` vector.
 #' @param instance_label A `character`, `factor`, or `numeric` vector, or
 #'   `NULL`.
 #' @param ... A set of name-value pairs. These construct the covariates for a
-#'   `mild_df`.
+#'   `mi_df`.
 #'
-#' @return A 'mild_df' object.
+#' @return A 'mi_df' object.
 #'
 #' @seealso
-#' * [as_mild_df()] to convert data.frames to `mild_df`s.
-#' * [generate_mild_df()] for simulating a `mild_df` object.
-#' * [summarize_samples()] for summarizing the `mild_df` into a multiple
-#' instance learning data set.
+#' * [as_mi_df()] to convert data.frames to `mi_df`s.
 #'
 #' @examples
-#' mild_df('bag_label' = factor(c(1, 1, 0)),
-#'         'bag_name' = c(rep('bag_1', 2), 'bag_2'),
-#'         'instance_name' = c('bag_1_inst_1', 'bag_1_inst_2', 'bag_2_inst_1'),
-#'         'X1' = c(-0.4, 0.5, 2),
-#'         'instance_label' = c(0, 1, 0))
+#' mi_df('bag_label' = factor(c(1, 1, 0)),
+#'       'bag_name' = c(rep('bag_1', 2), 'bag_2'),
+#'       'X1' = c(-0.4, 0.5, 2),
+#'       'instance_label' = c(0, 1, 0))
 #'
 #' @export
-#' @author Yifei Liu, Sean Kent
-mild_df <- function(bag_label = character(),
-                    bag_name = character(),
-                    instance_name = character(),
-                    ...,
-                    instance_label = NULL) {
+#' @author Sean Kent
+mi_df <- function(bag_label = character(),
+                  bag_name = character(),
+                  ...,
+                  instance_label = NULL) {
   x <- data.frame(
     bag_label = bag_label,
     bag_name = bag_name,
-    instance_name = instance_name,
     ...
   )
-  return(validate_mild_df(new_mild_df(x, instance_label = instance_label)))
+  return(validate_mi_df(new_mi_df(x, instance_label = instance_label)))
 }
 
-#' Coerce to MILD data frame
+#' Coerce to MI data frame
 #'
-#' `as_mild_df()` turns an existing object, such as a data frame, into a MILD
-#' data frame, a data frame with 'mild_df'. This is in contrast with
-#' [mild_df()], which builds a MILD data frame from individual columns.
+#' `as_mi_df()` turns an existing object, such as a data frame, into a MI
+#' data frame, a data frame with 'mi_df'. This is in contrast with
+#' [mi_df()], which builds a MI data frame from individual columns.
 #'
 #' @param x A data-frame or similar to convert.
 #' @param bag_label A character (default `'bag_label'`) describing which column
 #'   refers to the bag label.
 #' @param bag_name A character (default `'bag_name'`) describing which column
 #'   refers to the bag name.
-#' @param instance_name A character (default `'instance_name'`) describing which
-#'   column refers to the instance name.
 #' @param instance_label A character (default `'instance_label'`) describing which
 #'   column refers to the instance labels. If NULL, no instance_labels will be
 #'   used.
 #' @param ... Arguments reserved for other methods.
 #'
-#' @seealso [mild_df()] to build a `mild_df` object.
+#' @seealso [mi_df()] to build a `mi_df` object.
 #' @examples
 #' x = data.frame('bag_LABEL' = factor(c(1, 1, 0)),
 #'                'bag_name' = c(rep('bag_1', 2), 'bag_2'),
-#'                'instance_name' = c('bag_1_inst_1', 'bag_1_inst_2', 'bag_2_inst_1'),
 #'                'X1' = c(-0.4, 0.5, 2),
 #'                'instance_label' = c(0, 1, 0))
 #'
-#' df <- as_mild_df(x)
+#' df <- as_mi_df(x)
 #'
 #' @export
 #' @author Sean Kent
-as_mild_df <- function(x,
-                       bag_label = "bag_label",
-                       bag_name = "bag_name",
-                       instance_name = "instance_name",
-                       instance_label = "instance_label",
-                       ...) {
-  UseMethod("as_mild_df")
+as_mi_df <- function(x,
+                     bag_label = "bag_label",
+                     bag_name = "bag_name",
+                     instance_label = "instance_label",
+                     ...) {
+  UseMethod("as_mi_df")
 }
 
-
 #' @export
-as_mild_df.default <- function(x,
-                               bag_label = "bag_label",
-                               bag_name = "bag_name",
-                               instance_name = "instance_name",
-                               instance_label = "instance_label",
-                               ...) {
-  # TODO: allow `bag_label` to be passed as a vector
+as_mi_df.default <- function(x,
+                             bag_label = "bag_label",
+                             bag_name = "bag_name",
+                             instance_label = "instance_label",
+                             ...) {
   if (!inherits(x, "data.frame")) {
     x <- as.data.frame(x)
   }
@@ -177,7 +160,6 @@ as_mild_df.default <- function(x,
 
   bag_label <- .check_val_in_cols(bag_label, cols, default = cols[1])
   bag_name <- .check_val_in_cols(bag_name, cols, default = cols[2])
-  instance_name <- .check_val_in_cols(instance_name, cols, default = cols[3])
 
   # handle `instance_label` argument
   if (length(instance_label) == 1) {
@@ -196,13 +178,29 @@ as_mild_df.default <- function(x,
   }
 
   # Re-order and re-name the columns, if needed
-  rest <- which(!(cols %in% c(bag_label, bag_name, instance_name)))
+  rest <- which(!(cols %in% c(bag_label, bag_name)))
   bag_label <- which(cols == bag_label)
   bag_name <- which(cols == bag_name)
-  instance_name <- which(cols == instance_name)
 
-  x <- x[, c(bag_label, bag_name, instance_name, rest), drop = FALSE]
-  colnames(x)[1:3] <- c("bag_label", "bag_name", "instance_name")
+  x <- x[, c(bag_label, bag_name, rest), drop = FALSE]
+  colnames(x)[1:2] <- c("bag_label", "bag_name")
 
-  return(validate_mild_df(new_mild_df(x, instance_label = instance_label)))
+  return(validate_mi_df(new_mi_df(x, instance_label = instance_label)))
 }
+
+#' Check for `val` in `cols`
+#' @param val A character to check
+#' @param cols A character vector of column names
+#' @param default An integer which specifies the element in `cols` to default to
+#' @noRd
+.check_val_in_cols <- function(val, cols, default) {
+  if (val %ni% cols) {
+    rlang::warn(c(
+      paste("Column", val, "not found in `x`."),
+      i = paste0("Using column, ", default, " as `", val, "`")
+    ))
+    val <- default
+  }
+  val
+}
+
