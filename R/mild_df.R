@@ -224,6 +224,17 @@ tbl_sum.mild_df <- function(x, ...) {
   .make_mild_df_header(x)
 }
 
+#' @export
+`[.mild_df` <- function(x, i, j, ..., drop = FALSE) {
+  out <- NextMethod("[")
+  if (!missing(j)) {
+    warn <- length(j) > 1
+  } else {
+    warn <- FALSE
+  }
+  .drop_class_if_metadata_removed(out, "mild_df", warn)
+}
+
 ## Utility functions below ----------------------------------------------------#
 
 #' Make header for printing

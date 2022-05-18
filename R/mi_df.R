@@ -10,7 +10,6 @@ new_mi_df <- function(x = data.frame(), instance_label = NULL) {
 
 validate_mi_df <- function(x) {
   instance_label <- attr(x, "instance_label")
-
   # Check column names
   if (any(colnames(x)[1:2] != c("bag_label", "bag_name"))) {
     rlang::abort(
@@ -21,7 +20,7 @@ validate_mi_df <- function(x) {
   # Check whether `bag_label` is consistent with `bag_name`
   bags <- unique(x$bag_name)
   bag_labels <- function(x, bag) {
-    labels <- x[which(x$bag_name == bag), "bag_label"]
+    labels <- x[which(x$bag_name == bag), "bag_label", drop = TRUE]
     return(length(unique(labels)))
   }
   inconsistent_bag_labels <- sapply(bags, bag_labels, x = x) != 1
@@ -39,7 +38,7 @@ validate_mi_df <- function(x) {
 
     check_inst_label <- function(x, bag, inst) {
       ind <- which(x$bag_name == bag)
-      bag_label <- unique(x[ind, "bag_label"])
+      bag_label <- unique(x[ind, "bag_label", drop = TRUE])
       inst_label <- inst[ind]
       return(max(inst_label) != bag_label)
     }
@@ -247,6 +246,17 @@ tbl_sum.mi_df <- function(x, ...) {
   .make_mi_df_header(x)
 }
 
+#' @export
+`[.mi_df` <- function(x, i, j, ..., drop = FALSE) {
+  out <- NextMethod("[")
+  if (!missing(j)) {
+    warn <- length(j) > 1
+  } else {
+    warn <- FALSE
+  }
+  .drop_class_if_metadata_removed(out, "mi_df", warn)
+}
+
 ## Utility functions below ----------------------------------------------------#
 
 #' Check for `val` in `cols`
@@ -296,4 +306,26 @@ tbl_sum.mi_df <- function(x, ...) {
   c(str1, str2)
 }
 
+#' Drop `mi_df` class if metadata columns were removed from the data frame
+#' @noRd
+.drop_class_if_metadata_removed <- function(x, class = "mi_df", warn = TRUE) {
+  class <- match.arg(class, c("mi_df", "mild_df"))
+  if (!all(.reserved_df_variables(class) %in% names(x))) {
+    if (warn) {
+      msg <- paste0("Dropping '", class, "' class as required column was removed.")
+      rlang::warn(msg)
+    }
+    class(x) <- setdiff(class(x), class)
+  }
+  x
+}
 
+#' @noRd
+.reserved_df_variables <- function(class = "mi_df") {
+  class <- match.arg(class, c("mi_df", "mild_df"))
+  switch(
+    class,
+    "mi_df" = c("bag_label", "bag_name"),
+    "mild_df" = c("bag_label", "bag_name", "instance_name")
+  )
+}

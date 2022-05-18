@@ -80,3 +80,37 @@ test_that("Printing methods work as expected", {
 
   expect_s3_class(df, "mild_df")
 })
+
+test_that("Subsetting `mild_df` gives correct warnings and classes", {
+  df <- as_mild_df(x_main)
+
+  expect_s3_class(df[, c(1:3)], "mild_df")
+  expect_s3_class(df[, c(1:4)], "mild_df")
+  expect_false(inherits(df[, 1], "mild_df"))
+  expect_s3_class(df[, 1], "factor")
+
+  expect_warning(df2 <- df[, c(2:3)], "Dropping 'mild_df'")
+  expect_s3_class(df2, "data.frame")
+  expect_false(inherits(df2, "mild_df"))
+
+  expect_warning(df2 <- df[, c(1,4)], "Dropping 'mild_df'")
+  expect_s3_class(df2, "data.frame")
+  expect_false(inherits(df2, "mild_df"))
+
+
+  df <- as_mild_df(tibble::as_tibble(x_main))
+
+  expect_s3_class(df[, c(1:3)], "mild_df")
+  expect_s3_class(df[, c(1:4)], "mild_df")
+  expect_false(inherits(df[, 1], "mild_df"))
+  expect_s3_class(df[, 1], "data.frame") # different for tibbles
+
+  expect_warning(df2 <- df[, c(2:3)], "Dropping 'mild_df'")
+  expect_s3_class(df2, "data.frame")
+  expect_false(inherits(df2, "mild_df"))
+
+  expect_warning(df2 <- df[, c(1,4)], "Dropping 'mild_df'")
+  expect_s3_class(df2, "data.frame")
+  expect_false(inherits(df2, "mild_df"))
+})
+

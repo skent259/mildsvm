@@ -272,6 +272,7 @@ predict.smm <- function(object,
                         ...) {
   type <- match.arg(type)
   layer <- match.arg(layer, c("instance", "bag"))
+  if (!is.null(new_data)) new_data <- as.data.frame(new_data)
 
   if (is.matrix(kernel) && !is.null(object$x_scale)) {
     message("Model was fit using scaling, make sure that kernel matrix was similarly scaled.")

@@ -1,4 +1,7 @@
-suppressMessages(suppressWarnings(library(tibble)))
+suppressMessages(suppressWarnings({
+  library(tibble)
+  library(dplyr)
+}))
 
 x_main <- data.frame("bag_label" = factor(c(1, 1, 0)),
                      "bag_name" = c(rep("bag_1", 2), "bag_2"),
@@ -83,4 +86,37 @@ test_that("Printing methods work as expected", {
   expect_snapshot(print(df, n = 2))
 
   expect_s3_class(df, "mi_df")
+})
+
+test_that("Subsetting `mi_df` gives correct warnings and classes", {
+  df <- as_mi_df(x_main)
+
+  expect_s3_class(df[, c(1:2)], "mi_df")
+  expect_s3_class(df[, c(1:3)], "mi_df")
+  expect_false(inherits(df[, 1], "mi_df"))
+  expect_s3_class(df[, 1], "factor")
+
+  expect_warning(df2 <- df[, c(2:3)], "Dropping 'mi_df'")
+  expect_s3_class(df2, "data.frame")
+  expect_false(inherits(df2, "mi_df"))
+
+  expect_warning({df2 <- df[, c(1, 3)]}, "Dropping 'mi_df'")
+  expect_s3_class(df2, "data.frame")
+  expect_false(inherits(df2, "mi_df"))
+
+
+  df <- as_mi_df(tibble::as_tibble(x_main))
+
+  expect_s3_class(df[, c(1:2)], "mi_df")
+  expect_s3_class(df[, c(1:3)], "mi_df")
+  expect_false(inherits(df[, 1], "mi_df"))
+  expect_s3_class(df[, 1], "data.frame") # different for tibbles
+
+  expect_warning(df2 <- df[, c(2:3)], "Dropping 'mi_df'")
+  expect_s3_class(df2, "data.frame")
+  expect_false(inherits(df2, "mi_df"))
+
+  expect_warning(df2 <- df[, c(1, 3)], "Dropping 'mi_df'")
+  expect_s3_class(df2, "data.frame")
+  expect_false(inherits(df2, "mi_df"))
 })

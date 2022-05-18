@@ -235,6 +235,7 @@ predict.omisvm <- function(object,
   type <- match.arg(type, c("class", "raw"))
   layer <- match.arg(layer, c("bag", "instance"))
   method <- attr(object, "method")
+  if (!is.null(new_data)) new_data <- as.data.frame(new_data)
 
   k <- length(object$lev)
   h <- object$h

@@ -30,9 +30,10 @@ test_that("Nystrom method approximates the true kernel on a dataframe.", {
 
 })
 
-test_that("Nystrom method approximates the true kernel on a MilData object", {
+test_that("Nystrom method approximates the true kernel on a `mild_df` object", {
   check_nystrom_approximation <- function(fit, df, max_thresh, mean_thresh) {
-    X <- subset(df, select = -c(bag_label, bag_name, instance_name))
+    X <- subset(df, select = -c(bag_label, bag_name, instance_name)) %>%
+      suppressWarnings()
     fm <- build_fm(fit, df)
     fm <- as.matrix(subset(fm, select = -c(bag_label, bag_name, instance_name)))
 
@@ -149,8 +150,8 @@ test_that("Nystrom method works with various sampling parameters", {
   })
 
   fit <- kfm_nystrom(mil_data, m = 10, r = 10, kernel = "radial", sampling = 1:10, sigma = 0.05)
-  expect_equal(fit$df_sub, as.matrix(mil_data[1:10, -c(1:3)]), ignore_attr = TRUE)
-
+  expect_equal(fit$df_sub, as.matrix(mil_data[1:10, -c(1:3)]), ignore_attr = TRUE) %>%
+    expect_warning()
   fit <- kfm_nystrom(mil_data, m = 10, r = 10, kernel = "radial", sampling = "random", sigma = 0.05)
 
 })

@@ -105,6 +105,8 @@
     Code
       split(mild_data[, 4:5], mild_data$instance_name) %>% sapply(colMeans) %>% round(
         2) %>% t()
+    Warning <warning>
+      Dropping 'mild_df' class as required column was removed.
     Output
                    X1    X2
       bag1inst1 14.95 14.63
@@ -588,7 +590,6 @@
         predict(mdl2, mil_data, type = "raw")) %>% distinct(bag_name, bag_label,
         .pred_class, .pred)
     Output
-      An MILD data frame: 15 x 4 with 15 bags, 0 instances 
          bag_label bag_name .pred_class       .pred
       1          0     bag1           0 -0.11956070
       2          1     bag2           1  0.21090014
@@ -616,7 +617,6 @@
         predict(mdl1, mil_data, type = "raw")) %>% distinct(bag_name, bag_label,
         .pred_class, .pred)
     Output
-      An MILD data frame: 15 x 4 with 15 bags, 0 instances 
          bag_label bag_name .pred_class       .pred
       1          0     bag1           0 -0.37740255
       2          1     bag2           1  0.28344679
@@ -706,6 +706,9 @@
     Code
       data("ordmvnorm")
       x <- ordmvnorm[, 3:7]
+    Warning <warning>
+      Dropping 'mi_df' class as required column was removed.
+    Code
       y <- ordmvnorm$bag_label
       bags <- ordmvnorm$bag_name
       mdl1 <- misvm_orova(x, y, bags)
@@ -1193,6 +1196,9 @@
     Code
       data("ordmvnorm")
       x <- ordmvnorm[, 3:7]
+    Warning <warning>
+      Dropping 'mi_df' class as required column was removed.
+    Code
       y <- ordmvnorm$bag_label
       bags <- ordmvnorm$bag_name
       mdl1 <- omisvm(x, y, bags, weights = NULL)
@@ -1498,6 +1504,9 @@
     Code
       data("ordmvnorm")
       x <- ordmvnorm[, 3:7]
+    Warning <warning>
+      Dropping 'mi_df' class as required column was removed.
+    Code
       y <- attr(ordmvnorm, "instance_label")
       mdl1 <- svor_exc(x, y)
     Message <message>
