@@ -3,7 +3,7 @@ new_mi_df <- function(x = data.frame(), instance_label = NULL) {
   stopifnot(is.vector(instance_label) || is.null(instance_label))
 
   structure(x,
-            class = c("mi_df", "data.frame"),
+            class = c("mi_df", class(x)),
             instance_label = instance_label
   )
 }
@@ -188,6 +188,60 @@ as_mi_df.default <- function(x,
   return(validate_mi_df(new_mi_df(x, instance_label = instance_label)))
 }
 
+#' Printing multiple instance data frames
+#'
+#' @description
+#' Specialized print methods for the `mi_df`, `mild_df` classes. These return
+#' helpful information such as the number of rows, columns, bags, and instances
+#' (for `mild_df` objects).
+#'
+#' These methods print the data frame based on the underlying subclass. This
+#' allows for additional arguments that can be passed to `print.tbl()` when the
+#' subclass is a tibble (`tbl_df`, `tbl`), documented below.
+#'
+# Copied from pillar::format.tbl()
+#' @param x Object to format or print.
+#' @param ... Passed on to [tbl_format_setup()].
+#' @param n Number of rows to show. If `NULL`, the default, will print all rows
+#'   if less than the `print_max` [option][pillar::pillar_options]. Otherwise,
+#'   will print as many rows as specified by the `print_min`
+#'   [option][pillar::pillar_options].
+#' @param width Width of text output to generate. This defaults to `NULL`, which
+#'   means use the `width` [option][pillar::pillar_options].
+#' @param max_extra_cols Number of extra columns to print abbreviated
+#'   information for, if the width is too small for the entire tibble. If
+#'   `NULL`, the `max_extra_cols` [option][pillar::pillar_options] is used. The
+#'   previously defined `n_extra` argument is soft-deprecated.
+#' @param max_footer_lines Maximum number of footer lines. If `NULL`, the
+#'   `max_footer_lines` [option][pillar::pillar_options] is used.
+#'
+#' @examples
+#' data("ordmvnorm")
+#' print(as_mi_df(ordmvnorm, instance_label = "inst_label"))
+#'
+#' print(as_mi_df(ordmvnorm, instance_label = "inst_label"), n = 2)
+#'
+#' @rdname formatting
+#' @export
+print.mi_df <- function(x, ...) {
+  if (!inherits(x, "tbl")) {
+    str <- .make_mi_df_header(x)
+    cat(str[1])
+    if (!is.null(attr(x, "instance_label"))) {
+      cat(str[2])
+    }
+  }
+  NextMethod()
+}
+
+#' @export
+#' @importFrom pillar tbl_sum
+tbl_sum.mi_df <- function(x, ...) {
+  .make_mi_df_header(x)
+}
+
+## Utility functions below ----------------------------------------------------#
+
 #' Check for `val` in `cols`
 #' @param val A character to check
 #' @param cols A character vector of column names
@@ -203,4 +257,35 @@ as_mi_df.default <- function(x,
   }
   val
 }
+
+#' Make header for printing
+#'
+#' Should look like:
+#' ```
+#' An MI data frame: 3 x 3 with 2 bags
+#' and instance labels: 0, 1, 0
+#' ```
+#' @param x An `mi_df` object
+#' @noRd
+.make_mi_df_header <- function(x) {
+  n_bag <- length(unique(x$bag_label))
+  str1 <- paste("An MI data frame:", nrow(x), "x", ncol(x), "with", n_bag, "bags", "\n")
+
+  if (!is.null(attr(x, "instance_label"))) {
+    inst <- attr(x, "instance_label")
+    if (length(inst) > 5) {
+      inst_str <- paste0(inst[1:5], collapse = ", ")
+      inst_str <- paste0(inst_str, ", ...")
+    } else if (length(inst) == 5) {
+      inst_str <- paste0(inst[1:5], collapse = ", ")
+    } else {
+      inst_str <- paste0(inst, collapse = ", ")
+    }
+    str2 <- paste("and instance labels:", inst_str, "\n")
+  } else {
+    str2 <- NULL
+  }
+  c(str1, str2)
+}
+
 

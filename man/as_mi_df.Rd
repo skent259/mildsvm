@@ -33,7 +33,7 @@ data frame, a data frame with 'mi_df'. This is in contrast with
 \code{\link[=mi_df]{mi_df()}}, which builds a MI data frame from individual columns.
 }
 \examples{
-x = data.frame('bag_label' = factor(c(1, 1, 0)),
+x = data.frame('bag_LABEL' = factor(c(1, 1, 0)),
                'bag_name' = c(rep('bag_1', 2), 'bag_2'),
                'X1' = c(-0.4, 0.5, 2),
                'instance_label' = c(0, 1, 0))

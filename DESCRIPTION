@@ -24,6 +24,7 @@ Imports:
     kernlab,
     magrittr,
     mvtnorm,
+    pillar,
     pROC,
     purrr, 
     rlang,
