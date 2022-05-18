@@ -113,7 +113,7 @@ mild_df <- function(bag_label = character(),
                     instance_name = character(),
                     ...,
                     instance_label = NULL) {
-  x <- data.frame(
+  x <- tibble::tibble(
     bag_label = bag_label,
     bag_name = bag_name,
     instance_name = instance_name,

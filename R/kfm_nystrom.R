@@ -80,6 +80,7 @@ kfm_nystrom.default <- function(df,
     stop("parameter 'sampling' must be a numeric vector or the character 'random'. ")
   }
   df_sub <- df[sampling, , drop = FALSE]
+  rownames(df_sub) <- sampling
 
   k_hat <- compute_kernel(df_sub, type = kernel, sigma = kernel_params$sigma)
 

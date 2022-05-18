@@ -235,12 +235,13 @@ generate_mild_df <- function(
 
   bag_label <- as.numeric(bag_label)
 
-  out <- data.frame(bag_label,
-                    bag_name,
-                    instance_name = inst_name,
-                    x,
-                    instance_label = inst_label,
-                    stringsAsFactors = FALSE)
+  out <- tibble::tibble(
+    bag_label,
+    bag_name,
+    instance_name = inst_name,
+    x,
+    instance_label = inst_label
+  )
 
   return(as_mild_df(out))
 }

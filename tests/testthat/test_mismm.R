@@ -257,7 +257,7 @@ test_that("mismm() has correct argument handling", {
   )
 
   mil_data_test <- mil_data %>% mutate(bag_label = factor(bag_label, levels = c(1, 0)))
-  dimnames(mil_data_test) <- dimnames(mil_data)
+  expect_equal(dimnames(mil_data_test), dimnames(mil_data))
   expect_equal(
     mismm(mil_data, weights = c("0" = 2, "1" = 1)),
     mismm(mil_data_test, weights = c("0" = 2, "1" = 1))
@@ -269,7 +269,7 @@ test_that("mismm() has correct argument handling", {
   expect_equal(tmp1, tmp2)
 
   mil_data_test <- mil_data %>% mutate(bag_label = factor(bag_label, labels = c("No", "Yes")))
-  dimnames(mil_data_test) <- dimnames(mil_data)
+  expect_equal(dimnames(mil_data_test), dimnames(mil_data))
   expect_equal(
     mismm(mil_data, weights = c("0" = 2, "1" = 1))$ksvm_fit,
     suppressMessages(mismm(mil_data_test, weights = c("No" = 2, "Yes" = 1))$ksvm_fit)
@@ -432,7 +432,7 @@ test_that("mismm mip works with radial kernel", {
 test_that("Passing kernel matrix into mismm works", {
   skip_if_no_gurobi()
   set.seed(8)
-  mil_data_shuf <- mil_data[sample(1:nrow(mil_data)), ]
+  mil_data_shuf <- mil_data[sample(seq_len(nrow(mil_data))), ]
 
   check_kernel_matrix_works <- function(method) {
     set.seed(8)
@@ -456,7 +456,7 @@ test_that("Re-ordering data doesn't reduce performance", {
   check_auc_after_reordering <- function(method) {
     set.seed(8)
     mdl1 <- mismm(mil_data, method = method, control = list(sigma = 0.1))
-    mdl2 <- mismm(mil_data[sample(1:nrow(mil_data)), ], method = method, control = list(sigma = 0.1))
+    mdl2 <- mismm(mil_data[sample(seq_len(nrow(mil_data))), ], method = method, control = list(sigma = 0.1))
 
     pred1 <- predict(mdl1, mil_data_test, type = "raw")
     pred2 <- predict(mdl2, mil_data_test, type = "raw")
