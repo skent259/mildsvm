@@ -50,8 +50,8 @@ validate_omisvm <- function(x) {
 #'
 #' @examples
 #' data("ordmvnorm")
-#' x <- ordmvnorm[, 4:8]
-#' y <- ordmvnorm$inst_label
+#' x <- ordmvnorm[, 3:7]
+#' y <- ordmvnorm$bag_label
 #' bags <- ordmvnorm$bag_name
 #'
 #' mdl1 <- omisvm(x, y, bags, weights = NULL)
@@ -210,8 +210,8 @@ omisvm.formula <- function(formula, data, ...) {
 #'
 #' @examples
 #' data("ordmvnorm")
-#' x <- ordmvnorm[, 4:8]
-#' y <- ordmvnorm$inst_label
+#' x <- ordmvnorm[, 3:7]
+#' y <- ordmvnorm$bag_label
 #' bags <- ordmvnorm$bag_name
 #'
 #' mdl1 <- omisvm(x, y, bags, weights = NULL)

@@ -230,8 +230,8 @@ test_that("`predict.mismm()` examples work", {
 test_that("`misvm_orova()` examples work", {
   expect_snapshot({
     data("ordmvnorm")
-    x <- ordmvnorm[, 4:8]
-    y <- ordmvnorm$inst_label
+    x <- ordmvnorm[, 3:7]
+    y <- ordmvnorm$bag_label
     bags <- ordmvnorm$bag_name
 
     mdl1 <- misvm_orova(x, y, bags)
@@ -287,8 +287,8 @@ test_that("`omisvm()` examples work", {
   set.seed(8)
   expect_snapshot({
     data("ordmvnorm")
-    x <- ordmvnorm[, 4:8]
-    y <- ordmvnorm$inst_label
+    x <- ordmvnorm[, 3:7]
+    y <- ordmvnorm$bag_label
     bags <- ordmvnorm$bag_name
 
     mdl1 <- omisvm(x, y, bags, weights = NULL)
@@ -348,8 +348,8 @@ test_that("`summarize_samples()` examples work", {
 test_that("`svor_exc()` examples work", {
   expect_snapshot({
     data("ordmvnorm")
-    x <- ordmvnorm[, 4:8]
-    y <- ordmvnorm$inst_label
+    x <- ordmvnorm[, 3:7]
+    y <- attr(ordmvnorm, "instance_label")
 
     mdl1 <- svor_exc(x, y)
     predict(mdl1, x)

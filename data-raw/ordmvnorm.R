@@ -8,7 +8,6 @@ set.seed(8)
 n <- 1000
 bags <- rep(1:(n / 5), each = 5)
 y <- sample(1:5, size = n, prob = (1 / 1:5)^2, replace = TRUE)
-y <- classify_bags(y, bags, condense = FALSE)
 
 x <- matrix(NA, nrow = length(y), ncol = 5)
 for (y_ in unique(y)) {
@@ -24,6 +23,7 @@ ordmvnorm <-
     inst_label = y,
     as.data.frame(x)
   ) %>%
-  tibble::as_tibble()
+  tibble::as_tibble() %>%
+  as_mi_df(instance_label = "inst_label")
 
 usethis::use_data(ordmvnorm, overwrite = TRUE)

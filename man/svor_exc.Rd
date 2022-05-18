@@ -87,8 +87,8 @@ Constraints based on the research of Chu and Keerthi (2007).
 
 \examples{
 data("ordmvnorm")
-x <- ordmvnorm[, 4:8]
-y <- ordmvnorm$inst_label
+x <- ordmvnorm[, 3:7]
+y <- attr(ordmvnorm, "instance_label")
 
 mdl1 <- svor_exc(x, y)
 predict(mdl1, x)
