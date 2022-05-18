@@ -21,10 +21,11 @@ test_that("mismm() works for data-frame-like inputs", {
   # mip method
   # df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
   mdl1 <- mismm.default(x = mil_data[, 4:13],
-                          y = mil_data$bag_label,
-                          bags = mil_data$bag_name,
-                          instances = mil_data$instance_name,
-                          method = "mip")
+                        y = mil_data$bag_label,
+                        bags = mil_data$bag_name,
+                        instances = mil_data$instance_name,
+                        method = "mip") %>%
+    suppressWarnings()
 
   expect_equal(
     predict(mdl1, new_data = mil_data, type = "class", layer = "bag"),
@@ -43,10 +44,11 @@ test_that("mismm() works for data-frame-like inputs", {
 
   # heuristic method
   mdl2 <- mismm.default(x = mil_data[, 4:13],
-                          y = mil_data$bag_label,
-                          bags = mil_data$bag_name,
-                          instances = mil_data$instance_name,
-                          method = "heuristic")
+                        y = mil_data$bag_label,
+                        bags = mil_data$bag_name,
+                        instances = mil_data$instance_name,
+                        method = "heuristic") %>%
+    suppressWarnings()
 
   expect_equal(
     predict(mdl2, new_data = mil_data, type = "raw", layer = "bag"),
@@ -77,7 +79,8 @@ test_that("mismm() works for data-frame-like inputs", {
                           y = mil_data$bag_label,
                           bags = mil_data$bag_name,
                           instances = mil_data$instance_name,
-                          method = "qp-heuristic")
+                          method = "qp-heuristic") %>%
+    suppressWarnings()
 
   expect_equal(
     predict(mdl3, new_data = mil_data, type = "raw", layer = "bag"),
@@ -117,7 +120,8 @@ test_that("mismm() works with formula method", {
   mdl2 <- mismm.default(x = mil_data[, c("X1", "X2", "X3")],
                           y = mil_data$bag_label,
                           bags = mil_data$bag_name,
-                          instances = mil_data$instance_name)
+                          instances = mil_data$instance_name) %>%
+    suppressWarnings()
 
   expect_equal(mdl1$ksvm_fit, mdl2$ksvm_fit)
   expect_equal(mdl1$total_step, mdl2$total_step)
@@ -155,7 +159,8 @@ test_that("mismm() works with mild_df method", {
   mdl2 <- mismm.default(x = mil_data[, 4:13],
                           y = mil_data$bag_label,
                           bags = mil_data$bag_name,
-                          instances = mil_data$instance_name)
+                          instances = mil_data$instance_name) %>%
+    suppressWarnings()
 
   expect_equal(mdl1$ksvm_fit, mdl2$ksvm_fit)
   expect_equal(mdl1$total_step, mdl2$total_step)
@@ -175,7 +180,7 @@ test_that("predict.mismm returns labels that match the input labels", {
   skip_if_no_gurobi()
   test_prediction_levels_equal <- function(df, method, class = "default") {
     mdl <- switch(class,
-                  "default" = mismm(x = df[, 4:13],
+                  "default" = mismm(x = as.data.frame(df)[, 4:13],
                                       y = df$bag_label,
                                       bags = df$bag_name,
                                       instances = df$instance_name,
@@ -252,7 +257,7 @@ test_that("mismm() has correct argument handling", {
   )
 
   mil_data_test <- mil_data %>% mutate(bag_label = factor(bag_label, levels = c(1, 0)))
-  dimnames(mil_data_test) <- dimnames(mil_data)
+  expect_equal(dimnames(mil_data_test), dimnames(mil_data))
   expect_equal(
     mismm(mil_data, weights = c("0" = 2, "1" = 1)),
     mismm(mil_data_test, weights = c("0" = 2, "1" = 1))
@@ -264,7 +269,7 @@ test_that("mismm() has correct argument handling", {
   expect_equal(tmp1, tmp2)
 
   mil_data_test <- mil_data %>% mutate(bag_label = factor(bag_label, labels = c("No", "Yes")))
-  dimnames(mil_data_test) <- dimnames(mil_data)
+  expect_equal(dimnames(mil_data_test), dimnames(mil_data))
   expect_equal(
     mismm(mil_data, weights = c("0" = 2, "1" = 1))$ksvm_fit,
     suppressMessages(mismm(mil_data_test, weights = c("No" = 2, "Yes" = 1))$ksvm_fit)
@@ -335,7 +340,8 @@ test_that("mismm() has correct argument handling", {
   ## minimal arguments
   mismm.mild_df(mil_data)
   mismm.formula(mild(bag_label, bag_name, instance_name) ~ ., data = mil_data)
-  mismm.default(mil_data[, 4:13], mil_data$bag_label, mil_data$bag_name, mil_data$instance_name)
+  mismm.default(mil_data[, 4:13], mil_data$bag_label, mil_data$bag_name, mil_data$instance_name) %>%
+    suppressWarnings()
 
 })
 
@@ -345,14 +351,14 @@ test_that("mismm mip can warm start", {
   verbose <- interactive()
 
   # manually check that the output says "User MIP start produced solution with objective ..."
-  mdl1 <- mismm(x = mil_data[, 4:13] %>% as.data.frame(),
+  mdl1 <- mismm(x = as.data.frame(mil_data)[, 4:13],
                   y = mil_data$bag_label,
                   bags = mil_data$bag_name,
                   instances = mil_data$instance_name,
                   method = "mip",
                   control = list(start = TRUE, verbose = verbose))
 
-  mdl2 <- mismm(x = mil_data[, 4:13] %>% as.data.frame(),
+  mdl2 <- mismm(x = as.data.frame(mil_data)[, 4:13],
                   y = mil_data$bag_label,
                   bags = mil_data$bag_name,
                   instances = mil_data$instance_name,
@@ -375,7 +381,7 @@ test_that("mismm mip can warm start", {
 
 test_that("mismm mip works with radial kernel", {
   skip_if_no_gurobi()
-  mdl1 <- mismm.default(x = mil_data[, 4:12],
+  mdl1 <- mismm.default(x = as.data.frame(mil_data)[, 4:12],
                           y = mil_data$bag_label,
                           bags = mil_data$bag_name,
                           instances = mil_data$instance_name,
@@ -398,7 +404,7 @@ test_that("mismm mip works with radial kernel", {
 
   m <- 20
   r <- 10
-  mdl2 <- mismm.default(x = mil_data[, 4:12],
+  mdl2 <- mismm.default(x = as.data.frame(mil_data)[, 4:12],
                           y = mil_data$bag_label,
                           bags = mil_data$bag_name,
                           instances = mil_data$instance_name,
@@ -412,7 +418,7 @@ test_that("mismm mip works with radial kernel", {
 
   # Running with linear kernel shouldn't have the kfm_fit element
   expect_warning({
-    mdl1 <- mismm.default(x = mil_data[, 4:12],
+    mdl1 <- mismm.default(x = as.data.frame(mil_data)[, 4:12],
                             y = mil_data$bag_label,
                             bags = mil_data$bag_name,
                             instances = mil_data$instance_name,
@@ -426,7 +432,7 @@ test_that("mismm mip works with radial kernel", {
 test_that("Passing kernel matrix into mismm works", {
   skip_if_no_gurobi()
   set.seed(8)
-  mil_data_shuf <- mil_data[sample(1:nrow(mil_data)), ]
+  mil_data_shuf <- mil_data[sample(seq_len(nrow(mil_data))), ]
 
   check_kernel_matrix_works <- function(method) {
     set.seed(8)
@@ -450,7 +456,7 @@ test_that("Re-ordering data doesn't reduce performance", {
   check_auc_after_reordering <- function(method) {
     set.seed(8)
     mdl1 <- mismm(mil_data, method = method, control = list(sigma = 0.1))
-    mdl2 <- mismm(mil_data[sample(1:nrow(mil_data)), ], method = method, control = list(sigma = 0.1))
+    mdl2 <- mismm(mil_data[sample(seq_len(nrow(mil_data))), ], method = method, control = list(sigma = 0.1))
 
     pred1 <- predict(mdl1, mil_data_test, type = "raw")
     pred2 <- predict(mdl2, mil_data_test, type = "raw")

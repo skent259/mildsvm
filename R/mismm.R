@@ -408,6 +408,7 @@ predict.mismm <- function(object,
   type <- match.arg(type)
   layer <- match.arg(layer)
   method <- attr(object, "method")
+  if (!is.null(new_data)) new_data <- as.data.frame(new_data)
 
   if (method == "heuristic") {
     # pass on to the predict.smm method
@@ -653,7 +654,7 @@ mil_distribution <- function(data,
 
   # initialize the feature
   instance_selection <- initialize_instance_selection(data)
-  useful_inst_idx = instance_selection[["useful_inst_idx"]]
+  useful_inst_idx <- instance_selection[["useful_inst_idx"]]
   yy <- instance_selection[["yy"]]
 
   num_neg_inst <- length(useful_inst_idx) - length(positive_bag_name)  # calculate the number of negative instances.
@@ -662,6 +663,7 @@ mil_distribution <- function(data,
   res <- kernel_mil(kernel, data_info, max.step, cost, weights,
                     sigma, yy, useful_inst_idx)
 
+  data <- as.data.frame(data)
   sample_df <- data[data$instance_name %in% instance_name[res$useful_inst_idx],
                     -c(1, 2), drop = FALSE]
 

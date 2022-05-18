@@ -65,6 +65,7 @@ build_instance_feature <- function(data,
                                    mean = TRUE,
                                    sd = TRUE) {
 
+  data <- as.data.frame(validate_mild_df(data))
   instance_name <- unique(data$instance_name)
   df <- NULL
   for (i in seq_along(instance_name)) {

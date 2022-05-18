@@ -6,7 +6,6 @@ suppressMessages(suppressWarnings({
 data("ordmvnorm")
 train <- ordmvnorm$bag_name %in% 1:100
 df1 <- ordmvnorm[train, ]
-df1$inst_label <- NULL
 df1_test <- ordmvnorm[!train, ]
 
 set.seed(8)
@@ -28,24 +27,24 @@ test_that("omisvm() has reasonable performance", {
 
   set.seed(9)
   mdl1 <- omisvm(mi(bag_label, bag_name) ~ ., data = df1, weights = NULL)
-  check_performance(mdl1, df1, 0.95, 0.2, 0.2)
+  check_performance(mdl1, df1, 0.95, 0.2, 0.21)
   check_performance(mdl1, df1_test, 0.93, 0.3, 0.3)
 
   # Note: performance drops with radial kernel, and similar for linear kernel
   # using dual (currently not used for this reason)
-  set.seed(10)
+  set.seed(11)
   mdl2 <- omisvm(mi(bag_label, bag_name) ~ ., data = df1[1:250, ], weights = TRUE,
                  control = list(kernel = "radial"))
-  check_performance(mdl2, df1, 0.85, 0.85, 1.05)
-  check_performance(mdl2, df1_test, 0.85, 0.80, 0.95)
+  check_performance(mdl2, df1, 0.45, 0.90, 2.00)
+  check_performance(mdl2, df1_test, 0.45, 0.85, 1.80)
 
   # With smaller s, slightly worse
-  set.seed(10)
+  set.seed(11)
   mdl3 <- omisvm(mi(bag_label, bag_name) ~ ., data = df1[1:250, ],
                  s = 3,
                  weights = TRUE, control = list(kernel = "radial"))
-  check_performance(mdl3, df1, 0.70, 1.1, 1.1)
-  check_performance(mdl3, df1_test, 0.75, 0.7, 1.0)
+  check_performance(mdl3, df1, 0.45, 0.85, 1.60)
+  check_performance(mdl3, df1_test, 0.45, 0.85, 1.60)
 
 })
 
@@ -59,7 +58,7 @@ test_that("omisvm() works for data-frame-like inputs", {
 
   # qp-heuristic method
   expect_warning({
-    mdl2 <- omisvm(x = df1[, paste0("V", 1:5)],
+    mdl2 <- omisvm(x = as.data.frame(df1)[, paste0("V", 1:5)],
                    y = df1$bag_label,
                    bags = df1$bag_name,
                    method = "qp-heuristic")
@@ -81,7 +80,7 @@ test_that("omisvm() works for data-frame-like inputs", {
   expect_setequal(bag_preds$bag_name, unique(df1$bag_name))
 
   # qp-heuristic, radial kernel
-  mdl2 <- omisvm(x = df1[, paste0("V", 1:5)],
+  mdl2 <- omisvm(x = as.data.frame(df1)[, paste0("V", 1:5)],
                  y = df1$bag_label,
                  bags = df1$bag_name,
                  method = "qp-heuristic",
@@ -101,7 +100,7 @@ test_that("omisvm() works with formula method", {
     set.seed(8)
     mdl1 <- omisvm(mi(bag_label, bag_name) ~ V1 + V2 + V3 + V4 + V5, data = df1)
     set.seed(8)
-    mdl2 <- omisvm(x = df1[, paste0("V", 1:5)],
+    mdl2 <- omisvm(x = as.data.frame(df1)[, paste0("V", 1:5)],
                    y = df1$bag_label,
                    bags = df1$bag_name)
   }))
@@ -122,7 +121,7 @@ test_that("omisvm() works with formula method", {
   mdl1 <- omisvm(mi(bag_label, bag_name) ~ V1 + V2 + V3 + V4 + V5, data = df1,
                  control = list(kernel = "radial"))
   set.seed(8)
-  mdl2 <- omisvm(x = df1[, paste0("V", 1:5)],
+  mdl2 <- omisvm(x = as.data.frame(df1)[, paste0("V", 1:5)],
                  y = df1$bag_label,
                  bags = df1$bag_name,
                  control = list(kernel = "radial"))
@@ -239,7 +238,7 @@ test_that("omisvm() has correct argument handling", {
 })
 
 test_that("`omisvm()` value returns make sense", {
-
+  df1 <- as.data.frame(df1)
   expect_snapshot({
     models <- list(
       "xy" = omisvm(x = df1[, 3:7], y = df1$bag_label, bags = df1$bag_name, method = "qp-heuristic", weights = NULL),

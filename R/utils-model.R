@@ -246,6 +246,7 @@ convert_y <- function(y) {
 #'   (default `NULL`).
 #' @noRd
 x_from_formula <- function(formula, data, skip = NULL) {
+  data <- as.data.frame(data)
   response <- as.character(formula[[2]])
   skip <- c(skip, response)
   predictors <- setdiff(colnames(data), skip)
@@ -259,6 +260,7 @@ x_from_formula <- function(formula, data, skip = NULL) {
 #' @inheritParams misvm
 #' @noRd
 x_from_mi_formula <- function(formula, data) {
+  data <- as.data.frame(data)
   mi_names <- as.character(stats::terms(formula, data = data)[[2]])
   bag_label <- mi_names[[2]]
   bag_name <- mi_names[[3]]
@@ -273,6 +275,7 @@ x_from_mi_formula <- function(formula, data) {
 #' @inheritParams mismm
 #' @noRd
 x_from_mild_formula <- function(formula, data) {
+  data <- as.data.frame(data)
   mild_names <- as.character(stats::terms(formula, data = data)[[2]])
   bag_label <- mild_names[[2]]
   bag_name <- mild_names[[3]]

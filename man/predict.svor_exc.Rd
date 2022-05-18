@@ -47,8 +47,8 @@ the original function call.
 }
 \examples{
 data("ordmvnorm")
-y <- ordmvnorm$inst_label
-x <- ordmvnorm[, 4:8]
+x <- ordmvnorm[, 3:7]
+y <- attr(ordmvnorm, "instance_label")
 
 mdl1 <- svor_exc(x, y)
 predict(mdl1, x)

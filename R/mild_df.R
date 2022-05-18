@@ -3,8 +3,8 @@ new_mild_df <- function(x = data.frame(), instance_label = NULL) {
   stopifnot(is.vector(instance_label) || is.null(instance_label))
 
   structure(x,
-    class = c("mild_df", "data.frame"),
-    instance_label = instance_label
+            class = c("mild_df", class(x)),
+            instance_label = instance_label
   )
 }
 
@@ -113,7 +113,7 @@ mild_df <- function(bag_label = character(),
                     instance_name = character(),
                     ...,
                     instance_label = NULL) {
-  x <- data.frame(
+  x <- tibble::tibble(
     bag_label = bag_label,
     bag_name = bag_name,
     instance_name = instance_name,
@@ -142,7 +142,7 @@ mild_df <- function(bag_label = character(),
 #'
 #' @seealso [mild_df()] to build a `mild_df` object.
 #' @examples
-#' x = data.frame('bag_LABEL' = factor(c(1, 1, 0)),
+#' x <- data.frame('bag_LABEL' = factor(c(1, 1, 0)),
 #'                'bag_name' = c(rep('bag_1', 2), 'bag_2'),
 #'                'instance_name' = c('bag_1_inst_1', 'bag_1_inst_2', 'bag_2_inst_1'),
 #'                'X1' = c(-0.4, 0.5, 2),
@@ -161,7 +161,6 @@ as_mild_df <- function(x,
   UseMethod("as_mild_df")
 }
 
-
 #' @export
 as_mild_df.default <- function(x,
                                bag_label = "bag_label",
@@ -169,34 +168,14 @@ as_mild_df.default <- function(x,
                                instance_name = "instance_name",
                                instance_label = "instance_label",
                                ...) {
-  # TODO: allow `bag_label` to be passed as a vector
   if (!inherits(x, "data.frame")) {
     x <- as.data.frame(x)
   }
   cols <- colnames(x)
 
-  # Check that `bag_label`, `bag_name`, `instance_name` exist in colnames(x)
-  if (bag_label %ni% cols) {
-    rlang::warn(c(
-      paste("Column", bag_label, "not found in `x`."),
-      i = paste("Using column,", cols[1], "as `bag_label`")
-    ))
-    bag_label <- cols[1]
-  }
-  if (bag_name %ni% cols) {
-    rlang::warn(c(
-      paste("Column", bag_name, "not found in `x`."),
-      i = paste("Using column,", cols[2], "as `bag_name`")
-    ))
-    bag_name <- cols[2]
-  }
-  if (instance_name %ni% cols) {
-    rlang::warn(c(
-      paste("Column", instance_name, "not found in `x`."),
-      i = paste("Using column,", cols[3], "as `instance_name`")
-    ))
-    instance_name <- cols[3]
-  }
+  bag_label <- .check_val_in_cols(bag_label, cols, default = cols[1])
+  bag_name <- .check_val_in_cols(bag_name, cols, default = cols[2])
+  instance_name <- .check_val_in_cols(instance_name, cols, default = cols[3])
 
   # handle `instance_label` argument
   if (length(instance_label) == 1) {
@@ -225,3 +204,68 @@ as_mild_df.default <- function(x,
 
   return(validate_mild_df(new_mild_df(x, instance_label = instance_label)))
 }
+
+#' @rdname formatting
+#' @export
+print.mild_df <- function(x, ...) {
+  if (!inherits(x, "tbl")) {
+    str <- .make_mild_df_header(x)
+    cat(str[1])
+    if (!is.null(attr(x, "instance_label"))) {
+      cat(str[2])
+    }
+  }
+  NextMethod()
+}
+
+#' @export
+#' @importFrom pillar tbl_sum
+tbl_sum.mild_df <- function(x, ...) {
+  .make_mild_df_header(x)
+}
+
+#' @export
+`[.mild_df` <- function(x, i, j, ..., drop = FALSE) {
+  out <- NextMethod("[")
+  if (!missing(j)) {
+    warn <- length(j) > 1
+  } else {
+    warn <- FALSE
+  }
+  .drop_class_if_metadata_removed(out, "mild_df", warn)
+}
+
+## Utility functions below ----------------------------------------------------#
+
+#' Make header for printing
+#'
+#' Should look like:
+#' ```
+#' An MILD data frame: 4 x 3 with 2 bags, 3 instances
+#' and instance labels: 0, 1, 0
+#' ```
+#' @param x An `mild_df` object
+#' @noRd
+.make_mild_df_header <- function(x) {
+  n_bag <- length(unique(x$bag_name))
+  n_inst <- length(unique(x$instance_name))
+  str1 <- paste("An MILD data frame:", pillar::dim_desc(x),
+                "with", n_bag, "bags,", n_inst, "instances", "\n")
+
+  if (!is.null(attr(x, "instance_label"))) {
+    inst <- attr(x, "instance_label")
+    if (length(inst) > 5) {
+      inst_str <- paste0(inst[1:5], collapse = ", ")
+      inst_str <- paste0(inst_str, ", ...")
+    } else if (length(inst) == 5) {
+      inst_str <- paste0(inst[1:5], collapse = ", ")
+    } else {
+      inst_str <- paste0(inst, collapse = ", ")
+    }
+    str2 <- paste("and instance labels:", inst_str, "\n")
+  } else {
+    str2 <- NULL
+  }
+  c(str1, str2)
+}
+

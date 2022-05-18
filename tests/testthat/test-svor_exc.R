@@ -5,14 +5,16 @@ suppressMessages(suppressWarnings({
 
 
 data("ordmvnorm")
+df <- ordmvnorm
+df$y <- attr(ordmvnorm, "instance_label")
+df <- df[, c(1, 2, 8, 3:7)]
+df <- as_tibble(df)
 
-train <- ordmvnorm$bag_name %in% 1:30
-df1 <- ordmvnorm[train, ]
+train <- df$bag_name %in% 1:30
+df1 <- df[train, ]
 df1$bag_label <- df1$bag_name <- NULL
-colnames(df1)[1] <- "y"
 
-df1_test <- ordmvnorm[!train, ]
-colnames(df1_test)[3] <- "y"
+df1_test <- df[!train, ]
 
 # Tests ------------------------------------------------------------------------
 

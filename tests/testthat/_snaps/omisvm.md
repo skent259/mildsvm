@@ -3,49 +3,49 @@
     Code
       print(roc$auc)
     Output
-      Multi-class area under the curve: 0.9826
+      Multi-class area under the curve: 0.9515
     Code
       print(mzoe)
     Output
-      [1] 0.06
+      [1] 0.2
     Code
       print(mae)
     Output
-      [1] 0.06
+      [1] 0.2
     Code
       print(table(true, pred))
     Output
           pred
       true  1  2  3  4  5
          1  9  1  0  0  0
-         2  1 33  0  0  0
-         3  0  0 22  1  0
-         4  0  0  0 18  2
-         5  0  0  0  1 12
+         2  1 32  1  0  0
+         3  0  7 12  4  0
+         4  0  0  2 16  2
+         5  0  0  0  2 11
 
 ---
 
     Code
       print(roc$auc)
     Output
-      Multi-class area under the curve: 0.9856
+      Multi-class area under the curve: 0.9333
     Code
       print(mzoe)
     Output
-      [1] 0.05
+      [1] 0.28
     Code
       print(mae)
     Output
-      [1] 0.05
+      [1] 0.28
     Code
       print(table(true, pred))
     Output
           pred
       true  1  2  3  4  5
-         1 16  1  0  0  0
-         2  0 31  0  0  0
-         3  0  0 23  2  0
-         4  0  0  0 13  1
+         1 11  6  0  0  0
+         2  2 26  3  0  0
+         3  0  9 14  2  0
+         4  0  0  5  9  0
          5  0  0  0  1 12
 
 ---
@@ -53,7 +53,32 @@
     Code
       print(roc$auc)
     Output
-      Multi-class area under the curve: 0.8871
+      Multi-class area under the curve: 0.5
+    Code
+      print(mzoe)
+    Output
+      [1] 0.9
+    Code
+      print(mae)
+    Output
+      [1] 1.92
+    Code
+      print(table(true, pred))
+    Output
+          pred
+      true  1
+         1 10
+         2 34
+         3 23
+         4 20
+         5 13
+
+---
+
+    Code
+      print(roc$auc)
+    Output
+      Multi-class area under the curve: 0.5
     Code
       print(mzoe)
     Output
@@ -61,92 +86,67 @@
     Code
       print(mae)
     Output
-      [1] 0.99
+      [1] 1.75
     Code
       print(table(true, pred))
     Output
           pred
-      true  1  2  3
-         1 10  0  0
-         2 28  6  0
-         3  2 20  1
-         4  0  1 19
-         5  0  0 13
+      true  1
+         1 17
+         2 31
+         3 25
+         4 14
+         5 13
 
 ---
 
     Code
       print(roc$auc)
     Output
-      Multi-class area under the curve: 0.8805
+      Multi-class area under the curve: 0.5448
     Code
       print(mzoe)
     Output
-      [1] 0.73
+      [1] 0.83
     Code
       print(mae)
     Output
-      [1] 0.9
+      [1] 1.57
     Code
       print(table(true, pred))
     Output
           pred
-      true  1  2  3
-         1 17  0  0
-         2 23  8  0
-         3  3 20  2
-         4  0  1 13
-         5  0  0 13
+      true  1  2
+         1  1  9
+         2 18 16
+         3 14  9
+         4  9 11
+         5  5  8
 
 ---
 
     Code
       print(roc$auc)
     Output
-      Multi-class area under the curve: 0.7303
+      Multi-class area under the curve: 0.5848
     Code
       print(mzoe)
     Output
-      [1] 0.69
+      [1] 0.8
     Code
       print(mae)
     Output
-      [1] 1.05
+      [1] 1.46
     Code
       print(table(true, pred))
     Output
           pred
-      true  1  2  3
-         1  5  5  0
-         2  8 26  0
-         3  0 23  0
-         4  0 18  2
-         5  0  5  8
-
----
-
-    Code
-      print(roc$auc)
-    Output
-      Multi-class area under the curve: 0.7535
-    Code
-      print(mzoe)
-    Output
-      [1] 0.64
-    Code
-      print(mae)
-    Output
-      [1] 0.89
-    Code
-      print(table(true, pred))
-    Output
-          pred
-      true  1  2  3
-         1  8  9  0
-         2  4 27  0
-         3  0 24  1
-         4  0  8  6
-         5  0  4  9
+      true  1  2
+         1  7 10
+         2 18 13
+         3 14 11
+         4  9  5
+         5  3 10
 
 # `omisvm()` value returns make sense
 
@@ -183,7 +183,7 @@
       Setting levels: control = 1, case = 2
       Setting direction: controls < cases
     Output
-      Area under the curve: 0.9938
+      Area under the curve: 0.9403
 
 ---
 
@@ -196,5 +196,5 @@
       Setting levels: control = 1, case = 2
       Setting direction: controls > cases
     Output
-      Area under the curve: 0.8215
+      Area under the curve: 0.5694
 

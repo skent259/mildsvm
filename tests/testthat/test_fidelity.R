@@ -31,7 +31,9 @@ test_that("GenerateData.R functions have identical output", {
 
   class(MilDistribution_data) <- c("mild_df", "data.frame")
   cols <- 4:13
-  diff <- colMeans(mildsvm_data[, cols]) - colMeans(MilDistribution_data[, cols])
+  suppressWarnings({
+    diff <- colMeans(mildsvm_data[, cols]) - colMeans(MilDistribution_data[, cols])
+  })
   expect_lte(mean(diff), 0.05)
   expect_equal(dim(mildsvm_data), dim(MilDistribution_data))
 
@@ -315,7 +317,10 @@ test_that("misvm.R functions have identical output on MilData object.", {
                          control = list(kernel = "radial",
                                         sigma = 1 / 120))
 
-  mdl2 <- MilDistribution::mil_with_feature(mil_data, cost = 1)
+  suppressWarnings({
+    mdl2 <- MilDistribution::mil_with_feature(mil_data, cost = 1)
+  })
+
 
   expect_equal(mdl1$svm_fit$coefs, mdl2$svm_mdl$coefs)
   expect_equal(mdl1$n_step, mdl2$total_step)
@@ -328,7 +333,9 @@ test_that("misvm.R functions have identical output on MilData object.", {
     distinct()
 
   # Note prediction doesn't work in MilDistribution, but this is what it should do
-  MilDistribution_pred <- predict(mdl2, newdata = MilDistribution::build_instance_feature(mil_data))
+  suppressWarnings({
+    MilDistribution_pred <- predict(mdl2, newdata = MilDistribution::build_instance_feature(mil_data))
+  })
 
   expect_equal(
     mildsvm_bag_pred %>% arrange(.pred) %>% pull(.pred),

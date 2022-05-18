@@ -52,8 +52,8 @@ names match the original function call.
 }
 \examples{
 data("ordmvnorm")
-x <- ordmvnorm[, 4:8]
-y <- ordmvnorm$inst_label
+x <- ordmvnorm[, 3:7]
+y <- ordmvnorm$bag_label
 bags <- ordmvnorm$bag_name
 
 mdl1 <- misvm_orova(x, y, bags)

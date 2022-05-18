@@ -98,6 +98,17 @@ test_that("`kme()` examples work", {
   expect_true(TRUE)
 })
 
+test_that("`mi_df()` examples work", {
+  expect_snapshot({
+    mi_df('bag_label' = factor(c(1, 1, 0)),
+          'bag_name' = c(rep('bag_1', 2), 'bag_2'),
+          'X1' = c(-0.4, 0.5, 2),
+          'instance_label' = c(0, 1, 0))
+  })
+
+  expect_true(TRUE)
+})
+
 test_that("`mi()` examples work", {
   expect_snapshot({
     mil_data <- generate_mild_df(positive_degree = 3, nbag = 10)
@@ -230,8 +241,8 @@ test_that("`predict.mismm()` examples work", {
 test_that("`misvm_orova()` examples work", {
   expect_snapshot({
     data("ordmvnorm")
-    x <- ordmvnorm[, 4:8]
-    y <- ordmvnorm$inst_label
+    x <- ordmvnorm[, 3:7]
+    y <- ordmvnorm$bag_label
     bags <- ordmvnorm$bag_name
 
     mdl1 <- misvm_orova(x, y, bags)
@@ -287,8 +298,8 @@ test_that("`omisvm()` examples work", {
   set.seed(8)
   expect_snapshot({
     data("ordmvnorm")
-    x <- ordmvnorm[, 4:8]
-    y <- ordmvnorm$inst_label
+    x <- ordmvnorm[, 3:7]
+    y <- ordmvnorm$bag_label
     bags <- ordmvnorm$bag_name
 
     mdl1 <- omisvm(x, y, bags, weights = NULL)
@@ -348,8 +359,8 @@ test_that("`summarize_samples()` examples work", {
 test_that("`svor_exc()` examples work", {
   expect_snapshot({
     data("ordmvnorm")
-    x <- ordmvnorm[, 4:8]
-    y <- ordmvnorm$inst_label
+    x <- ordmvnorm[, 3:7]
+    y <- attr(ordmvnorm, "instance_label")
 
     mdl1 <- svor_exc(x, y)
     predict(mdl1, x)

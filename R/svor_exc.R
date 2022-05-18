@@ -49,8 +49,8 @@ validate_svor_exc <- function(x) {
 #'
 #' @examples
 #' data("ordmvnorm")
-#' x <- ordmvnorm[, 4:8]
-#' y <- ordmvnorm$inst_label
+#' x <- ordmvnorm[, 3:7]
+#' y <- attr(ordmvnorm, "instance_label")
 #'
 #' mdl1 <- svor_exc(x, y)
 #' predict(mdl1, x)
@@ -160,8 +160,8 @@ svor_exc.formula <- function(formula, data, ...) {
 #'
 #' @examples
 #' data("ordmvnorm")
-#' y <- ordmvnorm$inst_label
-#' x <- ordmvnorm[, 4:8]
+#' x <- ordmvnorm[, 3:7]
+#' y <- attr(ordmvnorm, "instance_label")
 #'
 #' mdl1 <- svor_exc(x, y)
 #' predict(mdl1, x)
