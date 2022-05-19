@@ -154,9 +154,10 @@
       models <- list(xy = omisvm(x = df1[, 3:7], y = df1$bag_label, bags = df1$
         bag_name, method = "qp-heuristic", weights = NULL), formula = omisvm(mi(
         bag_label, bag_name) ~ V1 + V2, method = "qp-heuristic", data = df1, weights = NULL),
-      `no-scale` = omisvm(x = df1[, 3:7], y = df1$bag_label, bags = df1$bag_name,
-      method = "qp-heuristic", weights = NULL, control = list(scale = FALSE))) %>%
-        suppressWarnings() %>% suppressMessages()
+      mi_df = omisvm(as_mi_df(df1, instance_label = NULL)), `no-scale` = omisvm(x = df1[
+        , 3:7], y = df1$bag_label, bags = df1$bag_name, method = "qp-heuristic",
+      weights = NULL, control = list(scale = FALSE))) %>% suppressWarnings() %>%
+        suppressMessages()
       print(lapply(models, names))
     Output
       $xy
@@ -166,6 +167,10 @@
       $formula
        [1] "gurobi_fit" "call_type"  "features"   "levels"     "cost"      
        [6] "h"          "repr_inst"  "x_scale"    "formula"    "bag_name"  
+      
+      $mi_df
+      [1] "gurobi_fit" "call_type"  "features"   "levels"     "cost"      
+      [6] "h"          "repr_inst"  "x_scale"    "bag_name"  
       
       $`no-scale`
       [1] "gurobi_fit" "call_type"  "features"   "levels"     "cost"      

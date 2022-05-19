@@ -344,6 +344,25 @@ test_that("misvm mip works with radial kernel", {
 
 })
 
+test_that("`misvm()` works with `mi_df` method", {
+  predictors <- c("X1_mean", "X2_mean", "X3_mean")
+  df1_mi <- as_mi_df(df1[, c("bag_label", "bag_name", predictors)], instance_label = NULL)
+  mdl1 <- misvm(df1_mi)
+  mdl2 <- misvm(x = df1[, predictors],
+                y = df1$bag_label,
+                bags = df1$bag_name)
+
+  expect_equal(mdl1$model, mdl2$model)
+  expect_equal(mdl1$total_step, mdl2$total_step)
+  expect_equal(mdl1$call_type, "misvm.mi_df")
+  expect_equal(mdl1$features, predictors)
+  expect_equal(mdl1$bag_name, "bag_name")
+
+  # predictions should match
+  expect_equal(predict(mdl1, df1, type = "raw"), predict(mdl2, df1, type = "raw"))
+  expect_equal(predict(mdl1, df1, type = "class"), predict(mdl2, df1, type = "class"))
+})
+
 test_that("misvm() works on 'mild_df' objects", {
   skip_if_no_gurobi()
   # minimal arguments
@@ -415,6 +434,7 @@ test_that("`misvm()` value returns make sense", {
       "xy-mip" = misvm(x = df1[, 3:122], y = df1$bag_label, bags = df1$bag_name, method = "mip"),
       "xy-qp" = misvm(x = df1[, 3:122], y = df1$bag_label, bags = df1$bag_name, method = "qp-heuristic"),
       "formula" = misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean, method = "heuristic", data = df1),
+      "mi_df" = misvm(as_mi_df(df1, instance_label = NULL)),
       "mildata" = misvm(mil_data),
       "no-scale-heur" = misvm(x = df1[, 3:122], y = df1$bag_label, bags = df1$bag_name, method = "heuristic", control = list(scale = FALSE)),
       "no-scale-mip" = misvm(x = df1[, 3:122], y = df1$bag_label, bags = df1$bag_name, method = "mip", control = list(scale = FALSE)),

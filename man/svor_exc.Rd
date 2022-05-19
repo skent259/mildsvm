@@ -4,6 +4,7 @@
 \alias{svor_exc}
 \alias{svor_exc.default}
 \alias{svor_exc.formula}
+\alias{svor_exc.mi_df}
 \title{Fit SVOR-EXC model to ordinal outcome data}
 \usage{
 \method{svor_exc}{default}(
@@ -18,6 +19,8 @@
 )
 
 \method{svor_exc}{formula}(formula, data, ...)
+
+\method{svor_exc}{mi_df}(x, ...)
 }
 \arguments{
 \item{x}{A data.frame, matrix, or similar object of covariates, where each
@@ -83,6 +86,11 @@ Constraints based on the research of Chu and Keerthi (2007).
 \item \code{default}: Method for data.frame-like objects
 
 \item \code{formula}: Method for passing formula
+
+\item \code{mi_df}: Method for \code{mi_df} objects, automatically handling bag
+names, labels, and all covariates. Use the \code{bag_label} as \code{y} at the
+instance level, then perform \code{svor_exc()} ignoring the MIL structure and
+bags.
 }}
 
 \examples{

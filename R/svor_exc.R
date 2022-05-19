@@ -142,6 +142,22 @@ svor_exc.formula <- function(formula, data, ...) {
   return(res)
 }
 
+#' @describeIn svor_exc Method for `mi_df` objects, automatically handling bag
+#'   names, labels, and all covariates. Use the `bag_label` as `y` at the
+#'   instance level, then perform `svor_exc()` ignoring the MIL structure and
+#'   bags.
+#' @export
+svor_exc.mi_df <- function(x, ...) {
+  x <- as.data.frame(validate_mi_df(x))
+  y <- x$bag_label
+  x$bag_label <- x$bag_name <- NULL
+
+  res <- svor_exc.default(x, y, ...)
+  res$call_type <- "svor_exc.mi_df"
+  res$bag_name <- "bag_name"
+  return(res)
+}
+
 #' Predict method for `svor_exc` object
 #'
 #' @details

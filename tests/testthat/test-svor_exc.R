@@ -129,6 +129,30 @@ test_that("svor_exc() works with formula method", {
 
 })
 
+test_that("`svor_exc()` works with `mi_df` method", {
+  df2 <- df1
+  df2$bag_name <- seq_len(nrow(df2))
+  predictors <- paste0("V", 1:5)
+  df1_mi <- as_mi_df(df2[, c("y", "bag_name", predictors)],
+                     bag_label = "y",
+                     instance_label = NULL)
+  suppressMessages({
+    mdl1 <- svor_exc(df1_mi)
+    mdl2 <- svor_exc(x = df1[, predictors],
+                     y = df1$y)
+  })
+
+  expect_equal(mdl1$model, mdl2$model)
+  expect_equal(mdl1$total_step, mdl2$total_step)
+  expect_equal(mdl1$call_type, "svor_exc.mi_df")
+  expect_equal(mdl1$features, predictors)
+  expect_equal(mdl1$bag_name, "bag_name")
+
+  # predictions should match
+  expect_equal(predict(mdl1, df1, type = "raw"), predict(mdl2, df1, type = "raw"))
+  expect_equal(predict(mdl1, df1, type = "class"), predict(mdl2, df1, type = "class"))
+})
+
 test_that("predict.svor_exc() returns labels that match the input labels", {
   test_prediction_levels_equal <- function(df, class = "default") {
     suppressMessages({
@@ -233,11 +257,14 @@ test_that("svor_exc() has correct argument handling", {
 })
 
 test_that("`svor_exc()` value returns make sense", {
+  df2 <- df1
+  df2$bag_name <- seq_len(nrow(df2))
 
   expect_snapshot({
     models <- list(
       "xy" = svor_exc(x = df1[, 2:6], y = df1$y, weights = NULL),
       "formula" = svor_exc(y ~ V1 + V2, data = df1, weights = NULL),
+      "mi_df" = svor_exc(as_mi_df(df2, bag_label = "y", instance_label = NULL)),
       "no-scale" = svor_exc(x = df1[, 2:6], y = df1$y,
                             weights = NULL, control = list(scale = FALSE))
     ) %>%

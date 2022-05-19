@@ -4,6 +4,7 @@
 \alias{mior}
 \alias{mior.default}
 \alias{mior.formula}
+\alias{mior.mi_df}
 \title{Fit MIOR model to the data}
 \usage{
 \method{mior}{default}(
@@ -21,6 +22,8 @@
 )
 
 \method{mior}{formula}(formula, data, ...)
+
+\method{mior}{mi_df}(x, ...)
 }
 \arguments{
 \item{x}{A data.frame, matrix, or similar object of covariates, where each
@@ -122,6 +125,9 @@ with \code{control$option = 'xiao'}.
 \item \code{default}: Method for data.frame-like objects
 
 \item \code{formula}: Method for passing formula
+
+\item \code{mi_df}: Method for \code{mi_df} objects, automatically handling bag
+names, labels, and all covariates.
 }}
 
 \examples{

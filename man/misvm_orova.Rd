@@ -4,6 +4,7 @@
 \alias{misvm_orova}
 \alias{misvm_orova.default}
 \alias{misvm_orova.formula}
+\alias{misvm_orova.mi_df}
 \title{Fit MI-SVM model to ordinal outcome data using One-vs-All}
 \usage{
 \method{misvm_orova}{default}(
@@ -21,6 +22,8 @@
 )
 
 \method{misvm_orova}{formula}(formula, data, ...)
+
+\method{misvm_orova}{mi_df}(x, ...)
 }
 \arguments{
 \item{x}{A data.frame, matrix, or similar object of covariates, where each
@@ -108,6 +111,9 @@ individual level vs not.
 \item \code{default}: Method for data.frame-like objects
 
 \item \code{formula}: Method for passing formula
+
+\item \code{mi_df}: Method for \code{mi_df} objects, automatically handling bag
+names, labels, and all covariates.
 }}
 
 \examples{

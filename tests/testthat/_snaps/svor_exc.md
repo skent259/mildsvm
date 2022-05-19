@@ -64,7 +64,8 @@
 
     Code
       models <- list(xy = svor_exc(x = df1[, 2:6], y = df1$y, weights = NULL),
-      formula = svor_exc(y ~ V1 + V2, data = df1, weights = NULL), `no-scale` = svor_exc(
+      formula = svor_exc(y ~ V1 + V2, data = df1, weights = NULL), mi_df = svor_exc(
+        as_mi_df(df2, bag_label = "y", instance_label = NULL)), `no-scale` = svor_exc(
         x = df1[, 2:6], y = df1$y, weights = NULL, control = list(scale = FALSE))) %>%
         suppressWarnings() %>% suppressMessages()
       print(lapply(models, names))
@@ -76,6 +77,10 @@
       $formula
       [1] "smo_fit"   "call_type" "x"         "features"  "levels"    "cost"     
       [7] "n_step"    "x_scale"   "formula"  
+      
+      $mi_df
+      [1] "smo_fit"   "call_type" "x"         "features"  "levels"    "cost"     
+      [7] "n_step"    "x_scale"   "bag_name" 
       
       $`no-scale`
       [1] "smo_fit"   "call_type" "x"         "features"  "levels"    "cost"     

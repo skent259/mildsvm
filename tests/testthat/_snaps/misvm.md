@@ -6,17 +6,17 @@
         bag_label, bags = df1$bag_name, method = "mip"), `xy-qp` = misvm(x = df1[, 3:
         122], y = df1$bag_label, bags = df1$bag_name, method = "qp-heuristic"),
       formula = misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean, method = "heuristic",
-      data = df1), mildata = misvm(mil_data), `no-scale-heur` = misvm(x = df1[, 3:122],
-      y = df1$bag_label, bags = df1$bag_name, method = "heuristic", control = list(
-        scale = FALSE)), `no-scale-mip` = misvm(x = df1[, 3:122], y = df1$bag_label,
-      bags = df1$bag_name, method = "mip", control = list(scale = FALSE)),
-      `no-scale-qp` = misvm(x = df1[, 3:122], y = df1$bag_label, bags = df1$bag_name,
-      method = "qp-heuristic", control = list(scale = FALSE)), kfm_fit = misvm(mi(
-        bag_label, bag_name) ~ X1_mean + X2_mean, data = df1, method = "mip",
-      control = list(kernel = "radial")), `no-weights-heur` = misvm(x = df1[, 3:122],
-      y = df1$bag_label, bags = df1$bag_name, method = "heuristic", weights = FALSE),
-      `no-weights-mildata` = misvm(mil_data)) %>% suppressWarnings() %>%
-        suppressMessages()
+      data = df1), mi_df = misvm(as_mi_df(df1, instance_label = NULL)), mildata = misvm(
+        mil_data), `no-scale-heur` = misvm(x = df1[, 3:122], y = df1$bag_label, bags = df1$
+        bag_name, method = "heuristic", control = list(scale = FALSE)),
+      `no-scale-mip` = misvm(x = df1[, 3:122], y = df1$bag_label, bags = df1$bag_name,
+      method = "mip", control = list(scale = FALSE)), `no-scale-qp` = misvm(x = df1[,
+        3:122], y = df1$bag_label, bags = df1$bag_name, method = "qp-heuristic",
+      control = list(scale = FALSE)), kfm_fit = misvm(mi(bag_label, bag_name) ~
+        X1_mean + X2_mean, data = df1, method = "mip", control = list(kernel = "radial")),
+      `no-weights-heur` = misvm(x = df1[, 3:122], y = df1$bag_label, bags = df1$
+        bag_name, method = "heuristic", weights = FALSE), `no-weights-mildata` = misvm(
+        mil_data)) %>% suppressWarnings() %>% suppressMessages()
       print(lapply(models, names))
     Output
       $`xy-heur`
@@ -34,6 +34,10 @@
       $formula
        [1] "svm_fit"   "call_type" "x"         "features"  "levels"    "cost"     
        [7] "weights"   "repr_inst" "n_step"    "x_scale"   "formula"   "bag_name" 
+      
+      $mi_df
+       [1] "svm_fit"   "call_type" "x"         "features"  "levels"    "cost"     
+       [7] "weights"   "repr_inst" "n_step"    "x_scale"   "bag_name" 
       
       $mildata
        [1] "svm_fit"       "call_type"     "x"             "features"     

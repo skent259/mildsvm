@@ -125,6 +125,25 @@ test_that("misvm_orova() works with formula method", {
 
 })
 
+test_that("`misvm_orova()` works with `mi_df` method", {
+  predictors <- paste0("V", 1:5)
+  df1_mi <- as_mi_df(df1[, c("bag_label", "bag_name", predictors)], instance_label = NULL)
+  mdl1 <- misvm_orova(df1_mi)
+  mdl2 <- misvm_orova(x = df1[, predictors],
+                      y = df1$bag_label,
+                      bags = df1$bag_name)
+
+  expect_equal(mdl1$model, mdl2$model)
+  expect_equal(mdl1$total_step, mdl2$total_step)
+  expect_equal(mdl1$call_type, "misvm_orova.mi_df")
+  expect_equal(mdl1$features, predictors)
+  expect_equal(mdl1$bag_name, "bag_name")
+
+  # predictions should match
+  expect_equal(predict(mdl1, df1, type = "raw"), predict(mdl2, df1, type = "raw"))
+  expect_equal(predict(mdl1, df1, type = "class"), predict(mdl2, df1, type = "class"))
+})
+
 test_that("predict.misvm_orova() returns labels that match the input labels", {
   test_prediction_levels_equal <- function(df, method, class = "default") {
     mdl <- switch(class,
@@ -223,7 +242,8 @@ test_that("`misvm_orova()` value returns make sense", {
       "heur" = misvm_orova(x = df2[, 3:7], y = df2$bag_label, bags = df2$bag_name, method = "heuristic"),
       "qp" = misvm_orova(x = df2[, 3:7], y = df2$bag_label, bags = df2$bag_name, method = "qp-heuristic"),
       "mip" = misvm_orova(x = df2[, 3:7], y = df2$bag_label, bags = df2$bag_name, method = "mip"),
-      "formula" = misvm_orova(mi(bag_label, bag_name) ~ V1 + V2, method = "qp-heuristic", data = df2)
+      "formula" = misvm_orova(mi(bag_label, bag_name) ~ V1 + V2, method = "qp-heuristic", data = df2),
+      "mi_df" = misvm_orova(as_mi_df(df2, instance_label = NULL))
     ) %>%
       suppressWarnings() %>%
       suppressMessages()

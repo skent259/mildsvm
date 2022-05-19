@@ -144,6 +144,39 @@ test_that("omisvm() works with formula method", {
 
 })
 
+test_that("`misvm()` works with `mi_df` method", {
+  predictors <- paste0("V", 1:5)
+  suppressWarnings({
+    mdl1 <- omisvm(df1)
+    mdl2 <- omisvm(x = as.data.frame(df1)[, predictors],
+                   y = df1$bag_label,
+                   bags = df1$bag_name)
+  })
+
+  expect_equal(mdl1$model, mdl2$model)
+  expect_equal(mdl1$total_step, mdl2$total_step)
+  expect_equal(mdl1$call_type, "omisvm.mi_df")
+  expect_equal(mdl1$features, predictors)
+  expect_equal(mdl1$bag_name, "bag_name")
+
+  # predictions should match
+  expect_equal(predict(mdl1, df1, type = "raw"), predict(mdl2, df1, type = "raw"))
+  expect_equal(predict(mdl1, df1, type = "class"), predict(mdl2, df1, type = "class"))
+
+  suppressWarnings({
+    set.seed(8)
+    mdl1 <- omisvm(df1, control = list(kernel = "radial"))
+    set.seed(8)
+    mdl2 <- omisvm(x = as.data.frame(df1)[, predictors],
+                   y = df1$bag_label,
+                   bags = df1$bag_name,
+                   control = list(kernel = "radial"))
+  })
+  expect_equal(mdl1$model, mdl2$model)
+  expect_equal(predict(mdl1, df1, type = "raw"), predict(mdl2, df1, type = "raw"))
+
+})
+
 test_that("predict.omisvm() returns labels that match the input labels", {
   set.seed(9)
   test_prediction_levels_equal <- function(df, method,
@@ -243,6 +276,7 @@ test_that("`omisvm()` value returns make sense", {
     models <- list(
       "xy" = omisvm(x = df1[, 3:7], y = df1$bag_label, bags = df1$bag_name, method = "qp-heuristic", weights = NULL),
       "formula" = omisvm(mi(bag_label, bag_name) ~ V1 + V2, method = "qp-heuristic", data = df1, weights = NULL),
+      "mi_df" = omisvm(as_mi_df(df1, instance_label = NULL)),
       "no-scale" = omisvm(x = df1[, 3:7], y = df1$bag_label, bags = df1$bag_name,
                           method = "qp-heuristic", weights = NULL, control = list(scale = FALSE))
     ) %>%
