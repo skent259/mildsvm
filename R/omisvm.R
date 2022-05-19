@@ -192,6 +192,21 @@ omisvm.formula <- function(formula, data, ...) {
   return(res)
 }
 
+#' @describeIn omisvm Method for `mi_df` objects, automatically handling bag
+#'   names, labels, and all covariates.
+#' @export
+omisvm.mi_df <- function(x, ...) {
+  x <- as.data.frame(validate_mi_df(x))
+  y <- x$bag_label
+  bags <- x$bag_name
+  x$bag_label <- x$bag_name <- NULL
+
+  res <- omisvm.default(x, y, bags, ...)
+  res$call_type <- "omisvm.mi_df"
+  res$bag_name <- "bag_name"
+  return(res)
+}
+
 #' Predict method for `omisvm` object
 #'
 #' @details

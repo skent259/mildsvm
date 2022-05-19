@@ -4,6 +4,7 @@
 \alias{omisvm}
 \alias{omisvm.default}
 \alias{omisvm.formula}
+\alias{omisvm.mi_df}
 \title{Fit MI-SVM-OR model to ordinal outcome data}
 \usage{
 \method{omisvm}{default}(
@@ -22,6 +23,8 @@
 )
 
 \method{omisvm}{formula}(formula, data, ...)
+
+\method{omisvm}{mi_df}(x, ...)
 }
 \arguments{
 \item{x}{A data.frame, matrix, or similar object of covariates, where each
@@ -119,6 +122,9 @@ space. Additional methods should be available shortly.
 \item \code{default}: Method for data.frame-like objects
 
 \item \code{formula}: Method for passing formula
+
+\item \code{mi_df}: Method for \code{mi_df} objects, automatically handling bag
+names, labels, and all covariates.
 }}
 
 \examples{

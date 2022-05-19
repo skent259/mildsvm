@@ -276,6 +276,21 @@ misvm.formula <- function(formula, data, ...) {
   return(res)
 }
 
+#' @describeIn misvm Method for `mi_df` objects, automatically handling bag
+#'   names, labels, and all covariates.
+#' @export
+misvm.mi_df <- function(x, ...) {
+  x <- as.data.frame(validate_mi_df(x))
+  y <- x$bag_label
+  bags <- x$bag_name
+  x$bag_label <- x$bag_name <- NULL
+
+  res <- misvm.default(x, y, bags, ...)
+  res$call_type <- "misvm.mi_df"
+  res$bag_name <- "bag_name"
+  return(res)
+}
+
 #' @describeIn misvm Method for `mild_df` objects. Summarize samples to the
 #'   instance level based on specified functions, then perform `misvm()` on
 #'   instance level data.

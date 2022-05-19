@@ -4,6 +4,7 @@
 \alias{misvm}
 \alias{misvm.default}
 \alias{misvm.formula}
+\alias{misvm.mi_df}
 \alias{misvm.mild_df}
 \title{Fit MI-SVM model to the data}
 \usage{
@@ -22,6 +23,8 @@
 )
 
 \method{misvm}{formula}(formula, data, ...)
+
+\method{misvm}{mi_df}(x, ...)
 
 \method{misvm}{mild_df}(x, .fns = list(mean = mean, sd = stats::sd), cor = FALSE, ...)
 }
@@ -132,6 +135,9 @@ using the gurobi package optimization back-end.
 \item \code{default}: Method for data.frame-like objects
 
 \item \code{formula}: Method for passing formula
+
+\item \code{mi_df}: Method for \code{mi_df} objects, automatically handling bag
+names, labels, and all covariates.
 
 \item \code{mild_df}: Method for \code{mild_df} objects. Summarize samples to the
 instance level based on specified functions, then perform \code{misvm()} on

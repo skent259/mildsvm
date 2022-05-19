@@ -1,21 +1,22 @@
 suppressMessages(suppressWarnings(library(dplyr)))
 
+set.seed(8)
+mil_data <- mildsvm::generate_mild_df(nbag = 20,
+                                      positive_prob = 0.15,
+                                      sd_of_mean = rep(0.15, 3))
+df1 <- mildsvm::build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
+
+set.seed(9)
+mil_data_test <- mildsvm::generate_mild_df(nbag = 20,
+                                           positive_prob = 0.15,
+                                           sd_of_mean = rep(0.15, 3))
+
+df_test <- mildsvm::build_instance_feature(mil_data_test, seq(0.05, 0.95, length.out = 10))
+
+cost_seq = 2^c(-2, 4)
+
 test_that("cv_misvm() works for data-frame-like inputs", {
   skip_if_no_gurobi()
-  set.seed(8)
-  mil_data <- mildsvm::generate_mild_df(nbag = 20,
-                                        positive_prob = 0.15,
-                                        sd_of_mean = rep(0.15, 3))
-  df1 <- mildsvm::build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
-
-  set.seed(9)
-  mil_data_test <- mildsvm::generate_mild_df(nbag = 20,
-                                        positive_prob = 0.15,
-                                        sd_of_mean = rep(0.15, 3))
-
-  df_test <- mildsvm::build_instance_feature(mil_data_test, seq(0.05, 0.95, length.out = 10))
-
-
   set.seed(8)
   model <- cv_misvm(x = df1[, 4:123],
                     y = df1$bag_label,
@@ -97,9 +98,6 @@ test_that("cv_misvm() works for data-frame-like inputs", {
 
 })
 
-
-
-
 test_that("cv_misvm() works with formula method", {
   skip_if_no_gurobi()
   set.seed(8)
@@ -157,9 +155,6 @@ test_that("cv_misvm() works with formula method", {
                    cost_seq = 2^seq(-5, 7, length.out = 5))
   predict(mdl1, df1, type = "raw")
 })
-
-
-
 
 test_that("predict.cv_misvm returns labels that match the input labels", {
   skip_if_no_gurobi()
@@ -252,7 +247,27 @@ test_that("Dots work in cv_misvm() formula", {
 
 })
 
+test_that("`cv_misvm()` works with `mi_df` method", {
+  predictors <- c("X1_mean", "X2_mean", "X3_mean")
+  df1_mi <- as_mi_df(df1[, c("bag_label", "bag_name", predictors)], instance_label = NULL)
+  set.seed(8)
+  mdl1 <- cv_misvm(df1_mi, n_fold = 3, cost_seq = cost_seq)
+  set.seed(8)
+  mdl2 <- cv_misvm(x = df1[, predictors],
+                   y = df1$bag_label,
+                   bags = df1$bag_name,
+                   n_fold = 3, cost_seq = cost_seq)
 
+  expect_equal(mdl1$model, mdl2$model)
+  expect_equal(mdl1$total_step, mdl2$total_step)
+  expect_equal(mdl1$call_type, "cv_misvm.mi_df")
+  expect_equal(mdl1$misvm_fit$features, predictors)
+  expect_equal(mdl1$bag_name, "bag_name")
+
+  # predictions should match
+  expect_equal(predict(mdl1, df1, type = "raw"), predict(mdl2, df1, type = "raw"))
+  expect_equal(predict(mdl1, df1, type = "class"), predict(mdl2, df1, type = "class"))
+})
 
 
 

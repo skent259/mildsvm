@@ -205,6 +205,21 @@ cv_misvm.formula <- function(formula, data, cost_seq, n_fold, fold_id, ...) {
   return(res)
 }
 
+#' @describeIn cv_misvm Method for `mi_df` objects, automatically handling bag
+#'   names, labels, and all covariates.
+#' @export
+cv_misvm.mi_df <- function(x, ...) {
+  x <- as.data.frame(validate_mi_df(x))
+  y <- x$bag_label
+  bags <- x$bag_name
+  x$bag_label <- x$bag_name <- NULL
+
+  res <- cv_misvm.default(x, y, bags, ...)
+  res$call_type <- "cv_misvm.mi_df"
+  res$bag_name <- "bag_name"
+  return(res)
+}
+
 #' Predict method for `cv_misvm` object
 #'
 #' @param object An object of class `cv_misvm`.

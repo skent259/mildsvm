@@ -4,6 +4,7 @@
 \alias{cv_misvm}
 \alias{cv_misvm.default}
 \alias{cv_misvm.formula}
+\alias{cv_misvm.mi_df}
 \title{Fit MI-SVM model to the data using cross-validation}
 \usage{
 \method{cv_misvm}{default}(
@@ -22,6 +23,8 @@
 )
 
 \method{cv_misvm}{formula}(formula, data, cost_seq, n_fold, fold_id, ...)
+
+\method{cv_misvm}{mi_df}(x, ...)
 }
 \arguments{
 \item{x}{A data.frame, matrix, or similar object of covariates, where each
@@ -119,6 +122,9 @@ more details on the fitting function.
 \item \code{default}: Method for data.frame-like objects
 
 \item \code{formula}: Method for passing formula
+
+\item \code{mi_df}: Method for \code{mi_df} objects, automatically handling bag
+names, labels, and all covariates.
 }}
 
 \examples{

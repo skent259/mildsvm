@@ -166,10 +166,10 @@
     Code
       models <- list(xy = mior(x = df1[, 4:6], y = df1$bag_label, bags = df1$bag_name,
       method = "qp-heuristic", weights = NULL), formula = mior(mi(bag_label, bag_name) ~
-        V1 + V2, method = "qp-heuristic", data = df1, weights = NULL), `no-scale` = mior(
-        x = df1[, 4:6], y = df1$bag_label, bags = df1$bag_name, method = "qp-heuristic",
-        weights = NULL, control = list(scale = FALSE))) %>% suppressWarnings() %>%
-        suppressMessages()
+        V1 + V2, method = "qp-heuristic", data = df1, weights = NULL), mi_df = mior(
+        as_mi_df(df1, instance_label = NULL)), `no-scale` = mior(x = df1[, 4:6], y = df1$
+        bag_label, bags = df1$bag_name, method = "qp-heuristic", weights = NULL,
+      control = list(scale = FALSE))) %>% suppressWarnings() %>% suppressMessages()
       print(lapply(models, names))
     Output
       $xy
@@ -180,6 +180,10 @@
        [1] "gurobi_fit" "call_type"  "features"   "levels"     "cost"      
        [6] "cost_eta"   "repr_inst"  "n_step"     "x_scale"    "formula"   
       [11] "bag_name"  
+      
+      $mi_df
+       [1] "gurobi_fit" "call_type"  "features"   "levels"     "cost"      
+       [6] "cost_eta"   "repr_inst"  "n_step"     "x_scale"    "bag_name"  
       
       $`no-scale`
       [1] "gurobi_fit" "call_type"  "features"   "levels"     "cost"      

@@ -48,7 +48,8 @@
         bag_label, bags = df2$bag_name, method = "qp-heuristic"), mip = misvm_orova(
         x = df2[, 3:7], y = df2$bag_label, bags = df2$bag_name, method = "mip"),
       formula = misvm_orova(mi(bag_label, bag_name) ~ V1 + V2, method = "qp-heuristic",
-      data = df2)) %>% suppressWarnings() %>% suppressMessages()
+      data = df2), mi_df = misvm_orova(as_mi_df(df2, instance_label = NULL))) %>%
+        suppressWarnings() %>% suppressMessages()
       print(lapply(models, names))
     Output
       $heur
@@ -62,5 +63,8 @@
       
       $formula
       [1] "fits"      "call_type" "levels"    "features"  "formula"   "bag_name" 
+      
+      $mi_df
+      [1] "fits"      "call_type" "levels"    "features"  "bag_name" 
       
 

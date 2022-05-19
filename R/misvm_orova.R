@@ -128,6 +128,25 @@ misvm_orova.formula <- function(formula, data, ...) {
   return(res)
 }
 
+#' @describeIn misvm_orova Method for `mi_df` objects, automatically handling bag
+#'   names, labels, and all covariates.
+#' @export
+misvm_orova.mi_df <- function(x, ...) {
+  x <- as.data.frame(validate_mi_df(x))
+  y <- x$bag_label
+  bags <- x$bag_name
+  x$bag_label <- x$bag_name <- NULL
+
+  res <- misvm_orova.default(x, y, bags, ...)
+  for (i in seq_along(res$fits)) {
+    res$fits[[i]]$call_type <- "misvm.mi_df"
+    res$fits[[i]]$bag_name <- "bag_name"
+  }
+  res$call_type <- "misvm_orova.mi_df"
+  res$bag_name <- "bag_name"
+  return(res)
+}
+
 #' Predict method for `misvm_orova` object
 #'
 #' Predict method for `misvm_orova` object.  Predictions use the K fitted MI-SVM

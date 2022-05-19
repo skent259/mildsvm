@@ -172,6 +172,29 @@ test_that("`mior()` works with formula method", {
 
 })
 
+test_that("`misvm()` works with `mi_df` method", {
+  predictors <- paste0("V", 1:3)
+  df1_mi <- as_mi_df(df1[, c("bag_label", "bag_name", predictors)], instance_label = NULL)
+  suppressWarnings(suppressMessages({
+    set.seed(8)
+    mdl1 <- mior(df1_mi)
+    set.seed(8)
+    mdl2 <- mior(x = df1[, predictors],
+                 y = df1$bag_label,
+                 bags = df1$bag_name)
+  }))
+
+  expect_equal(mdl1$model, mdl2$model)
+  expect_equal(mdl1$total_step, mdl2$total_step)
+  expect_equal(mdl1$call_type, "mior.mi_df")
+  expect_equal(mdl1$features, predictors)
+  expect_equal(mdl1$bag_name, "bag_name")
+
+  # predictions should match
+  expect_equal(predict(mdl1, df1, type = "raw"), predict(mdl2, df1, type = "raw"))
+  expect_equal(predict(mdl1, df1, type = "class"), predict(mdl2, df1, type = "class"))
+})
+
 test_that("`predict.mior()` returns labels that match the input labels", {
   test_prediction_levels_equal <- function(df, method,
                                            class = "default",
@@ -286,6 +309,7 @@ test_that("`mior()` value returns make sense", {
            method = "qp-heuristic", weights = NULL),
       "formula" = mior(mi(bag_label, bag_name) ~ V1 + V2,
            method = "qp-heuristic", data = df1, weights = NULL),
+      "mi_df" = mior(as_mi_df(df1, instance_label = NULL)),
       "no-scale" = mior(x = df1[, 4:6], y = df1$bag_label, bags = df1$bag_name,
            method = "qp-heuristic", weights = NULL, control = list(scale = FALSE))
     ) %>%
