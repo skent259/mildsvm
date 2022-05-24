@@ -53,100 +53,100 @@
     Code
       print(roc$auc)
     Output
-      Multi-class area under the curve: 0.5
+      Multi-class area under the curve: 0.8741
     Code
       print(mzoe)
     Output
-      [1] 0.9
+      [1] 0.32
     Code
       print(mae)
     Output
-      [1] 1.92
+      [1] 0.32
     Code
       print(table(true, pred))
     Output
           pred
-      true  1
-         1 10
-         2 34
-         3 23
-         4 20
-         5 13
+      true  1  2  3  4
+         1  6  4  0  0
+         2  0 33  1  0
+         3  0  4  9 10
+         4  0  0  0 20
+         5  0  0  0 13
 
 ---
 
     Code
       print(roc$auc)
     Output
-      Multi-class area under the curve: 0.5
+      Multi-class area under the curve: 0.8392
     Code
       print(mzoe)
     Output
-      [1] 0.83
+      [1] 0.48
     Code
       print(mae)
     Output
-      [1] 1.75
+      [1] 0.5
     Code
       print(table(true, pred))
     Output
           pred
-      true  1
-         1 17
-         2 31
-         3 25
-         4 14
-         5 13
+      true  1  2  3  4
+         1  4 13  0  0
+         2  1 27  1  2
+         3  0  8  8  9
+         4  0  0  1 13
+         5  0  0  0 13
 
 ---
 
     Code
       print(roc$auc)
     Output
-      Multi-class area under the curve: 0.5448
+      Multi-class area under the curve: 0.8753
     Code
       print(mzoe)
     Output
-      [1] 0.83
+      [1] 0.32
     Code
       print(mae)
     Output
-      [1] 1.57
+      [1] 0.32
     Code
       print(table(true, pred))
     Output
           pred
-      true  1  2
-         1  1  9
-         2 18 16
-         3 14  9
-         4  9 11
-         5  5  8
+      true  1  2  3  4
+         1  6  4  0  0
+         2  0 33  1  0
+         3  0  5  9  9
+         4  0  0  0 20
+         5  0  0  0 13
 
 ---
 
     Code
       print(roc$auc)
     Output
-      Multi-class area under the curve: 0.5848
+      Multi-class area under the curve: 0.8426
     Code
       print(mzoe)
     Output
-      [1] 0.8
+      [1] 0.48
     Code
       print(mae)
     Output
-      [1] 1.46
+      [1] 0.5
     Code
       print(table(true, pred))
     Output
           pred
-      true  1  2
-         1  7 10
-         2 18 13
-         3 14 11
-         4  9  5
-         5  3 10
+      true  1  2  3  4
+         1  4 13  0  0
+         2  2 26  1  2
+         3  0  9  9  7
+         4  0  0  1 13
+         5  0  0  0 13
 
 # `omisvm()` value returns make sense
 
@@ -188,18 +188,5 @@
       Setting levels: control = 1, case = 2
       Setting direction: controls < cases
     Output
-      Area under the curve: 0.9403
-
----
-
-    Code
-      with(df1_test, suppressWarnings({
-        pred <- predict(mdl2, df1_test, type = "raw")$.pred
-        pROC::auc(classify_bags(bag_label, bag_name), classify_bags(pred, bag_name))
-      }))
-    Message <simpleMessage>
-      Setting levels: control = 1, case = 2
-      Setting direction: controls > cases
-    Output
-      Area under the curve: 0.5694
+      Area under the curve: 0.9302
 

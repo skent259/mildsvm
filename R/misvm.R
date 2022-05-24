@@ -894,6 +894,9 @@ misvm_dualqpheuristic_fit <- function(y,
   y <- r$y
   bags <- r$b
   x <- r$X
+  if (is.matrix(kernel)) {
+    kernel <- kernel[r$order, r$order]
+  }
   if (rescale) x <- scale(x)
 
   # randomly select initial representative instances
