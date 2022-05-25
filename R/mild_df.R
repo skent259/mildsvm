@@ -2,9 +2,10 @@ new_mild_df <- function(x = data.frame(), instance_label = NULL) {
   stopifnot(is.data.frame(x))
   stopifnot(is.vector(instance_label) || is.null(instance_label))
 
-  structure(x,
-            class = c("mild_df", class(x)),
-            instance_label = instance_label
+  tibble::new_tibble(
+    x,
+    class = "mild_df",
+    instance_label = instance_label
   )
 }
 
@@ -24,7 +25,7 @@ validate_mild_df <- function(x) {
     labels <- x[which(x$bag_name == bag), "bag_label"]
     return(length(unique(labels)))
   }
-  inconsistent_bag_labels <- sapply(bags, bag_labels, x = x) != 1
+  inconsistent_bag_labels <- sapply(bags, bag_labels, x = as.data.frame(x)) != 1
 
   if (any(inconsistent_bag_labels)) {
     rlang::abort(c(
@@ -44,7 +45,7 @@ validate_mild_df <- function(x) {
       return(max(inst_label) != bag_label)
     }
     inconsistent_inst_labels <- sapply(bags, check_inst_label,
-                                       x = x, inst = instance_label)
+                                       x = as.data.frame(x), inst = instance_label)
 
     if (any(inconsistent_inst_labels)) {
       rlang::abort(c(
@@ -231,6 +232,13 @@ tbl_sum.mild_df <- function(x, ...) {
     warn <- length(j) > 1
   } else {
     warn <- FALSE
+  }
+  
+  if (nargs() > 2) {
+    inst_label <- df_instance_label(x)
+    if (!is.null(inst_label)) {
+      attr(out, "instance_label") <- inst_label[i]
+    }
   }
   .drop_class_if_metadata_removed(out, "mild_df", warn)
 }

@@ -56,10 +56,13 @@ test_that("`as_mild_df()` retains tibble typing", {
   expect_s3_class(as_mild_df(x), "mild_df")
   expect_s3_class(as_mild_df(x), "tbl")
   expect_s3_class(as_mild_df(x), "tbl_df")
-
-  expect_false(inherits(as_mild_df(x_main), "tbl"))
 })
 
+test_that("`as_mi_df()` converts data.frame to tibble", {
+  expect_s3_class(as_mild_df(x_main), "mild_df")
+  expect_s3_class(as_mild_df(x_main), "tbl")
+  expect_s3_class(as_mild_df(x_main), "tbl_df")
+})
 
 test_that("Printing methods work as expected", {
   x <- x_main
@@ -87,7 +90,7 @@ test_that("Subsetting `mild_df` gives correct warnings and classes", {
   expect_s3_class(df[, c(1:3)], "mild_df")
   expect_s3_class(df[, c(1:4)], "mild_df")
   expect_false(inherits(df[, 1], "mild_df"))
-  expect_s3_class(df[, 1], "factor")
+  expect_s3_class(df[, 1], "tbl_df")
 
   expect_warning(df2 <- df[, c(2:3)], "Dropping 'mild_df'")
   expect_s3_class(df2, "data.frame")
@@ -112,5 +115,33 @@ test_that("Subsetting `mild_df` gives correct warnings and classes", {
   expect_warning(df2 <- df[, c(1,4)], "Dropping 'mild_df'")
   expect_s3_class(df2, "data.frame")
   expect_false(inherits(df2, "mild_df"))
+})
+
+test_that("Subsetting `mi_df` rows works as expected", {
+  df <- as_mild_df(x_main)
+
+  check_row_subset <- function(df, ind) {
+    df2 <- df[ind, ]
+    n <- length(ind)
+    expect_equal(nrow(df2), n)
+    expect_equal(ncol(df2), ncol(df))
+    expect_equal(length(df_instance_label(df2)), n)
+    expect_equal(length(rownames(df2)), n)
+  }
+
+  check_row_subset(df, 1:2) # fewer rows
+  check_row_subset(df, 1:3) # same rows
+  check_row_subset(df, 1:4) %>%
+    expect_warning() # extra rows
+  check_row_subset(df, c(1, 1, 2)) # different order
+
+  # list subsetting
+  expect_equal(nrow(df[1]), nrow(df))
+  expect_equal(nrow(df[1:2]), nrow(df))
+  expect_equal(nrow(df[1:3]), nrow(df))
+
+  # dplyr::filter
+  df2 <- filter(df, bag_label == 1)
+  # expect_equal(length(df_instance_label(df2)), nrow(df2)) # fails
 })
 

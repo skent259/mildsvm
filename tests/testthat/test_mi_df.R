@@ -153,8 +153,6 @@ test_that("Subsetting `mi_df` rows works as expected", {
   # dplyr::filter
   df2 <- filter(df, bag_label == 1)
   # expect_equal(length(df_instance_label(df2)), nrow(df2)) # fails
-
-
 })
 
 

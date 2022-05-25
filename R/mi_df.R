@@ -113,7 +113,7 @@ mi_df <- function(bag_label = character(),
 }
 
 df_instance_label <- function(x) {
-  if (inherits(x, "mi_df")) {
+  if (inherits(x, "mi_df") | inherits(x, "mild_df")) {
     attr(x, "instance_label")
   } else {
     NULL
@@ -263,7 +263,7 @@ tbl_sum.mi_df <- function(x, ...) {
   } else {
     warn <- FALSE
   }
-  
+
   if (nargs() > 2) {
     inst_label <- df_instance_label(x)
     if (!is.null(inst_label)) {
