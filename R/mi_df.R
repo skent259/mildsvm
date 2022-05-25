@@ -2,14 +2,15 @@ new_mi_df <- function(x = data.frame(), instance_label = NULL) {
   stopifnot(is.data.frame(x))
   stopifnot(is.vector(instance_label) || is.null(instance_label))
 
-  structure(x,
-            class = c("mi_df", class(x)),
-            instance_label = instance_label
+  tibble::new_tibble(
+    x,
+    class = "mi_df",
+    instance_label = instance_label
   )
 }
 
 validate_mi_df <- function(x) {
-  instance_label <- attr(x, "instance_label")
+  instance_label <- df_instance_label(x)
   # Check column names
   if (any(colnames(x)[1:2] != c("bag_label", "bag_name"))) {
     rlang::abort(
@@ -23,7 +24,7 @@ validate_mi_df <- function(x) {
     labels <- x[which(x$bag_name == bag), "bag_label", drop = TRUE]
     return(length(unique(labels)))
   }
-  inconsistent_bag_labels <- sapply(bags, bag_labels, x = x) != 1
+  inconsistent_bag_labels <- sapply(bags, bag_labels, x = as.data.frame(x)) != 1
 
   if (any(inconsistent_bag_labels)) {
     rlang::abort(c(
@@ -43,7 +44,7 @@ validate_mi_df <- function(x) {
       return(max(inst_label) != bag_label)
     }
     inconsistent_inst_labels <- sapply(bags, check_inst_label,
-                                       x = x, inst = instance_label)
+                                       x = as.data.frame(x), inst = instance_label)
 
     if (any(inconsistent_inst_labels)) {
       rlang::abort(c(
@@ -109,6 +110,14 @@ mi_df <- function(bag_label = character(),
     ...
   )
   return(validate_mi_df(new_mi_df(x, instance_label = instance_label)))
+}
+
+df_instance_label <- function(x) {
+  if (inherits(x, "mi_df") | inherits(x, "mild_df")) {
+    attr(x, "instance_label")
+  } else {
+    NULL
+  }
 }
 
 #' Coerce to MI data frame
@@ -253,6 +262,13 @@ tbl_sum.mi_df <- function(x, ...) {
     warn <- length(j) > 1
   } else {
     warn <- FALSE
+  }
+
+  if (nargs() > 2) {
+    inst_label <- df_instance_label(x)
+    if (!is.null(inst_label)) {
+      attr(out, "instance_label") <- inst_label[i]
+    }
   }
   .drop_class_if_metadata_removed(out, "mi_df", warn)
 }
