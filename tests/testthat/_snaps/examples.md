@@ -393,7 +393,7 @@
       # An MI data frame: 3 x 3 with 2 bags
       # and instance labels: 0, 1, 0
         bag_label bag_name    X1
-      * <fct>     <chr>    <dbl>
+        <fct>     <chr>    <dbl>
       1 1         bag_1     -0.4
       2 1         bag_1      0.5
       3 0         bag_2      2  
