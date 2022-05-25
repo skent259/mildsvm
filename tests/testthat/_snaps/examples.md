@@ -433,7 +433,7 @@
       # An MILD data frame: 3 x 4 with 2 bags, 3 instances
       # and instance labels: 0, 1, 0
         bag_label bag_name instance_name    X1
-      * <fct>     <chr>    <chr>         <dbl>
+        <fct>     <chr>    <chr>         <dbl>
       1 1         bag_1    bag_1_inst_1   -0.4
       2 1         bag_1    bag_1_inst_2    0.5
       3 0         bag_2    bag_2_inst_1    2  

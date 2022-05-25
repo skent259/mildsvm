@@ -127,7 +127,7 @@ test_that("Subsetting `mi_df` gives correct warnings and classes", {
   expect_false(inherits(df2, "mi_df"))
 })
 
-test_that("Subsetting `mi_df` rows works as expected", {
+test_that("Subsetting `mild_df` rows works as expected", {
   df <- as_mi_df(x_main)
 
   check_row_subset <- function(df, ind) {
@@ -142,7 +142,7 @@ test_that("Subsetting `mi_df` rows works as expected", {
   check_row_subset(df, 1:2) # fewer rows
   check_row_subset(df, 1:3) # same rows
   check_row_subset(df, 1:4) %>%
-    expect_warning() # extra rows
+    suppressWarnings() # extra rows
   check_row_subset(df, c(1, 1, 2)) # different order
 
   # list subsetting
@@ -151,7 +151,7 @@ test_that("Subsetting `mi_df` rows works as expected", {
   expect_equal(nrow(df[1:3]), nrow(df))
 
   # dplyr::filter
-  df2 <- filter(df, bag_label == 1)
+  df2 <- dplyr::filter(df, bag_label == 1)
   # expect_equal(length(df_instance_label(df2)), nrow(df2)) # fails
 })
 
