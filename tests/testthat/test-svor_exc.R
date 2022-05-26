@@ -314,3 +314,8 @@ test_that("Ordering of data doesn't change `svor_exc()` results", {
 
 })
 
+test_that("Can pass sigma to `svor_exc()`", {
+  mdl1 <- svor_exc(y ~ V1 + V2, data = df1, control = list(kernel = "radial", sigma = 1/3))
+  predict(mdl1, df1)
+  expect_true(TRUE)
+})

@@ -205,7 +205,6 @@ predict.svor_exc <- function(object,
   if ("x_scale" %in% names(object)) {
     new_x <- as.data.frame(scale(new_x, center = object$x_scale$center, scale = object$x_scale$scale))
   }
-
   # kernel
   kernel <- compute_kernel(as.matrix(new_x),
                            object$x,
@@ -270,7 +269,7 @@ svor_exc_fit <- function(y,
 
   # add components to `smo_fit`
   smo_fit$kernel <- kernel
-  smo_fit$sigma <- kernel
+  smo_fit$sigma <- sigma
   smo_fit$c <- c
 
   res <- list(
