@@ -16,7 +16,9 @@
 .e <- function(q, len) {
   x <- rep(0, len)
   x[q] <- 1
-  names(x) <- paste0("dr", seq_len(len))
+  if (length(x) > 0) {
+    names(x) <- paste0("dr", seq_len(len))
+  }
   return(x)
 }
 
