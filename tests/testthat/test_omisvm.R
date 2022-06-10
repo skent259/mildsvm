@@ -335,3 +335,15 @@ test_that("`omisvm()` can use all values of `s`", {
     expect_warning()
 })
 
+test_that("`omisvm()` works when passing label with 2 levels", {
+
+  ind <- df1$bag_label %in% c(2, 5)
+  expect_warning({mdl1 <- omisvm(df1[ind, ])},
+                   "Only 2 levels detected") %>%
+    suppressWarnings() %>%
+    suppressMessages()
+
+  preds <- predict(mdl1, new_data = df1)$.pred_class
+  expect_equal(length(table(preds)), 2)
+})
+
