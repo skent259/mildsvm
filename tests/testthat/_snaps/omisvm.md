@@ -161,20 +161,101 @@
       print(lapply(models, names))
     Output
       $xy
-      [1] "gurobi_fit" "call_type"  "features"   "levels"     "cost"      
-      [6] "h"          "repr_inst"  "x_scale"   
+       [1] "gurobi_fit" "call_type"  "features"   "levels"     "cost"      
+       [6] "h"          "s"          "kernel"     "repr_inst"  "x_scale"   
       
       $formula
        [1] "gurobi_fit" "call_type"  "features"   "levels"     "cost"      
-       [6] "h"          "repr_inst"  "x_scale"    "formula"    "bag_name"  
+       [6] "h"          "s"          "kernel"     "repr_inst"  "x_scale"   
+      [11] "formula"    "bag_name"  
       
       $mi_df
-      [1] "gurobi_fit" "call_type"  "features"   "levels"     "cost"      
-      [6] "h"          "repr_inst"  "x_scale"    "bag_name"  
+       [1] "gurobi_fit" "call_type"  "features"   "levels"     "cost"      
+       [6] "h"          "s"          "kernel"     "repr_inst"  "x_scale"   
+      [11] "bag_name"  
       
       $`no-scale`
       [1] "gurobi_fit" "call_type"  "features"   "levels"     "cost"      
-      [6] "h"          "repr_inst" 
+      [6] "h"          "s"          "kernel"     "repr_inst" 
+      
+    Code
+      print(models)
+    Output
+      $xy
+      An misvm object called with misvm.default 
+       
+      Parameters: 
+        method: qp-heuristic 
+        kernel: linear  
+        cost: 1 
+        h: 1 
+        s: 4 
+        scale: TRUE 
+        weights: FALSE 
+       
+      Model info: 
+        Levels of `y`: chr [1:5] "1" "2" "3" "4" "5"
+        Features: chr [1:5] "V1" "V2" "V3" "V4" "V5"
+        Number of iterations: 
+        Gap to optimality: 
+      
+      
+      $formula
+      An misvm object called with omisvm.formula 
+       
+      Parameters: 
+        method: qp-heuristic 
+        kernel: linear  
+        cost: 1 
+        h: 1 
+        s: 4 
+        scale: TRUE 
+        weights: FALSE 
+       
+      Model info: 
+        Levels of `y`: chr [1:5] "1" "2" "3" "4" "5"
+        Features: chr [1:2] "V1" "V2"
+        Number of iterations: 
+        Gap to optimality: 
+      
+      
+      $mi_df
+      An misvm object called with omisvm.mi_df 
+       
+      Parameters: 
+        method: qp-heuristic 
+        kernel: linear  
+        cost: 1 
+        h: 1 
+        s: 4 
+        scale: TRUE 
+        weights: FALSE 
+       
+      Model info: 
+        Levels of `y`: chr [1:5] "1" "2" "3" "4" "5"
+        Features: chr [1:5] "V1" "V2" "V3" "V4" "V5"
+        Number of iterations: 
+        Gap to optimality: 
+      
+      
+      $`no-scale`
+      An misvm object called with misvm.default 
+       
+      Parameters: 
+        method: qp-heuristic 
+        kernel: linear  
+        cost: 1 
+        h: 1 
+        s: 4 
+        scale: FALSE 
+        weights: FALSE 
+       
+      Model info: 
+        Levels of `y`: chr [1:5] "1" "2" "3" "4" "5"
+        Features: chr [1:5] "V1" "V2" "V3" "V4" "V5"
+        Number of iterations: 
+        Gap to optimality: 
+      
       
 
 # Ordering of data doesn't change `omisvm()` results

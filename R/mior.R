@@ -345,6 +345,8 @@ print.mior <- function(x, digits = getOption("digits"), ...) {
   cat("  weights:", weights, "\n")
   cat("", "\n")
   cat("Model info:", "\n")
+  cat("  Levels of `y`:")
+  str(x$levels, width = getOption("width")-14)
   cat("  Features:")
   str(x$features, width = getOption("width")-14)
   cat("  Number of iterations:", x$n_step, "\n")

@@ -34,17 +34,20 @@ validate_omisvm <- function(x) {
 #' @param ... Arguments passed to or from other methods.
 #'
 #' @return An object of class `omisvm.`  The object contains at least the
-#'   following components: * `*_fit`: A fit object depending on the `method`
-#'   parameter.  If `method = 'qp-heuristic'` this will be `gurobi_fit` from a
-#'   model optimization. * `call_type`: A character indicating which method
-#'   `omisvm()` was called with. * `features`: The names of features used in
-#'   training. * `levels`: The levels of `y` that are recorded for future
-#'   prediction. * `cost`: The cost parameter from function inputs. * `weights`:
-#'   The calculated weights on the `cost` parameter. * `repr_inst`: The
-#'   instances from positive bags that are selected to be most representative of
-#'   the positive instances. * `n_step`: If `method == 'qp-heuristic'`, the
-#'   total steps used in the heuristic algorithm. * `x_scale`: If `scale =
-#'   TRUE`, the scaling parameters for new predictions.
+#'   following components:
+#'   * `*_fit`: A fit object depending on the `method` parameter.  If `method =
+#'   'qp-heuristic'` this will be `gurobi_fit` from a model optimization.
+#'   * `call_type`: A character indicating which method `omisvm()` was called
+#'   with.
+#'   * `features`: The names of features used in training.
+#'   * `levels`: The levels of `y` that are recorded for future prediction.
+#'   * `cost`: The cost parameter from function inputs.
+#'   * `weights`: The calculated weights on the `cost` parameter.
+#'   * `repr_inst`: The instances from positive bags that are selected to be
+#'   most representative of the positive instances.
+#'   * `n_step`: If `method == 'qp-heuristic'`, the total steps used in the
+#'   heuristic algorithm.
+#'   * `x_scale`: If `scale = TRUE`, the scaling parameters for new predictions.
 #'
 #' @seealso [predict.omisvm()] for prediction on new data.
 #'
@@ -161,7 +164,14 @@ omisvm.default <- function(
   out$levels <- lev
   out$cost <- cost
   out$h <- h
+  out$s <- s
   out$weights <- weights
+  out$kernel <- control$kernel
+  out$kernel_param <- switch(
+    out$kernel,
+    "radial" = list("sigma" = control$sigma),
+    "linear" = NULL,
+  )
   out$repr_inst <- res$repr_inst
   out$n_step <- res$n_step
   out$x_scale <- x_scale
@@ -290,6 +300,32 @@ predict.omisvm <- function(object,
   res
 }
 
+#' @export
+print.omisvm <- function(x, digits = getOption("digits"), ...) {
+  method <- attr(x, "method")
+  kernel_param <- .get_kernel_param_str(x, digits)
+  weights <- .get_weights_str(x)
+
+  cat("An misvm object called with", x$call_type, "\n")
+  cat("", "\n")
+  cat("Parameters:", "\n")
+  cat("  method:", method, "\n")
+  cat("  kernel:", x$kernel, kernel_param, "\n")
+  cat("  cost:", x$cost, "\n")
+  cat("  h:", x$h, "\n")
+  cat("  s:", x$s, "\n")
+  cat("  scale:", !is.null(x$x_scale), "\n")
+  cat("  weights:", weights, "\n")
+  cat("", "\n")
+  cat("Model info:", "\n")
+  cat("  Levels of `y`:")
+  str(x$levels, width = getOption("width")-14)
+  cat("  Features:")
+  str(x$features, width = getOption("width")-14)
+  cat("  Number of iterations:", x$n_step, "\n")
+  cat("  Gap to optimality:", x$gurobi_fit$mipgap, "\n")
+  cat("\n")
+}
 
 # Specific implementation methods below ----------------------------------------
 

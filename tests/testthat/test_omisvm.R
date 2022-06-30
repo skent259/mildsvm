@@ -284,6 +284,7 @@ test_that("`omisvm()` value returns make sense", {
       suppressMessages()
 
     print(lapply(models, names))
+    print(models)
   })
   expect_true(TRUE)
 })

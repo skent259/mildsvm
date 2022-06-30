@@ -205,6 +205,7 @@
         weights: FALSE 
        
       Model info: 
+        Levels of `y`: chr [1:3] "1" "2" "3"
         Features: chr [1:3] "V1" "V2" "V3"
         Number of iterations: 4 
         Gap to optimality: 
@@ -222,6 +223,7 @@
         weights: FALSE 
        
       Model info: 
+        Levels of `y`: chr [1:3] "1" "2" "3"
         Features: chr [1:2] "V1" "V2"
         Number of iterations: 5 
         Gap to optimality: 
@@ -239,6 +241,7 @@
         weights: FALSE 
        
       Model info: 
+        Levels of `y`: chr [1:3] "1" "2" "3"
         Features: chr [1:4] "repr" "V1" "V2" "V3"
         Number of iterations: 4 
         Gap to optimality: 
@@ -256,6 +259,7 @@
         weights: FALSE 
        
       Model info: 
+        Levels of `y`: chr [1:3] "1" "2" "3"
         Features: chr [1:3] "V1" "V2" "V3"
         Number of iterations: 4 
         Gap to optimality: 
