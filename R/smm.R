@@ -122,7 +122,7 @@ smm.default <- function(
     weights <- weights[lev]
     names(weights) <- c("-1", "1")
   } else if (isTRUE(weights)) {
-    weights <- c("-1" = sum(y == 1) / sum(y == 0), "1" = 1)
+    weights <- c("-1" = sum(y == 1) / sum(y == -1), "1" = 1)
   } else {
     weights <- NULL
   }

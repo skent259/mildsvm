@@ -78,7 +78,7 @@
         kernel: kme w/ radial  (sigma = 0.3333333) 
         cost: 1 
         scale: TRUE 
-        weights: ('-1' = Inf, '1' = 1) 
+        weights: ('-1' = 1, '1' = 1) 
        
       Model info: 
         Features: chr [1:3] "x1" "x2" "x3"
@@ -91,7 +91,7 @@
         kernel: kme w/ radial  (sigma = 0.3333333) 
         cost: 1 
         scale: TRUE 
-        weights: ('-1' = Inf, '1' = 1) 
+        weights: ('-1' = 1, '1' = 1) 
        
       Model info: 
         Features: chr [1:3] "x1" "x2" "x3"
@@ -104,7 +104,7 @@
         kernel: kme w/ radial  (sigma = 0.1) 
         cost: 1 
         scale: TRUE 
-        weights: ('0' = Inf, '1' = 1) 
+        weights: ('0' = 1.5, '1' = 1) 
        
       Model info: 
         Features: chr [1:10] "X1" "X2" "X3" "X4" "X5" "X6" "X7" "X8" "X9" ...
@@ -117,7 +117,7 @@
         kernel: kme w/ radial  (sigma = 0.3333333) 
         cost: 1 
         scale: FALSE 
-        weights: ('-1' = Inf, '1' = 1) 
+        weights: ('-1' = 1, '1' = 1) 
        
       Model info: 
         Features: chr [1:3] "x1" "x2" "x3"
@@ -130,7 +130,7 @@
         kernel: kme w/ radial  (sigma = 0.1) 
         cost: 1 
         scale: FALSE 
-        weights: ('0' = Inf, '1' = 1) 
+        weights: ('0' = 1.5, '1' = 1) 
        
       Model info: 
         Features: chr [1:10] "X1" "X2" "X3" "X4" "X5" "X6" "X7" "X8" "X9" ...
