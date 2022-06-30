@@ -72,18 +72,85 @@
     Output
       $xy
       [1] "smo_fit"   "call_type" "x"         "features"  "levels"    "cost"     
-      [7] "n_step"    "x_scale"  
+      [7] "kernel"    "n_step"    "x_scale"  
       
       $formula
-      [1] "smo_fit"   "call_type" "x"         "features"  "levels"    "cost"     
-      [7] "n_step"    "x_scale"   "formula"  
+       [1] "smo_fit"   "call_type" "x"         "features"  "levels"    "cost"     
+       [7] "kernel"    "n_step"    "x_scale"   "formula"  
       
       $mi_df
-      [1] "smo_fit"   "call_type" "x"         "features"  "levels"    "cost"     
-      [7] "n_step"    "x_scale"   "bag_name" 
+       [1] "smo_fit"   "call_type" "x"         "features"  "levels"    "cost"     
+       [7] "kernel"    "n_step"    "x_scale"   "bag_name" 
       
       $`no-scale`
       [1] "smo_fit"   "call_type" "x"         "features"  "levels"    "cost"     
-      [7] "n_step"   
+      [7] "kernel"    "n_step"   
+      
+    Code
+      print(models)
+    Output
+      $xy
+      An svor_exc object called with svor_exc.default 
+       
+      Parameters: 
+        method: smo 
+        kernel: linear  
+        cost: 1 
+        scale: TRUE 
+        weights: FALSE 
+       
+      Model info: 
+        Levels of `y`: chr [1:5] "1" "2" "3" "4" "5"
+        Features: chr [1:5] "V1" "V2" "V3" "V4" "V5"
+        Number of iterations: 500 
+      
+      
+      $formula
+      An svor_exc object called with svor_exc.formula 
+       
+      Parameters: 
+        method: smo 
+        kernel: linear  
+        cost: 1 
+        scale: TRUE 
+        weights: FALSE 
+       
+      Model info: 
+        Levels of `y`: chr [1:5] "1" "2" "3" "4" "5"
+        Features: chr [1:2] "V1" "V2"
+        Number of iterations: 146 
+      
+      
+      $mi_df
+      An svor_exc object called with svor_exc.mi_df 
+       
+      Parameters: 
+        method: smo 
+        kernel: linear  
+        cost: 1 
+        scale: TRUE 
+        weights: FALSE 
+       
+      Model info: 
+        Levels of `y`: chr [1:5] "1" "2" "3" "4" "5"
+        Features: chr [1:5] "V1" "V2" "V3" "V4" "V5"
+        Number of iterations: 500 
+      
+      
+      $`no-scale`
+      An svor_exc object called with svor_exc.default 
+       
+      Parameters: 
+        method: smo 
+        kernel: linear  
+        cost: 1 
+        scale: FALSE 
+        weights: FALSE 
+       
+      Model info: 
+        Levels of `y`: chr [1:5] "1" "2" "3" "4" "5"
+        Features: chr [1:5] "V1" "V2" "V3" "V4" "V5"
+        Number of iterations: 500 
+      
       
 
