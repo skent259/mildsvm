@@ -66,6 +66,7 @@ kfm_nystrom.default <- function(df,
   # TODO: check all columns are numeric
   `%ni%` <- Negate(`%in%`)
   kernel_params <- list(...)
+  sampling_arg <- .set_sampling_arg_passed(sampling)
 
   df <- as.matrix(df)
   # `sampling`
@@ -98,6 +99,11 @@ kfm_nystrom.default <- function(df,
     df_sub = df_sub,
     dv = d_mat %*% v_mat,
     method = "nystrom",
+    params = list(
+      m = m,
+      r = r,
+      sampling = sampling_arg
+    ),
     kernel = kernel,
     kernel_params = kernel_params
   )))
@@ -121,6 +127,19 @@ kfm_nystrom.mild_df <- function(df,
   return(kfm_nystrom.default(df, m, r, kernel, sampling, ...))
 }
 
+#' @export
+print.kfm_nystrom <- function(x, digits = getOption("digits"), ...) {
+  kernel_param <- .get_kernel_param_str(x, digits)
+
+  cat("An Nystrom kernel feature map object", "\n")
+  cat("", "\n")
+  cat("Parameters:", "\n")
+  cat("  m:", x$params$m, "\n")
+  cat("  r:", x$params$r, "\n")
+  cat("  kernel:", x$kernel, kernel_param, "\n")
+  cat("  sampling:", x$params$sampling, "\n")
+  cat("\n")
+}
 
 #' @describeIn build_fm Method for `kfm_nystrom` class.
 #' @export

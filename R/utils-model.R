@@ -365,6 +365,17 @@ x_from_mild_formula <- function(formula, data) {
   }
 }
 
+#' Set the sampling arg passed
+#' @param x The sampling arg
+#' @noRd
+.set_sampling_arg_passed <- function(x) {
+  if (is.character(x) && length(x) == 1) {
+    x
+  } else {
+    "user supplied sampling"
+  }
+}
+
 #' Get string for `kernel_param` print
 #' @param x A model object
 #' @noRd
