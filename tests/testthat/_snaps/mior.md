@@ -173,20 +173,92 @@
       print(lapply(models, names))
     Output
       $xy
-      [1] "gurobi_fit" "call_type"  "features"   "levels"     "cost"      
-      [6] "cost_eta"   "repr_inst"  "n_step"     "x_scale"   
+       [1] "gurobi_fit" "call_type"  "features"   "levels"     "cost"      
+       [6] "cost_eta"   "kernel"     "repr_inst"  "n_step"     "x_scale"   
       
       $formula
        [1] "gurobi_fit" "call_type"  "features"   "levels"     "cost"      
-       [6] "cost_eta"   "repr_inst"  "n_step"     "x_scale"    "formula"   
-      [11] "bag_name"  
+       [6] "cost_eta"   "kernel"     "repr_inst"  "n_step"     "x_scale"   
+      [11] "formula"    "bag_name"  
       
       $mi_df
        [1] "gurobi_fit" "call_type"  "features"   "levels"     "cost"      
-       [6] "cost_eta"   "repr_inst"  "n_step"     "x_scale"    "bag_name"  
+       [6] "cost_eta"   "kernel"     "repr_inst"  "n_step"     "x_scale"   
+      [11] "bag_name"  
       
       $`no-scale`
       [1] "gurobi_fit" "call_type"  "features"   "levels"     "cost"      
-      [6] "cost_eta"   "repr_inst"  "n_step"    
+      [6] "cost_eta"   "kernel"     "repr_inst"  "n_step"    
+      
+    Code
+      print(models)
+    Output
+      $xy
+      An mior object called with mior.default 
+       
+      Parameters: 
+        method: qp-heuristic 
+        kernel: linear  
+        cost: 1 
+        cost_eta: 1 
+        scale: TRUE 
+        weights: FALSE 
+       
+      Model info: 
+        Features: chr [1:3] "V1" "V2" "V3"
+        Number of iterations: 4 
+        Gap to optimality: 
+      
+      
+      $formula
+      An mior object called with mior.formula 
+       
+      Parameters: 
+        method: qp-heuristic 
+        kernel: linear  
+        cost: 1 
+        cost_eta: 1 
+        scale: TRUE 
+        weights: FALSE 
+       
+      Model info: 
+        Features: chr [1:2] "V1" "V2"
+        Number of iterations: 5 
+        Gap to optimality: 
+      
+      
+      $mi_df
+      An mior object called with mior.mi_df 
+       
+      Parameters: 
+        method: qp-heuristic 
+        kernel: linear  
+        cost: 1 
+        cost_eta: 1 
+        scale: TRUE 
+        weights: FALSE 
+       
+      Model info: 
+        Features: chr [1:4] "repr" "V1" "V2" "V3"
+        Number of iterations: 4 
+        Gap to optimality: 
+      
+      
+      $`no-scale`
+      An mior object called with mior.default 
+       
+      Parameters: 
+        method: qp-heuristic 
+        kernel: linear  
+        cost: 1 
+        cost_eta: 1 
+        scale: FALSE 
+        weights: FALSE 
+       
+      Model info: 
+        Features: chr [1:3] "V1" "V2" "V3"
+        Number of iterations: 4 
+        Gap to optimality: 
+      
       
 
