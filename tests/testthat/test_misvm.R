@@ -425,6 +425,7 @@ test_that("`misvm()` value returns make sense", {
       suppressMessages()
 
     print(lapply(models, names))
+    print(models)
   })
   expect_true(TRUE)
 })
@@ -598,17 +599,3 @@ test_that("Formulas with spaces in names work for `misvm()`", {
   expect_true(TRUE)
 })
 
-test_that("`misvm()` print methods look right", {
-  skip_on_cran()
-
-  models <-
-    c("heuristic", "mip", "qp-heuristic") %>%
-    purrr::set_names() %>%
-    purrr::map(~run_misvm(method = .x))
-
-  models <- c(models,
-              list("radial" = run_misvm(control = list(kernel = "radial"))))
-
-  expect_snapshot(models)
-  expect_true(TRUE)
-})

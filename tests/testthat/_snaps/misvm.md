@@ -68,6 +68,189 @@
        [9] "repr_inst"     "n_step"        "x_scale"       "bag_name"     
       [13] "instance_name" "summary_fns"   "summary_cor"  
       
+    Code
+      print(models)
+    Output
+      $`xy-heur`
+      An misvm object called with misvm.default 
+       
+      Parameters: 
+        method: heuristic 
+        kernel: linear  
+        cost: 1 
+        scale: TRUE 
+        weights: ('0' = 0.375, '1' = 1) 
+       
+      Model info: 
+        Features: chr [1:120] "X1_0.05" "X1_0.15" "X1_0.25" "X1_0.35" ...
+        Number of iterations: 2 
+      
+      
+      $`xy-mip`
+      An misvm object called with misvm.default 
+       
+      Parameters: 
+        method: mip 
+        kernel: linear  
+        cost: 1 
+        scale: TRUE 
+        weights: ('0' = 0.375, '1' = 1) 
+       
+      Model info: 
+        Features: chr [1:120] "X1_0.05" "X1_0.15" "X1_0.25" "X1_0.35" ...
+        Gap to optimality: 0 
+      
+      
+      $`xy-qp`
+      An misvm object called with misvm.default 
+       
+      Parameters: 
+        method: qp-heuristic 
+        kernel: linear  
+        cost: 1 
+        scale: TRUE 
+        weights: ('0' = 0.375, '1' = 1) 
+       
+      Model info: 
+        Features: chr [1:120] "X1_0.05" "X1_0.15" "X1_0.25" "X1_0.35" ...
+        Number of iterations: 2 
+      
+      
+      $formula
+      An misvm object called with misvm.formula 
+       
+      Parameters: 
+        method: heuristic 
+        kernel: linear  
+        cost: 1 
+        scale: TRUE 
+        weights: ('0' = 0.375, '1' = 1) 
+       
+      Model info: 
+        Features: chr [1:2] "X1_mean" "X2_mean"
+        Number of iterations: 2 
+      
+      
+      $mi_df
+      An misvm object called with misvm.mi_df 
+       
+      Parameters: 
+        method: heuristic 
+        kernel: linear  
+        cost: 1 
+        scale: TRUE 
+        weights: ('0' = 0.375, '1' = 1) 
+       
+      Model info: 
+        Features: chr [1:120] "X1_0.05" "X1_0.15" "X1_0.25" "X1_0.35" ...
+        Number of iterations: 2 
+      
+      
+      $mildata
+      An misvm object called with misvm.mild_df 
+       
+      Parameters: 
+        method: heuristic 
+        kernel: linear  
+        cost: 1 
+        scale: TRUE 
+        weights: ('0' = 0.375, '1' = 1) 
+       
+      Model info: 
+        Features: chr [1:20] "X1_mean" "X2_mean" "X3_mean" "X4_mean" "X5_mean" ...
+        Number of iterations: 2 
+      
+      
+      $`no-scale-heur`
+      An misvm object called with misvm.default 
+       
+      Parameters: 
+        method: heuristic 
+        kernel: linear  
+        cost: 1 
+        scale: FALSE 
+        weights: ('0' = 0.375, '1' = 1) 
+       
+      Model info: 
+        Features: chr [1:120] "X1_0.05" "X1_0.15" "X1_0.25" "X1_0.35" ...
+        Number of iterations: 3 
+      
+      
+      $`no-scale-mip`
+      An misvm object called with misvm.default 
+       
+      Parameters: 
+        method: mip 
+        kernel: linear  
+        cost: 1 
+        scale: FALSE 
+        weights: ('0' = 0.375, '1' = 1) 
+       
+      Model info: 
+        Features: chr [1:120] "X1_0.05" "X1_0.15" "X1_0.25" "X1_0.35" ...
+        Gap to optimality: 0 
+      
+      
+      $`no-scale-qp`
+      An misvm object called with misvm.default 
+       
+      Parameters: 
+        method: qp-heuristic 
+        kernel: linear  
+        cost: 1 
+        scale: FALSE 
+        weights: ('0' = 0.375, '1' = 1) 
+       
+      Model info: 
+        Features: chr [1:120] "X1_0.05" "X1_0.15" "X1_0.25" "X1_0.35" ...
+        Number of iterations: 3 
+      
+      
+      $kfm_fit
+      An misvm object called with misvm.formula 
+       
+      Parameters: 
+        method: mip 
+        kernel: radial  (sigma = 0.5) 
+        cost: 1 
+        scale: TRUE 
+        weights: ('0' = 0.375, '1' = 1) 
+       
+      Model info: 
+        Features: chr [1:2] "X1_mean" "X2_mean"
+        Gap to optimality: 0 
+      
+      
+      $`no-weights-heur`
+      An misvm object called with misvm.default 
+       
+      Parameters: 
+        method: heuristic 
+        kernel: linear  
+        cost: 1 
+        scale: TRUE 
+        weights: FALSE 
+       
+      Model info: 
+        Features: chr [1:120] "X1_0.05" "X1_0.15" "X1_0.25" "X1_0.35" ...
+        Number of iterations: 2 
+      
+      
+      $`no-weights-mildata`
+      An misvm object called with misvm.mild_df 
+       
+      Parameters: 
+        method: heuristic 
+        kernel: linear  
+        cost: 1 
+        scale: TRUE 
+        weights: ('0' = 0.375, '1' = 1) 
+       
+      Model info: 
+        Features: chr [1:20] "X1_mean" "X2_mean" "X3_mean" "X4_mean" "X5_mean" ...
+        Number of iterations: 2 
+      
+      
 
 # Ordering of data doesn't change `misvm()` results
 
@@ -107,70 +290,4 @@
       Setting direction: controls < cases
     Output
       Area under the curve: 1
-
-# `misvm()` print methods look right
-
-    Code
-      models
-    Output
-      $heuristic
-      An misvm object called with misvm.default 
-       
-      Parameters: 
-        method: heuristic 
-        kernel: linear  
-        cost: 1 
-        scale: TRUE 
-        weights: ('0' = 0.375, '1' = 1) 
-       
-      Model info: 
-        Features: chr [1:120] "X1_0.05" "X1_0.15" "X1_0.25" "X1_0.35" ...
-        Number of iterations: 2 
-      
-      
-      $mip
-      An misvm object called with misvm.default 
-       
-      Parameters: 
-        method: mip 
-        kernel: linear  
-        cost: 1 
-        scale: TRUE 
-        weights: ('0' = 0.375, '1' = 1) 
-       
-      Model info: 
-        Features: chr [1:120] "X1_0.05" "X1_0.15" "X1_0.25" "X1_0.35" ...
-        Gap to optimality: 0 
-      
-      
-      $`qp-heuristic`
-      An misvm object called with misvm.default 
-       
-      Parameters: 
-        method: qp-heuristic 
-        kernel: linear  
-        cost: 1 
-        scale: TRUE 
-        weights: ('0' = 0.375, '1' = 1) 
-       
-      Model info: 
-        Features: chr [1:120] "X1_0.05" "X1_0.15" "X1_0.25" "X1_0.35" ...
-        Number of iterations: 2 
-      
-      
-      $radial
-      An misvm object called with misvm.default 
-       
-      Parameters: 
-        method: heuristic 
-        kernel: radial  (sigma = 0.008333333) 
-        cost: 1 
-        scale: TRUE 
-        weights: ('0' = 0.375, '1' = 1) 
-       
-      Model info: 
-        Features: chr [1:120] "X1_0.05" "X1_0.15" "X1_0.25" "X1_0.35" ...
-        Number of iterations: 4 
-      
-      
 

@@ -354,6 +354,35 @@ x_from_mild_formula <- function(formula, data) {
   params
 }
 
+#' Get string for `kernel_param` print
+#' @param x A model object
+#' @noRd
+.get_kernel_param_str <- function(x, digits = getOption("digits")) {
+  kernel_param <- switch(
+    x$kernel,
+    "linear" = "",
+    "radial" = paste0(" (sigma = ",
+                      format(x$kernel_param$sigma, digits = digits),
+                      ")"),
+    "user supplied matrix" = ""
+  )
+}
+
+#' Get string for `weights` print
+#' @inheritParams .get_kernel_param_str
+#' @noRd
+.get_weights_str <- function(x) {
+  if (!is.null(x$weights)) {
+    weights <- paste0(
+      "(",  "'", x$levels[1], "' = ", x$weights[1],
+      ", ", "'", x$levels[2], "' = ", x$weights[2], ")"
+    )
+  } else {
+    weights <- "FALSE"
+  }
+  return(weights)
+}
+
 #' Initialize Instance Selection
 #'
 #' Use bag_label and instance_name information to initialize the selected

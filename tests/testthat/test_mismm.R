@@ -442,7 +442,12 @@ test_that("Passing kernel matrix into mismm works", {
     mdl2 <- mismm(mil_data_shuf, method = method, control = list(sigma = 0.05, scale = FALSE))
     pred2 <- predict(mdl2, new_data = mil_data_test, type = "raw")
 
-    expect_equal(mdl1, mdl2)
+    shared <- c(
+      "ksvm_fit", "call_type", "x", "features", "levels", "cost",
+      "sigma", "weights", "repr_inst", "n_step", "useful_inst_idx",
+      "inst_order", "bag_name", "instance_name"
+    )
+    expect_equal(mdl1[shared], mdl2[shared])
     expect_equal(pred1, pred2)
   }
 
@@ -505,6 +510,7 @@ test_that("`mismm()` value returns make sense", {
       suppressMessages()
 
     print(lapply(models, names))
+    print(models)
   })
   expect_true(TRUE)
 })

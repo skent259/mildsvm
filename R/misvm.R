@@ -429,21 +429,8 @@ predict.misvm <- function(object,
 #' @export
 print.misvm <- function (x, digits = getOption("digits"), ...) {
   method <- attr(x, "method")
-  kernel_param <- switch(
-    x$kernel,
-    "linear" = "",
-    "radial" = paste0(" (sigma = ",
-                      format(x$kernel_param$sigma, digits = digits),
-                      ")")
-  )
-  if (!is.null(x$weights)) {
-    weights <- paste0(
-      "(",  "'", x$levels[1], "' = ", x$weights[1],
-      ", ", "'", x$levels[2], "' = ", x$weights[2], ")"
-    )
-  } else {
-    weights <- "FALSE"
-  }
+  kernel_param <- .get_kernel_param_str(x, digits)
+  weights <- .get_weights_str(x)
 
   cat("An misvm object called with", x$call_type, "\n")
   cat("", "\n")
