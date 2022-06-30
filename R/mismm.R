@@ -195,10 +195,7 @@ mismm.default <- function(
       control$kernel <- "radial"
     }
   }
-  kernel_arg_passed <- control$kernel
-  if (is_matrix_kernel) {
-    kernel_arg_passed <- "user supplied matrix"
-  }
+  kernel_arg_passed <- .set_kernel_arg_passed(control)
   if (method == "qp-heuristic") {
     if (all(control$kernel == "radial")) {
       control$kernel <- kme(df = data.frame(instance_name = instances, x), sigma = control$sigma)

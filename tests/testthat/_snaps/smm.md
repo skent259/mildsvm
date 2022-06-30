@@ -34,35 +34,132 @@
       print(lapply(models, names))
     Output
       $xy
-      [1] "ksvm_fit"  "call_type" "x"         "features"  "levels"    "cost"     
-      [7] "sigma"     "weights"   "x_scale"  
+       [1] "ksvm_fit"     "call_type"    "x"            "features"     "levels"      
+       [6] "cost"         "sigma"        "weights"      "kernel"       "kernel_param"
+      [11] "x_scale"     
       
       $formula
        [1] "ksvm_fit"      "call_type"     "x"             "features"     
        [5] "levels"        "cost"          "sigma"         "weights"      
-       [9] "x_scale"       "formula"       "instance_name"
+       [9] "kernel"        "kernel_param"  "x_scale"       "formula"      
+      [13] "instance_name"
       
       $mildata
        [1] "ksvm_fit"      "call_type"     "x"             "features"     
        [5] "levels"        "cost"          "sigma"         "weights"      
-       [9] "x_scale"       "bag_name"      "instance_name"
+       [9] "kernel"        "kernel_param"  "x_scale"       "bag_name"     
+      [13] "instance_name"
       
       $`no-scale-xy`
-      [1] "ksvm_fit"  "call_type" "x"         "features"  "levels"    "cost"     
-      [7] "sigma"     "weights"  
+       [1] "ksvm_fit"     "call_type"    "x"            "features"     "levels"      
+       [6] "cost"         "sigma"        "weights"      "kernel"       "kernel_param"
       
       $`no-scale-mildata`
        [1] "ksvm_fit"      "call_type"     "x"             "features"     
        [5] "levels"        "cost"          "sigma"         "weights"      
-       [9] "bag_name"      "instance_name"
+       [9] "kernel"        "kernel_param"  "bag_name"      "instance_name"
       
       $`no-weights-xy`
-      [1] "ksvm_fit"  "call_type" "x"         "features"  "levels"    "cost"     
-      [7] "sigma"     "x_scale"  
+       [1] "ksvm_fit"     "call_type"    "x"            "features"     "levels"      
+       [6] "cost"         "sigma"        "kernel"       "kernel_param" "x_scale"     
       
       $`no-weights-mildata`
        [1] "ksvm_fit"      "call_type"     "x"             "features"     
-       [5] "levels"        "cost"          "sigma"         "x_scale"      
-       [9] "bag_name"      "instance_name"
+       [5] "levels"        "cost"          "sigma"         "kernel"       
+       [9] "kernel_param"  "x_scale"       "bag_name"      "instance_name"
+      
+    Code
+      print(models)
+    Output
+      $xy
+      A smm object called with smm.default 
+       
+      Parameters: 
+        kernel: kme w/ radial  (sigma = 0.3333333) 
+        cost: 1 
+        scale: TRUE 
+        weights: ('-1' = Inf, '1' = 1) 
+       
+      Model info: 
+        Features: chr [1:3] "x1" "x2" "x3"
+      
+      
+      $formula
+      A smm object called with smm.formula 
+       
+      Parameters: 
+        kernel: kme w/ radial  (sigma = 0.3333333) 
+        cost: 1 
+        scale: TRUE 
+        weights: ('-1' = Inf, '1' = 1) 
+       
+      Model info: 
+        Features: chr [1:3] "x1" "x2" "x3"
+      
+      
+      $mildata
+      A smm object called with smm.mild_df 
+       
+      Parameters: 
+        kernel: kme w/ radial  (sigma = 0.1) 
+        cost: 1 
+        scale: TRUE 
+        weights: ('0' = Inf, '1' = 1) 
+       
+      Model info: 
+        Features: chr [1:10] "X1" "X2" "X3" "X4" "X5" "X6" "X7" "X8" "X9" ...
+      
+      
+      $`no-scale-xy`
+      A smm object called with smm.default 
+       
+      Parameters: 
+        kernel: kme w/ radial  (sigma = 0.3333333) 
+        cost: 1 
+        scale: FALSE 
+        weights: ('-1' = Inf, '1' = 1) 
+       
+      Model info: 
+        Features: chr [1:3] "x1" "x2" "x3"
+      
+      
+      $`no-scale-mildata`
+      A smm object called with smm.mild_df 
+       
+      Parameters: 
+        kernel: kme w/ radial  (sigma = 0.1) 
+        cost: 1 
+        scale: FALSE 
+        weights: ('0' = Inf, '1' = 1) 
+       
+      Model info: 
+        Features: chr [1:10] "X1" "X2" "X3" "X4" "X5" "X6" "X7" "X8" "X9" ...
+      
+      
+      $`no-weights-xy`
+      A smm object called with smm.default 
+       
+      Parameters: 
+        kernel: kme w/ radial  (sigma = 0.3333333) 
+        cost: 1 
+        scale: TRUE 
+        weights: FALSE 
+       
+      Model info: 
+        Features: chr [1:3] "x1" "x2" "x3"
+      
+      
+      $`no-weights-mildata`
+      A smm object called with smm.mild_df 
+       
+      Parameters: 
+        kernel: kme w/ radial  (sigma = 0.1) 
+        cost: 1 
+        scale: TRUE 
+        weights: FALSE 
+       
+      Model info: 
+        Features: chr [1:10] "X1" "X2" "X3" "X4" "X5" "X6" "X7" "X8" "X9" ...
+      
       
 

@@ -139,6 +139,7 @@ smm.default <- function(
       control$kernel <- "radial"
     }
   }
+  kernel_arg_passed <- .set_kernel_arg_passed(control)
   if (all(control$kernel == "radial")) {
     control$kernel <- kme(x, sigma = control$sigma)
   }
@@ -159,6 +160,13 @@ smm.default <- function(
   )
   res$sigma <- control$sigma
   res$weights <- weights
+  res$kernel <- kernel_arg_passed
+  res$kernel_param <- switch(
+    res$kernel,
+    "radial" = list("sigma" = control$sigma),
+    "linear" = NULL,
+    "user supplied matrix" = NULL
+  )
   if (control$scale) {
     res$x_scale <- list("center" = center, "scale" = scale)
   }
@@ -340,4 +348,24 @@ predict.smm <- function(object,
   res <- .pred_output(type, raw, pos)
   attr(res, "layer") <- layer
   return(res)
+}
+
+#' @export
+print.smm <- function(x, digits = getOption("digits"), ...) {
+  method <- attr(x, "method")
+  kernel_param <- .get_kernel_param_str(x, digits)
+  weights <- .get_weights_str(x)
+
+  cat("A smm object called with", x$call_type, "\n")
+  cat("", "\n")
+  cat("Parameters:", "\n")
+  cat("  kernel: kme w/", x$kernel, kernel_param, "\n")
+  cat("  cost:", x$cost, "\n")
+  cat("  scale:", !is.null(x$x_scale), "\n")
+  cat("  weights:", weights, "\n")
+  cat("", "\n")
+  cat("Model info:", "\n")
+  cat("  Features:")
+  str(x$features, width = getOption("width")-14)
+  cat("\n")
 }

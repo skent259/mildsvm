@@ -354,6 +354,17 @@ x_from_mild_formula <- function(formula, data) {
   params
 }
 
+#' Set the kernel arg passed
+#' @param control The control in a modeling function
+#' @noRd
+.set_kernel_arg_passed <- function(control) {
+  if (is.matrix(control$kernel)) {
+    "user supplied matrix"
+  } else {
+    control$kernel
+  }
+}
+
 #' Get string for `kernel_param` print
 #' @param x A model object
 #' @noRd
