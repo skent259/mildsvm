@@ -142,10 +142,12 @@ test_that("smm() has correct argument handling", {
   )))
 
   # `kernel`
+  shared <- c("ksvm_fit", "call_type", "x", "features", "levels",
+              "cost", "sigma", "weights")
   kernel_mat <- kme(data.frame(instance_name = instances, x), sigma = 1/3)
   expect_message(expect_equal(
-    smm(x, y, instances, control = list(kernel = "radial", sigma = 1/3, scale = FALSE)),
-    smm(x, y, instances, control = list(kernel = kernel_mat))
+    smm(x, y, instances, control = list(kernel = "radial", sigma = 1/3, scale = FALSE))[shared],
+    smm(x, y, instances, control = list(kernel = kernel_mat))[shared]
   ))
   suppressMessages({
     mdl1 <- smm(x, y, instances, control = list(kernel = kernel_mat))
@@ -401,6 +403,7 @@ test_that("`smm()` value returns make sense", {
       suppressMessages()
 
     print(lapply(models, names))
+    print(models)
   })
   expect_true(TRUE)
 

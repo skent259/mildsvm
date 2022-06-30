@@ -53,18 +53,107 @@
       print(lapply(models, names))
     Output
       $heur
-      [1] "fits"      "call_type" "levels"    "features" 
+      [1] "fits"      "call_type" "levels"    "features"  "kernel"   
       
       $qp
-      [1] "fits"      "call_type" "levels"    "features" 
+      [1] "fits"      "call_type" "levels"    "features"  "kernel"   
       
       $mip
-      [1] "fits"      "call_type" "levels"    "features" 
+      [1] "fits"      "call_type" "levels"    "features"  "kernel"   
       
       $formula
-      [1] "fits"      "call_type" "levels"    "features"  "formula"   "bag_name" 
+      [1] "fits"      "call_type" "levels"    "features"  "kernel"    "formula"  
+      [7] "bag_name" 
       
       $mi_df
-      [1] "fits"      "call_type" "levels"    "features"  "bag_name" 
+      [1] "fits"      "call_type" "levels"    "features"  "kernel"    "bag_name" 
+      
+    Code
+      print(models)
+    Output
+      $heur
+      An misvm_orova object called with misvm_orova.default 
+       
+      Parameters: 
+        method: heuristic 
+        kernel: linear  
+        cost: 1 
+        scale: TRUE 
+        weights: TRUE 
+       
+      Model info: 
+        Number of models: 5 
+        Levels of `y`: chr [1:5] "1" "2" "3" "4" "5"
+        Features: chr [1:5] "V1" "V2" "V3" "V4" "V5"
+        Number of iterations: 3 2 3 2 3 
+      
+      
+      $qp
+      An misvm_orova object called with misvm_orova.default 
+       
+      Parameters: 
+        method: qp-heuristic 
+        kernel: linear  
+        cost: 1 
+        scale: TRUE 
+        weights: TRUE 
+       
+      Model info: 
+        Number of models: 5 
+        Levels of `y`: chr [1:5] "1" "2" "3" "4" "5"
+        Features: chr [1:5] "V1" "V2" "V3" "V4" "V5"
+        Number of iterations: 3 2 2 1 0 
+      
+      
+      $mip
+      An misvm_orova object called with misvm_orova.default 
+       
+      Parameters: 
+        method: mip 
+        kernel: linear  
+        cost: 1 
+        scale: TRUE 
+        weights: TRUE 
+       
+      Model info: 
+        Number of models: 5 
+        Levels of `y`: chr [1:5] "1" "2" "3" "4" "5"
+        Features: chr [1:5] "V1" "V2" "V3" "V4" "V5"
+        Gap to optimality: 0 0 0 0 0 
+      
+      
+      $formula
+      An misvm_orova object called with misvm_orova.formula 
+       
+      Parameters: 
+        method: qp-heuristic 
+        kernel: linear  
+        cost: 1 
+        scale: TRUE 
+        weights: TRUE 
+       
+      Model info: 
+        Number of models: 5 
+        Levels of `y`: chr [1:5] "1" "2" "3" "4" "5"
+        Features: chr [1:2] "V1" "V2"
+        Number of iterations: 2 2 2 1 1 
+      
+      
+      $mi_df
+      An misvm_orova object called with misvm_orova.mi_df 
+       
+      Parameters: 
+        method: heuristic 
+        kernel: linear  
+        cost: 1 
+        scale: TRUE 
+        weights: TRUE 
+       
+      Model info: 
+        Number of models: 5 
+        Levels of `y`: chr [1:5] "1" "2" "3" "4" "5"
+        Features: chr [1:5] "V1" "V2" "V3" "V4" "V5"
+        Number of iterations: 3 2 3 2 3 
+      
       
 

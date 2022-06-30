@@ -317,6 +317,7 @@ test_that("`mior()` value returns make sense", {
       suppressMessages()
 
     print(lapply(models, names))
+    print(models)
   })
   expect_true(TRUE)
 

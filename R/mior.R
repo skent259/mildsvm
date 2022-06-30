@@ -177,6 +177,12 @@ mior.default <- function(
   out$cost <- cost
   out$cost_eta <- cost_eta
   out$weights <- weights
+  out$kernel <- control$kernel
+  out$kernel_param <- switch(
+    out$kernel,
+    "radial" = list("sigma" = control$sigma),
+    "linear" = NULL,
+  )
   out$repr_inst <- res$repr_inst
   out$n_step <- res$n_step
   out$x_scale <- res$x_scale
@@ -320,6 +326,32 @@ predict.mior <- function(object,
   attr(res, "layer") <- layer
   attr(res, "midpoints") <- midpoints
   return(res)
+}
+
+#' @export
+print.mior <- function(x, digits = getOption("digits"), ...) {
+  method <- attr(x, "method")
+  kernel_param <- .get_kernel_param_str(x, digits)
+  weights <- .get_weights_str(x)
+
+  cat("An mior object called with", x$call_type, "\n")
+  cat("", "\n")
+  cat("Parameters:", "\n")
+  cat("  method:", method, "\n")
+  cat("  kernel:", x$kernel, kernel_param, "\n")
+  cat("  cost:", x$cost, "\n")
+  cat("  cost_eta:", x$cost_eta, "\n")
+  cat("  scale:", !is.null(x$x_scale), "\n")
+  cat("  weights:", weights, "\n")
+  cat("", "\n")
+  cat("Model info:", "\n")
+  cat("  Levels of `y`:")
+  str(x$levels, width = getOption("width")-14)
+  cat("  Features:")
+  str(x$features, width = getOption("width")-14)
+  cat("  Number of iterations:", x$n_step, "\n")
+  cat("  Gap to optimality:", x$gurobi_fit$mipgap, "\n")
+  cat("\n")
 }
 
 # Specific implementation methods below ----------------------------------------

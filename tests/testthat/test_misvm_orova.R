@@ -19,7 +19,7 @@ for (y_ in unique(y)) {
   to_fill <- which(y_ == y)
   X[to_fill, ] <- mvtnorm::rmvnorm(length(to_fill), mean = c(2*y_, -1*y_, 1*y_, 0, 0))
 }
-colnames(X) <- paste0("V", 1:ncol(X))
+colnames(X) <- paste0("V", seq_len(ncol(X)))
 
 # build into data frames
 df <- bind_cols(bag_label = classify_bags(y, bags, condense = FALSE), bag_name = bags, as.data.frame(X)) %>%
@@ -209,7 +209,7 @@ test_that("misvm_orova() has correct argument handling", {
   # misvm_orova(mi(bag_label, bag_name) ~ ., data = df1, weights = FALSE)
   mdl1 <- misvm_orova(mi(bag_label, bag_name) ~ ., data = df2, weights = c("0" = 1, "1" = 1))
   mdl1$weights <- NULL
-  for (i in 1:length(mdl1$fits)) {
+  for (i in seq_along(mdl1$fits)) {
     mdl1$fits[[i]]$weights <- NULL
   }
   mdl2 <- misvm_orova(mi(bag_label, bag_name) ~ ., data = df2, weights = FALSE)
@@ -249,6 +249,7 @@ test_that("`misvm_orova()` value returns make sense", {
       suppressMessages()
 
     print(lapply(models, names))
+    print(models)
   })
   expect_true(TRUE)
 })

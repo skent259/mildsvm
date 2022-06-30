@@ -229,3 +229,33 @@ test_that("Nystrom sampling works with duplicated data", {
   expect_equal(dim(fm), c(8,7))
 
 })
+
+test_that("Nystrom feature map prints correctly", {
+  df <- data.frame(
+    X1 = c(2,   3,   4,   5,   6, 7, 8),
+    X2 = c(1, 1.2, 1.3, 1.4, 1.1, 7, 1),
+    X3 = rnorm(7)
+  )
+  set.seed(8)
+  df2 <- mildsvm::generate_mild_df(ncov = 5,
+                                  nbag = 7,
+                                  nsample = 7,
+                                  positive_prob = 0.15)
+
+  expect_snapshot({
+    kfms <- list(
+      "default" = kfm_nystrom(df),
+      "supplied_sample" = kfm_nystrom(df, sampling = 1:7),
+      "stratified_sample" = kfm_nystrom(df2, sampling = "stratified"),
+      "low m" = kfm_nystrom(df, m = 5),
+      "low r" = kfm_nystrom(df, r = 5),
+      "sigma" = kfm_nystrom(df, sigma = 0.05)
+    ) %>%
+      suppressWarnings() %>%
+      suppressMessages()
+
+    print(kfms)
+  })
+  expect_true(TRUE)
+})
+
