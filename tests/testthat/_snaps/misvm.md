@@ -1,75 +1,72 @@
 # `misvm()` value returns make sense
 
     Code
-      models <- list(`xy-heur` = misvm(x = df1[, 3:122], y = df1$bag_label, bags = df1$
-        bag_name, method = "heuristic"), `xy-mip` = misvm(x = df1[, 3:122], y = df1$
-        bag_label, bags = df1$bag_name, method = "mip"), `xy-qp` = misvm(x = df1[, 3:
-        122], y = df1$bag_label, bags = df1$bag_name, method = "qp-heuristic"),
-      formula = misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean, method = "heuristic",
-      data = df1), mi_df = misvm(as_mi_df(df1, instance_label = NULL)), mildata = misvm(
-        mil_data), `no-scale-heur` = misvm(x = df1[, 3:122], y = df1$bag_label, bags = df1$
-        bag_name, method = "heuristic", control = list(scale = FALSE)),
-      `no-scale-mip` = misvm(x = df1[, 3:122], y = df1$bag_label, bags = df1$bag_name,
-      method = "mip", control = list(scale = FALSE)), `no-scale-qp` = misvm(x = df1[,
-        3:122], y = df1$bag_label, bags = df1$bag_name, method = "qp-heuristic",
-      control = list(scale = FALSE)), kfm_fit = misvm(mi(bag_label, bag_name) ~
-        X1_mean + X2_mean, data = df1, method = "mip", control = list(kernel = "radial")),
-      `no-weights-heur` = misvm(x = df1[, 3:122], y = df1$bag_label, bags = df1$
-        bag_name, method = "heuristic", weights = FALSE), `no-weights-mildata` = misvm(
-        mil_data)) %>% suppressWarnings() %>% suppressMessages()
+      models <- list(`xy-heur` = run_misvm(method = "heuristic"), `xy-mip` = run_misvm(
+        method = "mip"), `xy-qp` = run_misvm(method = "qp-heuristic"), formula = misvm(
+        mi(bag_label, bag_name) ~ X1_mean + X2_mean, method = "heuristic", data = df1),
+      mi_df = misvm(as_mi_df(df1, instance_label = NULL)), mildata = misvm(mil_data),
+      `no-scale-heur` = run_misvm(method = "heuristic", control = list(scale = FALSE)),
+      `no-scale-mip` = run_misvm(method = "mip", control = list(scale = FALSE)),
+      `no-scale-qp` = run_misvm(method = "qp-heuristic", control = list(scale = FALSE)),
+      kfm_fit = misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean, data = df1,
+      method = "mip", control = list(kernel = "radial")), `no-weights-heur` = run_misvm(
+        method = "heuristic", weights = FALSE), `no-weights-mildata` = misvm(mil_data)) %>%
+        suppressWarnings() %>% suppressMessages()
       print(lapply(models, names))
     Output
       $`xy-heur`
        [1] "svm_fit"   "call_type" "x"         "features"  "levels"    "cost"     
-       [7] "weights"   "repr_inst" "n_step"    "x_scale"  
+       [7] "weights"   "kernel"    "repr_inst" "n_step"    "x_scale"  
       
       $`xy-mip`
       [1] "gurobi_fit" "call_type"  "features"   "levels"     "cost"      
-      [6] "weights"    "x_scale"   
+      [6] "weights"    "kernel"     "x_scale"   
       
       $`xy-qp`
-      [1] "gurobi_fit" "call_type"  "features"   "levels"     "cost"      
-      [6] "weights"    "repr_inst"  "n_step"     "x_scale"   
+       [1] "gurobi_fit" "call_type"  "features"   "levels"     "cost"      
+       [6] "weights"    "kernel"     "repr_inst"  "n_step"     "x_scale"   
       
       $formula
        [1] "svm_fit"   "call_type" "x"         "features"  "levels"    "cost"     
-       [7] "weights"   "repr_inst" "n_step"    "x_scale"   "formula"   "bag_name" 
+       [7] "weights"   "kernel"    "repr_inst" "n_step"    "x_scale"   "formula"  
+      [13] "bag_name" 
       
       $mi_df
        [1] "svm_fit"   "call_type" "x"         "features"  "levels"    "cost"     
-       [7] "weights"   "repr_inst" "n_step"    "x_scale"   "bag_name" 
+       [7] "weights"   "kernel"    "repr_inst" "n_step"    "x_scale"   "bag_name" 
       
       $mildata
        [1] "svm_fit"       "call_type"     "x"             "features"     
-       [5] "levels"        "cost"          "weights"       "repr_inst"    
-       [9] "n_step"        "x_scale"       "bag_name"      "instance_name"
-      [13] "summary_fns"   "summary_cor"  
+       [5] "levels"        "cost"          "weights"       "kernel"       
+       [9] "repr_inst"     "n_step"        "x_scale"       "bag_name"     
+      [13] "instance_name" "summary_fns"   "summary_cor"  
       
       $`no-scale-heur`
       [1] "svm_fit"   "call_type" "features"  "levels"    "cost"      "weights"  
-      [7] "repr_inst" "n_step"   
+      [7] "kernel"    "repr_inst" "n_step"   
       
       $`no-scale-mip`
       [1] "gurobi_fit" "call_type"  "features"   "levels"     "cost"      
-      [6] "weights"   
+      [6] "weights"    "kernel"    
       
       $`no-scale-qp`
       [1] "gurobi_fit" "call_type"  "features"   "levels"     "cost"      
-      [6] "weights"    "repr_inst"  "n_step"    
+      [6] "weights"    "kernel"     "repr_inst"  "n_step"    
       
       $kfm_fit
-       [1] "gurobi_fit" "kfm_fit"    "call_type"  "features"   "levels"    
-       [6] "cost"       "weights"    "x_scale"    "formula"    "bag_name"  
+       [1] "gurobi_fit"   "kfm_fit"      "call_type"    "features"     "levels"      
+       [6] "cost"         "weights"      "kernel"       "kernel_param" "x_scale"     
+      [11] "formula"      "bag_name"    
       
       $`no-weights-heur`
-      [1] "svm_fit"   "call_type" "x"         "features"  "levels"    "cost"     
-      [7] "repr_inst" "n_step"    "x_scale"  
+       [1] "svm_fit"   "call_type" "x"         "features"  "levels"    "cost"     
+       [7] "kernel"    "repr_inst" "n_step"    "x_scale"  
       
       $`no-weights-mildata`
        [1] "svm_fit"       "call_type"     "x"             "features"     
-       [5] "levels"        "cost"          "weights"       "repr_inst"    
-       [9] "n_step"        "x_scale"       "bag_name"      "instance_name"
-      [13] "summary_fns"   "summary_cor"  
+       [5] "levels"        "cost"          "weights"       "kernel"       
+       [9] "repr_inst"     "n_step"        "x_scale"       "bag_name"     
+      [13] "instance_name" "summary_fns"   "summary_cor"  
       
 
 # Ordering of data doesn't change `misvm()` results
@@ -110,4 +107,70 @@
       Setting direction: controls < cases
     Output
       Area under the curve: 1
+
+# `misvm()` print methods look right
+
+    Code
+      models
+    Output
+      $heuristic
+      An misvm object called with misvm.default 
+       
+      Parameters: 
+        method: heuristic 
+        kernel: linear  
+        cost: 1 
+        scale: TRUE 
+        weights: ('0' = 0.375, '1' = 1) 
+       
+      Model info: 
+        Features: chr [1:120] "X1_0.05" "X1_0.15" "X1_0.25" "X1_0.35" ...
+        Number of iterations: 2 
+      
+      
+      $mip
+      An misvm object called with misvm.default 
+       
+      Parameters: 
+        method: mip 
+        kernel: linear  
+        cost: 1 
+        scale: TRUE 
+        weights: ('0' = 0.375, '1' = 1) 
+       
+      Model info: 
+        Features: chr [1:120] "X1_0.05" "X1_0.15" "X1_0.25" "X1_0.35" ...
+        Gap to optimality: 0 
+      
+      
+      $`qp-heuristic`
+      An misvm object called with misvm.default 
+       
+      Parameters: 
+        method: qp-heuristic 
+        kernel: linear  
+        cost: 1 
+        scale: TRUE 
+        weights: ('0' = 0.375, '1' = 1) 
+       
+      Model info: 
+        Features: chr [1:120] "X1_0.05" "X1_0.15" "X1_0.25" "X1_0.35" ...
+        Number of iterations: 2 
+      
+      
+      $radial
+      An misvm object called with misvm.default 
+       
+      Parameters: 
+        method: heuristic 
+        kernel: radial  (sigma = 0.008333333) 
+        cost: 1 
+        scale: TRUE 
+        weights: ('0' = 0.375, '1' = 1) 
+       
+      Model info: 
+        Features: chr [1:120] "X1_0.05" "X1_0.15" "X1_0.25" "X1_0.35" ...
+        Number of iterations: 4 
+      
+      
 
