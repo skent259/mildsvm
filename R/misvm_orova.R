@@ -95,6 +95,8 @@ misvm_orova.default <- function(
   out$call_type <- "misvm_orova.default"
   out$levels <- lev
   out$features <- fits[[1]]$features
+  out$kernel <- fits[[1]]$kernel
+  out$kernel_param <- fits[[1]]$kernel_param
   return(new_misvm_orova(out, method = method))
 }
 
@@ -216,4 +218,36 @@ predict.misvm_orova <- function(object,
                 "class" = tibble::tibble(.pred_class = class_))
   attr(res, "layer") <- layer
   return(res)
+}
+
+#' @export
+print.misvm_orova <- function(x, digits = getOption("digits"), ...) {
+  method <- attr(x, "method")
+  kernel_param <- .get_kernel_param_str(x, digits)
+  weights <- !is.null(x$fits[[1]]$weights)
+  n_steps <- sapply(x$fits, function(.x) .x$n_step)
+  mipgaps <- sapply(x$fits, function(.x) .x$gurobi_fit$mipgap)
+
+  cat("An misvm_orova object called with", x$call_type, "\n")
+  cat("", "\n")
+  cat("Parameters:", "\n")
+  cat("  method:", method, "\n")
+  cat("  kernel:", x$kernel, kernel_param, "\n")
+  cat("  cost:", x$fits[[1]]$cost, "\n")
+  cat("  scale:", !is.null(x$fits[[1]]$x_scale), "\n")
+  cat("  weights:", weights, "\n")
+  cat("", "\n")
+  cat("Model info:", "\n")
+  cat("  Number of models:", length(x$fits), "\n")
+  cat("  Levels of `y`:")
+  str(x$levels, width = getOption("width")-14)
+  cat("  Features:")
+  str(x$features, width = getOption("width")-14)
+  if (method == "heuristic" || method == "qp-heuristic") {
+    cat("  Number of iterations:", n_steps, "\n")
+  }
+  if (method == "mip") {
+    cat("  Gap to optimality:", mipgaps, "\n")
+  }
+  cat("\n")
 }
