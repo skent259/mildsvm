@@ -131,7 +131,7 @@ kfm_nystrom.mild_df <- function(df,
 print.kfm_nystrom <- function(x, digits = getOption("digits"), ...) {
   kernel_param <- .get_kernel_param_str(x, digits)
 
-  cat("An Nystrom kernel feature map object", "\n")
+  cat("A Nystrom kernel feature map object", "\n")
   cat("", "\n")
   cat("Parameters:", "\n")
   cat("  m:", x$params$m, "\n")

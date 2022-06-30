@@ -60,6 +60,18 @@ kfm_exact <- function(kernel = "polynomial", degree = 2, const = 1) {
   )))
 }
 
+#' @export
+print.kfm_exact <- function(x, digits = getOption("digits"), ...) {
+
+  cat("An exact kernel feature map object", "\n")
+  cat("", "\n")
+  cat("Parameters:", "\n")
+  cat("  kernel:", x$kernel, "\n")
+  cat("  degree:", x$degree, "\n")
+  cat("  const:", x$const, "\n")
+  cat("\n")
+}
+
 #' @describeIn build_fm Method for `kfm_exact` class.
 #' @export
 build_fm.kfm_exact <- function(kfm_fit, new_data, ...) {
