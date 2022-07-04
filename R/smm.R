@@ -94,52 +94,28 @@ smm.default <- function(
     sigma = if (is.vector(x)) 1 else 1 / ncol(x)
   )
   control <- .set_default(control, defaults)
-  if ("scale" %ni% names(control) && is.matrix(control$kernel)) {
-    message("Since `kernel` was passed as a matrix, defaulting to `scale` = FALSE.")
-    control$scale <- FALSE
-  } else if ("scale" %ni% names(control)) {
-    control$scale <- TRUE
-  }
+  control$kernel <- .set_kernel(control$kernel,
+                                size = length(unique(instances)),
+                                size_str = "unique instances")
+  control <- .set_scale(control)
+  kernel_arg_passed <- .set_kernel_arg_passed(control)
 
-  col_x <- colnames(x)
-  if (control$scale) {
-    x <- scale(x)
-    center <- attr(x, "scaled:center")
-    scale <- attr(x, "scaled:scale")
-    x <- as.data.frame(x)
-  }
+  # remove NaN columns and columns with no variance, store col names, scale
+  x_info <- .convert_x(x, control$scale)
+  x <- x_info$x
+  col_x <- x_info$col_x
+  x_scale <- x_info$x_scale
+
   x <- data.frame(instance_name = instances, x)
 
-  # store the levels of y and convert to 0,1 numeric format.
-  y_info <- convert_y(y)
-  y <- 2*classify_bags(y_info$y, instances) - 1
-  y <- factor(y)
+  # store the levels of y and convert to -1,1 factor format at instance level.
+  y_info <- convert_y(y, to = "-1,1")
+  y <- factor(classify_bags(y_info$y, instances))
   lev <- y_info$lev
 
-  # weights
-  if (is.numeric(weights)) {
-    stopifnot(names(weights) == lev | names(weights) == rev(lev))
-    weights <- weights[lev]
-    names(weights) <- c("-1", "1")
-  } else if (isTRUE(weights)) {
-    weights <- c("-1" = sum(y == 1) / sum(y == -1), "1" = 1)
-  } else {
-    weights <- NULL
-  }
+  weights <- .set_weights(weights, list(y = 1 * (y == 1), lev = lev))
 
   # kernel
-  is_matrix_kernel <- inherits(control$kernel, "matrix")
-  n_instances <- length(unique(instances))
-  if (all(control$kernel != "radial") && !is_matrix_kernel) {
-    warning("control$kernel must either be 'radial' or a square matrix.  Defaulting to 'radial'.")
-    control$kernel <- "radial"
-  } else if (is_matrix_kernel) {
-    if (all(dim(control$kernel) != c(n_instances, n_instances))) {
-      warning("Matrix passed to control$kernel is not of correct size. Defaulting to 'radial'.")
-      control$kernel <- "radial"
-    }
-  }
-  kernel_arg_passed <- .set_kernel_arg_passed(control)
   if (all(control$kernel == "radial")) {
     control$kernel <- kme(x, sigma = control$sigma)
   }
@@ -167,9 +143,7 @@ smm.default <- function(
     "linear" = NULL,
     "user supplied matrix" = NULL
   )
-  if (control$scale) {
-    res$x_scale <- list("center" = center, "scale" = scale)
-  }
+  res$x_scale <- x_scale
   return(new_smm(res))
 }
 
@@ -275,74 +249,31 @@ predict.smm <- function(object,
                         type = c("class", "raw"),
                         layer = "instance",
                         new_instances = "instance_name",
-                        new_bags = NULL,
+                        new_bags = "bag_name",
                         kernel = NULL,
                         ...) {
   type <- match.arg(type)
   layer <- match.arg(layer, c("instance", "bag"))
-  if (!is.null(new_data)) new_data <- as.data.frame(new_data)
-
-  if (is.matrix(kernel) && !is.null(object$x_scale)) {
-    message("Model was fit using scaling, make sure that kernel matrix was similarly scaled.")
+  if (!is.null(new_data)) {
+    new_data <- as.data.frame(new_data)
   }
+  .warn_kernel_scaling(kernel, object$x_scale)
 
-  traindata <- object$x
-  model <- object$ksvm_fit
+  instances <- .get_instances(object, new_data, new_instances)
+  new_x <- .get_new_x(object, new_data, kernel = kernel)
+  kernel_m <- .calculate_pred_kernel_smm(object, kernel, instances, new_x)
 
-  # instance information
-  if (object$call_type == "smm.formula" & new_instances[1] == "instance_name" & length(new_instances) == 1) {
-    new_instances <- object$instance_name
-  }
-  if (length(new_instances) == 1 & new_instances[1] %in% colnames(new_data)) {
-    instances <- new_data[[new_instances]]
-  } else {
-    instances <- new_instances
-  }
-
-  # bag information (for `smm.mild_df()`)
-  if (layer == "bag") {
-    if (is.null(new_bags)) {
-      bags <- new_data[[object$bag_name]]
-    } else if (length(new_bags) == 1 & new_bags[1] %in% colnames(new_data)) {
-      bags <- new_data[[new_bags]]
-    } else {
-      bags <- new_bags
-    }
-  }
-
-  # new_x
-  if (object$call_type == "smm.formula") {
-    new_x <- x_from_formula(object$formula, new_data, skip = object$instance_name)
-  } else {
-    new_x <- new_data[, object$features, drop = FALSE]
-  }
-  if (!is.null(new_x) && "x_scale" %in% names(object) && is.null(kernel)) {
-    new_x <- as.data.frame(scale(new_x, center = object$x_scale$center, scale = object$x_scale$scale))
-  }
-
-  # kernel_m
-  sv_ind <- kernlab::SVindex(model)
-  if (is.matrix(kernel)) {
-    kernel_m <- kernel[, sv_ind, drop = FALSE] # future note, I don't think this actually filters anything out...
-  } else {
-    used_instance_names <- unique(traindata$instance_name)[sv_ind]
-    used_instances <- which(traindata$instance_name %in% used_instance_names)
-    kernel_m <- kme(df = data.frame(instance_name = instances, new_x),
-                    df2 = traindata[used_instances, , drop = FALSE],
-                    sigma = object$sigma)
-  }
-  kernel_m <- kernlab::as.kernelMatrix(kernel_m)
-
-  raw <- kernlab::predict(model, kernel_m, type = "decision")
+  raw <- kernlab::predict(object$ksvm_fit, kernel_m, type = "decision")
   raw <- as.numeric(raw)
   names(raw) <- unique(instances)
   raw <- raw[instances]
 
   if (layer == "bag") {
+    bags <- .get_bags(object, new_data, new_bags)
     raw <- classify_bags(raw, bags, condense = FALSE)
   }
 
-  pos <- 2 * (raw > 0) - 1
+  pos <- .to_plus_minus(raw)
   pos <- factor(pos, levels = c(-1, 1), labels = object$levels)
 
   res <- .pred_output(type, raw, pos)

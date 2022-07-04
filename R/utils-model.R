@@ -1,3 +1,14 @@
+#' Convert to -1, +1
+#'
+#' @param x A numeric vector. This can be input from {0, 1} or raw scores from
+#'   the real line.
+#' @param thresh A numeric threshold (default 0) that `x` must exceed to be
+#'   considered positive.
+#' @noRd
+.to_plus_minus <- function(x, thresh = 0) {
+  2 * (x > 0) - 1
+}
+
 #' Set default values in a list, when not present
 #' @param x A list to modify.
 #' @param args A list or vector of named arguments for defaults
@@ -16,9 +27,12 @@
 #' @inheritParams .set_default
 #' @noRd
 .set_scale <- function(x) {
-  if ("scale" %ni% names(x) && inherits(x$kernel, "matrix")) {
-    # if kernel matrix is passed in, then really no re-scaling was done.
+  if ("scale" %ni% names(x) && is.matrix(x$kernel)) {
     x$scale <- FALSE
+    rlang::inform(c(
+      "Scaling is not available when `kernel` is of class matrix.",
+      i = "Setting `scale` = FALSE."
+    ))
   } else if ("scale" %ni% names(x)) {
     x$scale <- TRUE
   }
@@ -33,16 +47,53 @@
     x$start <- FALSE
     rlang::inform(c(
       "Warm start is not available when `kernel` is not equal to 'linear'.",
-      i = "Setting `start` = FALSE. "
+      i = "Setting `start` = FALSE."
     ))
   }
   return(x)
 }
 
+#' Set 'kernel' value from control list
+#'
+#' Set the kernel based on a passed parameter (usually to `control$kernel`). The
+#' logic handles cases where a character is passed or a matrix is passed:
+#' - `kernel` is a matrix: checks the matrix dimensions are correct. If they are
+#'   not, it warns and sets `kernel = 'radial'`
+#' - `kernel` is not a matrix: sets `kernel = 'radial'` since the linear kernel
+#'   is not currently supported
+#'
+#' @param kernel A matrix or character to be checked and potentially modified.
+#' @param size An integer for the expected row and column size of `kernel`
+#' @param size_str A character for the size warning that represents what the
+#'   size is
+#' @noRd
+.set_kernel <- function(kernel, size, size_str) {
+  if (all(kernel != "radial") && !is.matrix(kernel)) {
+    kernel <- "radial"
+    rlang::warn(c(
+      "Argument `control$kernel` must either be 'radial' or a square matrix.",
+      i = "Setting `control$kernel` = 'radial'."
+    ))
+  } else if (is.matrix(kernel)) {
+    if (all(dim(kernel) != c(size, size))) {
+      kernel <- "radial"
+      rlang::warn(c(
+        paste0("Any matrix passed to `control$kernel` must be of size (n, n) where n is the number of ", size_str, "."),
+        x = paste0("Matrix was of size (", nrow(kernel), ", ", ncol(kernel) , ")."),
+        x = paste0("There are ", size, "unique instances."),
+        i = "Setting `control$kernel` = 'radial'."
+      ))
+    }
+  }
+  return(kernel)
+}
+
 #' Store the levels of y and convert to 0,1 numeric format.
 #' @inheritParams .reorder
+#' @param to An option to convert to 0,1 numeric or -1,1 numeric format
 #' @noRd
-convert_y <- function(y) {
+convert_y <- function(y, to = "0,1") {
+  to <- match.arg(to, c("0,1", "-1,1"))
   y <- factor(y)
   lev <- levels(y)
   if (length(lev) == 1) {
@@ -57,6 +108,9 @@ convert_y <- function(y) {
     message(paste0("Setting level ", lev[2], " to be the positive class for misvm fitting."))
   } # else lev[2] is like 1, keep it that way.
   y <- as.numeric(y) - 1
+  if (to == "-1,1") {
+    y <- 2*y - 1
+  }
   list(y = y, lev = lev)
 }
 
@@ -77,7 +131,6 @@ convert_y <- function(y) {
   y <- as.numeric(y)
   list(y = y, lev = lev)
 }
-
 
 #' Check columns of x for NaN and no variance
 #'
@@ -172,9 +225,13 @@ convert_y <- function(y) {
 #' @param y Output from `.convert_y()`
 #' @inheritParams misvm
 #' @noRd
-.set_weights <- function(w, y, bags) {
+.set_weights <- function(w, y, bags = NULL) {
   lev <- y$lev
   y <- y$y
+
+  if (is.null(bags)) {
+    bags <- seq_along(y)
+  }
 
   if (is.numeric(w)) {
     stopifnot(names(w) == lev | names(w) == rev(lev))
@@ -240,6 +297,17 @@ convert_y <- function(y) {
   return(s)
 }
 
+#' Warn about scaling with matrix kernels
+#' @inheritParams predict.smm
+#' @param scale A logical for whether scaling was done in model fitting
+#' @noRd
+.warn_kernel_scaling <- function(kernel, scale) {
+  if (is.matrix(kernel) && !is.null(scale)) {
+    rlang::inform(
+      "Since model was fit using scaling, make sure that kernel matrix was similarly scaled."
+    )
+  }
+}
 #' Calculate x-matrix from a standard formula
 #' @inheritParams smm
 #' @param skip a vector of variable names to skip, or `NULL` to keep all
@@ -303,15 +371,35 @@ x_from_mild_formula <- function(formula, data) {
   }
 }
 
+#' Get instances for prediction function
+#'
+#' Used in `predict.smm()`
+#' @inheritParams predict.smm
+#' @noRd
+.get_instances <- function(object, new_data, new_instances) {
+  if (object$call_type == "smm.formula" & new_instances[1] == "instance_name" & length(new_instances) == 1) {
+    new_instances <- object$instance_name
+  }
+  if (length(new_instances) == 1 & new_instances[1] %in% colnames(new_data)) {
+    instances <- new_data[[new_instances]]
+  } else {
+    instances <- new_instances
+  }
+}
+
 #' Get new_x for prediction function
 #'
 #' Used in `misvm()`, `omisvm()`
 #' @inheritParams predict.misvm
 #' @noRd
-.get_new_x <- function(object, new_data) {
+.get_new_x <- function(object, new_data, kernel = NULL) {
+
   method <- attr(object, "method")
 
-  if (grepl("formula", object$call_type)) {
+  if (grepl("smm.formula", object$call_type)) {
+    new_x <- x_from_formula(object$formula, new_data, skip = object$instance_name)
+    new_x <- new_x[, object$features, drop = FALSE]
+  } else if (grepl("formula", object$call_type)) {
     new_x <- x_from_mi_formula(object$formula, new_data)
     new_x <- new_x[, object$features, drop = FALSE]
   } else {
@@ -320,10 +408,39 @@ x_from_mild_formula <- function(formula, data) {
   if ("kfm_fit" %in% names(object)) {
     new_x <- build_fm(object$kfm_fit, as.matrix(new_x))
   }
-  if (method == "qp-heuristic" & "x_scale" %in% names(object)) {
-    new_x <- as.data.frame(scale(new_x, center = object$x_scale$center, scale = object$x_scale$scale))
+  scale_eligible <- method == "qp-heuristic" || grepl("smm", object$call_type)
+  if (scale_eligible & "x_scale" %in% names(object) & is.null(kernel)) {
+    new_x <- as.data.frame(scale(new_x, object$x_scale$center, object$x_scale$scale))
   }
   new_x
+}
+
+#' Calculate a kernel for prediction in `smm()`
+#'
+#' When `kernel` is already a matrix, pull the support vector columns.
+#' Otherwise, calculate the kernel from the new data and the training data at
+#' the support vector instances based on the kernel mean embedding `kme()`
+#' function
+#' @inheritParams predict.smm
+#' @param instances A vector of instances, as from `.get_instances()`
+#' @param new_x A data frame of new predictors
+#' @noRd
+.calculate_pred_kernel_smm <- function(object, kernel, instances, new_x) {
+  train_df <- object$x
+  sv_ind <- kernlab::SVindex(object$ksvm_fit)
+  if (is.matrix(kernel)) {
+    kernel_m <- kernel[, sv_ind, drop = FALSE] # future note, I don't think this actually filters anything out...
+  } else {
+    train_inst <- train_df$instance_name
+    sv_inst_names <- unique(train_inst)[sv_ind]
+    sv_inst <- which(train_inst %in% sv_inst_names)
+    new_df <- data.frame(instance_name = instances, new_x)
+
+    kernel_m <- kme(new_df,
+                    train_df[sv_inst, , drop = FALSE],
+                    sigma = object$sigma)
+  }
+  return(kernlab::as.kernelMatrix(kernel_m))
 }
 
 #' Return prediction output
