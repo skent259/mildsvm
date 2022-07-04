@@ -8,7 +8,7 @@
       print(kfms)
     Output
       $default
-      An Nystrom kernel feature map object 
+      A Nystrom kernel feature map object 
        
       Parameters: 
         m: 7 
@@ -18,7 +18,7 @@
       
       
       $supplied_sample
-      An Nystrom kernel feature map object 
+      A Nystrom kernel feature map object 
        
       Parameters: 
         m: 7 
@@ -28,7 +28,7 @@
       
       
       $stratified_sample
-      An Nystrom kernel feature map object 
+      A Nystrom kernel feature map object 
        
       Parameters: 
         m: 196 
@@ -38,7 +38,7 @@
       
       
       $`low m`
-      An Nystrom kernel feature map object 
+      A Nystrom kernel feature map object 
        
       Parameters: 
         m: 5 
@@ -48,7 +48,7 @@
       
       
       $`low r`
-      An Nystrom kernel feature map object 
+      A Nystrom kernel feature map object 
        
       Parameters: 
         m: 7 
@@ -58,7 +58,7 @@
       
       
       $sigma
-      An Nystrom kernel feature map object 
+      A Nystrom kernel feature map object 
        
       Parameters: 
         m: 7 
