@@ -7,6 +7,7 @@ suppressMessages(suppressWarnings({
 
 test_that("`build_fm()`, `kfm_exact()`, `kfm_nystrom()` examples work", {
   skip_on_cran()
+  skip_on_ci()
 
   expect_snapshot({
     df <- data.frame(
@@ -28,6 +29,7 @@ test_that("`build_fm()`, `kfm_exact()`, `kfm_nystrom()` examples work", {
 
 test_that("`cv_misvm()` examples work", {
   skip_on_cran()
+  skip_on_ci()
   skip_if_not_installed("gurobi")
 
   expect_snapshot({
@@ -97,6 +99,7 @@ test_that("`generate_mild_df()` examples work", {
 
 test_that("`kme()` examples work", {
   skip_on_cran()
+  skip_on_ci()
 
   expect_snapshot({
     x = data.frame('instance_name' = c('inst_1', 'inst_2', 'inst_1'),
@@ -112,6 +115,7 @@ test_that("`kme()` examples work", {
 
 test_that("`mi_df()` examples work", {
   skip_on_cran()
+  skip_on_ci()
 
   expect_snapshot({
     mi_df('bag_label' = factor(c(1, 1, 0)),
@@ -125,6 +129,7 @@ test_that("`mi_df()` examples work", {
 
 test_that("`mi()` examples work", {
   skip_on_cran()
+  skip_on_ci()
 
   expect_snapshot({
     mil_data <- generate_mild_df(positive_degree = 3, nbag = 10)
@@ -138,6 +143,7 @@ test_that("`mi()` examples work", {
 
 test_that("`mild_df()` examples work", {
   skip_on_cran()
+  skip_on_ci()
 
   expect_snapshot({
     mild_df('bag_label' = factor(c(1, 1, 0)),
@@ -166,6 +172,7 @@ test_that("`mild()` examples work", {
 
 test_that("`mior()` examples work", {
   skip_on_cran()
+  skip_on_ci()
   skip_if_not_installed("gurobi")
 
   expect_snapshot({
@@ -211,6 +218,7 @@ test_that("`mior()` examples work", {
 
 test_that("`mismm()` example works", {
   skip_on_cran()
+  skip_on_ci()
   skip_if_not_installed("gurobi")
 
   expect_snapshot({
@@ -243,6 +251,7 @@ test_that("`mismm()` example works", {
 
 test_that("`predict.mismm()` examples work", {
   skip_on_cran()
+  skip_on_ci()
 
   set.seed(8)
   expect_snapshot({
@@ -294,6 +303,7 @@ test_that("`misvm_orova()` examples work", {
 
 test_that("`misvm()` examples work", {
   skip_on_cran()
+  skip_on_ci()
   skip_if_not_installed("gurobi")
 
   expect_snapshot({
@@ -331,6 +341,7 @@ test_that("`misvm()` examples work", {
 
 test_that("`omisvm()` examples work", {
   skip_on_cran()
+  skip_on_ci()
   skip_if_not_installed("gurobi")
 
   set.seed(8)
@@ -357,6 +368,7 @@ test_that("`omisvm()` examples work", {
 
 test_that("`smm()` examples work", {
   skip_on_cran()
+  skip_on_ci()
 
   expect_snapshot({
     set.seed(8)
@@ -386,6 +398,7 @@ test_that("`smm()` examples work", {
 
 test_that("`summarize_samples()` examples work", {
   skip_on_cran()
+  skip_on_ci()
 
   expect_snapshot({
     fns <- list(mean = mean, sd = sd)
