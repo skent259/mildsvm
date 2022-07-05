@@ -1,8 +1,3 @@
-suppressMessages(suppressWarnings({
-  library(dplyr)
-  library(tibble)
-}))
-
 data("ordmvnorm")
 train <- ordmvnorm$bag_name %in% 1:100
 df1 <- ordmvnorm[train, ]
@@ -72,9 +67,9 @@ test_that("omisvm() works for data-frame-like inputs", {
 
   bag_preds <-
     df1 %>%
-    bind_cols(predict(mdl2, df1, type = "class")) %>%
-    group_by(bag_name) %>%
-    summarize(bag_label = unique(bag_label),
+    dplyr::bind_cols(predict(mdl2, df1, type = "class")) %>%
+    dplyr::group_by(bag_name) %>%
+    dplyr::summarize(bag_label = unique(bag_label),
               .pred = unique(.pred_class))
 
   expect_equal(nrow(bag_preds), length(unique(df1$bag_name)))
@@ -206,31 +201,31 @@ test_that("predict.omisvm() returns labels that match the input labels", {
   }
 
   # 1:5
-  df2 <- df1 %>% mutate(bag_label = factor(bag_label))
+  df2 <- df1 %>% dplyr::mutate(bag_label = factor(bag_label))
   test_prediction_levels_equal(df2, method = "qp-heuristic")
   test_prediction_levels_equal(df2, method = "qp-heuristic", kernel = "radial")
   test_prediction_levels_equal(df2, method = "qp-heuristic", class = "formula")
 
   # 1 0
-  df2 <- df1 %>% mutate(bag_label = factor(bag_label, levels = 5:1))
+  df2 <- df1 %>% dplyr::mutate(bag_label = factor(bag_label, levels = 5:1))
   expect_message(test_prediction_levels_equal(df2, method = "qp-heuristic"))
   expect_message(test_prediction_levels_equal(df2, method = "qp-heuristic", class = "formula"))
 
   # Characters
-  df2 <- df1 %>% mutate(bag_label = factor(bag_label, labels = c("A", "B", "C", "D", "E")))
+  df2 <- df1 %>% dplyr::mutate(bag_label = factor(bag_label, labels = c("A", "B", "C", "D", "E")))
   expect_message(test_prediction_levels_equal(df2, method = "qp-heuristic"))
   expect_message(test_prediction_levels_equal(df2, method = "qp-heuristic", kernel = "radial"))
   expect_message(test_prediction_levels_equal(df2, method = "qp-heuristic", class = "formula"))
 
   # check re-naming of factors returns the same predictions
   df2 <- df1
-  df3 <- df1 %>% mutate(bag_label = ordered(bag_label, labels = letters[1:5]))
+  df3 <- df1 %>% dplyr::mutate(bag_label = ordered(bag_label, labels = letters[1:5]))
   mdl2 <- omisvm(mi(bag_label, bag_name) ~ V1 + V2, data = df2, weights = NULL)
   expect_message({
     mdl3 <- omisvm(mi(bag_label, bag_name) ~ V1 + V2, data = df3, weights = NULL)
   })
   expect_equal(predict(mdl2, df2, type = "class") %>%
-                 mutate(.pred_class = ordered(.pred_class, levels = 1:5, labels = letters[1:5])),
+                 dplyr::mutate(.pred_class = ordered(.pred_class, levels = 1:5, labels = letters[1:5])),
                predict(mdl3, df3, type = "class"),
                ignore_attr = TRUE)
   # NOTE: re-ordering of the factors in this case WILL NOT return the same model, and this is expected
@@ -240,7 +235,7 @@ test_that("predict.omisvm() returns labels that match the input labels", {
 test_that("Dots work in omisvm() formula", {
   skip_if_not_installed("gurobi")
 
-  df2 <- df1 %>% select(bag_label, bag_name, V1, V2, V3)
+  df2 <- df1 %>% dplyr::select(bag_label, bag_name, V1, V2, V3)
 
   suppressWarnings({
     set.seed(8)

@@ -1,6 +1,3 @@
-suppressMessages(suppressWarnings(library(dplyr)))
-
-
 set.seed(8)
 mil_data <- generate_mild_df(nbag = 10,
                              nsample = 5,
@@ -66,9 +63,9 @@ test_that("mismm() works for data-frame-like inputs", {
 
   bag_preds <-
     mil_data %>%
-    bind_cols(predict(mdl2, mil_data, type = "class")) %>%
-    group_by(bag_name) %>%
-    summarize(bag_label = unique(bag_label),
+    dplyr::bind_cols(predict(mdl2, mil_data, type = "class")) %>%
+    dplyr::group_by(bag_name) %>%
+    dplyr::summarize(bag_label = unique(bag_label),
               .pred = unique(.pred_class))
 
   expect_equal(nrow(bag_preds), length(unique(mil_data$bag_name)))
@@ -100,9 +97,9 @@ test_that("mismm() works for data-frame-like inputs", {
   # manually check the bag level predictions
   bag_level_pred <- function(object, df) {
     df %>%
-      bind_cols(predict(object, df, type = "class")) %>%
-      bind_cols(predict(object, df, type = "raw")) %>%
-      distinct(bag_name, bag_label, .pred, .pred_class)
+      dplyr::bind_cols(predict(object, df, type = "class")) %>%
+      dplyr::bind_cols(predict(object, df, type = "raw")) %>%
+      dplyr::distinct(bag_name, bag_label, .pred, .pred_class)
   }
 
   bag_level_pred(mdl1, mil_data)
@@ -193,36 +190,36 @@ test_that("predict.mismm returns labels that match the input labels", {
   }
 
   # 0/1
-  df1 <- mil_data %>% as.data.frame() %>% mutate(bag_label = factor(bag_label))
+  df1 <- mil_data %>% as.data.frame() %>% dplyr::mutate(bag_label = factor(bag_label))
   test_prediction_levels_equal(df1, method = "heuristic")
   test_prediction_levels_equal(df1, method = "mip")
   test_prediction_levels_equal(df1, method = "qp-heuristic")
   test_prediction_levels_equal(df1, method = "heuristic", class = "formula")
 
   # 1/0
-  df1 <- mil_data %>% as.data.frame() %>% mutate(bag_label = factor(bag_label, levels = c(1, 0)))
+  df1 <- mil_data %>% as.data.frame() %>% dplyr::mutate(bag_label = factor(bag_label, levels = c(1, 0)))
   test_prediction_levels_equal(df1, method = "heuristic")
   test_prediction_levels_equal(df1, method = "mip")
   test_prediction_levels_equal(df1, method = "qp-heuristic")
   test_prediction_levels_equal(df1, method = "heuristic", class = "formula")
 
   # TRUE/FALSE
-  df1 <- mil_data %>% as.data.frame() %>% mutate(bag_label = factor(bag_label, labels = c(TRUE, FALSE)))
+  df1 <- mil_data %>% as.data.frame() %>% dplyr::mutate(bag_label = factor(bag_label, labels = c(TRUE, FALSE)))
   test_prediction_levels_equal(df1, method = "heuristic")
   test_prediction_levels_equal(df1, method = "mip")
   test_prediction_levels_equal(df1, method = "qp-heuristic")
   test_prediction_levels_equal(df1, method = "heuristic", class = "formula")
 
   # Yes/No
-  df1 <- mil_data %>% as.data.frame() %>% mutate(bag_label = factor(bag_label, labels = c("No", "Yes")))
+  df1 <- mil_data %>% as.data.frame() %>% dplyr::mutate(bag_label = factor(bag_label, labels = c("No", "Yes")))
   expect_message(test_prediction_levels_equal(df1, method = "heuristic"))
   expect_message(test_prediction_levels_equal(df1, method = "mip"))
   expect_message(test_prediction_levels_equal(df1, method = "qp-heuristic"))
   expect_message(test_prediction_levels_equal(df1, method = "heuristic", class = "formula"))
 
   # check that 0/1 and 1/0 return the same predictions
-  df1 <- mil_data %>% as.data.frame() %>% mutate(bag_label = factor(bag_label, levels = c(0, 1)))
-  df3 <- mil_data %>% as.data.frame() %>% mutate(bag_label = factor(bag_label, levels = c(1, 0)))
+  df1 <- mil_data %>% as.data.frame() %>% dplyr::mutate(bag_label = factor(bag_label, levels = c(0, 1)))
+  df3 <- mil_data %>% as.data.frame() %>% dplyr::mutate(bag_label = factor(bag_label, levels = c(1, 0)))
   mdl2 <- mismm(mild(bag_label, bag_name, instance_name) ~ X1 + X2, data = df1)
   mdl3 <- mismm(mild(bag_label, bag_name, instance_name) ~ X1 + X2, data = df3)
   expect_equal(predict(mdl2, df1, type = "class"),
@@ -232,7 +229,7 @@ test_that("predict.mismm returns labels that match the input labels", {
 
 test_that("Dots work in mismm() formula", {
   skip_if_not_installed("gurobi")
-  mil_data2 <- mil_data %>% select(bag_label, bag_name, instance_name, X1, X2, X3)
+  mil_data2 <- mil_data %>% dplyr::select(bag_label, bag_name, instance_name, X1, X2, X3)
 
   mismm_dot <- mismm(mild(bag_label, bag_name, instance_name) ~ ., data = mil_data2)
   mismm_nodot <- mismm(mild(bag_label, bag_name, instance_name) ~ X1 + X2 + X3, data = mil_data2)
@@ -256,7 +253,7 @@ test_that("mismm() has correct argument handling", {
     mismm(mil_data, weights = FALSE)
   )
 
-  mil_data_test <- mil_data %>% mutate(bag_label = factor(bag_label, levels = c(1, 0)))
+  mil_data_test <- mil_data %>% dplyr::mutate(bag_label = factor(bag_label, levels = c(1, 0)))
   expect_equal(dimnames(mil_data_test), dimnames(mil_data))
   expect_equal(
     mismm(mil_data, weights = c("0" = 2, "1" = 1)),
@@ -268,7 +265,7 @@ test_that("mismm() has correct argument handling", {
   tmp2 <- mismm(mil_data_test, weights = c("0" = 2, "1" = 1), method = "mip")
   expect_equal(tmp1, tmp2)
 
-  mil_data_test <- mil_data %>% mutate(bag_label = factor(bag_label, labels = c("No", "Yes")))
+  mil_data_test <- mil_data %>% dplyr::mutate(bag_label = factor(bag_label, labels = c("No", "Yes")))
   expect_equal(dimnames(mil_data_test), dimnames(mil_data))
   expect_equal(
     mismm(mil_data, weights = c("0" = 2, "1" = 1))$ksvm_fit,

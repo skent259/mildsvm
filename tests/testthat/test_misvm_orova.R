@@ -1,8 +1,3 @@
-suppressMessages(suppressWarnings({
-  library(dplyr)
-  library(tibble)
-}))
-
 # Build a sample data set ------------------------------------------------------
 # - 4 columns where two of them have means related to outcome and the other two are noise
 # - bags are aggregated randomly
@@ -22,8 +17,8 @@ for (y_ in unique(y)) {
 colnames(X) <- paste0("V", seq_len(ncol(X)))
 
 # build into data frames
-df <- bind_cols(bag_label = classify_bags(y, bags, condense = FALSE), bag_name = bags, as.data.frame(X)) %>%
-  as_tibble()
+df <- dplyr::bind_cols(bag_label = classify_bags(y, bags, condense = FALSE), bag_name = bags, as.data.frame(X)) %>%
+  tibble::as_tibble()
 train <- bags %in% 1:100
 df1 <- df[train, ]
 df1_test <- df[!train, ]
@@ -87,9 +82,9 @@ test_that("misvm_orova() works for data-frame-like inputs", {
 
   bag_preds <-
     df1 %>%
-    bind_cols(predict(mdl2, df1, type = "class")) %>%
-    group_by(bag_name) %>%
-    summarize(bag_label = unique(bag_label),
+    dplyr::bind_cols(predict(mdl2, df1, type = "class")) %>%
+    dplyr::group_by(bag_name) %>%
+    dplyr::summarize(bag_label = unique(bag_label),
               .pred = unique(.pred_class))
 
   expect_equal(nrow(bag_preds), length(unique(df1$bag_name)))
@@ -163,28 +158,28 @@ test_that("predict.misvm_orova() returns labels that match the input labels", {
   }
 
   # 1:5
-  df2 <- df1[1:100, ] %>% mutate(bag_label = factor(bag_label))
+  df2 <- df1[1:100, ] %>% dplyr::mutate(bag_label = factor(bag_label))
   test_prediction_levels_equal(df2, method = "qp-heuristic")
   test_prediction_levels_equal(df2, method = "qp-heuristic", class = "formula")
 
   # 1/0
-  df2 <- df1[1:100, ] %>% mutate(bag_label = factor(bag_label, levels = 5:1))
+  df2 <- df1[1:100, ] %>% dplyr::mutate(bag_label = factor(bag_label, levels = 5:1))
   expect_message(test_prediction_levels_equal(df2, method = "qp-heuristic"))
   expect_message(test_prediction_levels_equal(df2, method = "qp-heuristic", class = "formula"))
 
   # Characters
-  df2 <- df1[1:100, ] %>% mutate(bag_label = factor(bag_label, labels = c("A", "B", "C", "D", "E")))
+  df2 <- df1[1:100, ] %>% dplyr::mutate(bag_label = factor(bag_label, labels = c("A", "B", "C", "D", "E")))
   expect_message(test_prediction_levels_equal(df2, method = "qp-heuristic"))
   expect_message(test_prediction_levels_equal(df2, method = "qp-heuristic", class = "formula"))
 
   # check re-naming of factors returns the same predictions
   df2 <- df1[1:100, ]
-  df3 <- df1[1:100, ] %>% mutate(bag_label = ordered(bag_label, labels = letters[1:5]))
+  df3 <- df1[1:100, ] %>% dplyr::mutate(bag_label = ordered(bag_label, labels = letters[1:5]))
   mdl2 <- misvm_orova(mi(bag_label, bag_name) ~ V1 + V2, data = df2, weights = FALSE)
   expect_message({
     mdl3 <- misvm_orova(mi(bag_label, bag_name) ~ V1 + V2, data = df3, weights = FALSE)
   })
-  expect_equal(predict(mdl2, df2, type = "class") %>% mutate(.pred_class = ordered(.pred_class, labels = letters[1:5])),
+  expect_equal(predict(mdl2, df2, type = "class") %>% dplyr::mutate(.pred_class = ordered(.pred_class, labels = letters[1:5])),
                predict(mdl3, df3, type = "class"),
                ignore_attr = TRUE)
   # NOTE: re-ordering of the factors in this case WILL NOT return the same model, and this is expected
@@ -192,7 +187,7 @@ test_that("predict.misvm_orova() returns labels that match the input labels", {
 })
 
 test_that("Dots work in misvm_orova() formula", {
-  df2 <- df1 %>% select(bag_label, bag_name, V1, V2, V3)
+  df2 <- df1 %>% dplyr::select(bag_label, bag_name, V1, V2, V3)
 
   misvm_dot <- misvm_orova(mi(bag_label, bag_name) ~ ., data = df2)
   misvm_nodot <- misvm_orova(mi(bag_label, bag_name) ~ V1 + V2 + V3, data = df2)

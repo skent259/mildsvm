@@ -1,8 +1,3 @@
-suppressMessages(suppressWarnings({
-  library(tibble)
-  library(dplyr)
-}))
-
 x_main <- data.frame("bag_label" = factor(c(1, 1, 0)),
                      "bag_name" = c(rep("bag_1", 2), "bag_2"),
                      "X1" = c(-0.4, 0.5, 2),
@@ -54,7 +49,7 @@ test_that("`mi_df()` works for typical input", {
 })
 
 test_that("`as_mi_df()` retains tibble typing", {
-  x <- as_tibble(x_main)
+  x <- tibble::as_tibble(x_main)
 
   expect_s3_class(as_mi_df(x), "mi_df")
   expect_s3_class(as_mi_df(x), "tbl")
@@ -85,7 +80,7 @@ test_that("Printing methods work as expected", {
     suppressMessages()
   expect_snapshot(print(df))
 
-  x <- as_tibble(x)
+  x <- tibble::as_tibble(x)
   df <- as_mi_df(x) %>%
     suppressMessages()
   expect_snapshot(print(df))

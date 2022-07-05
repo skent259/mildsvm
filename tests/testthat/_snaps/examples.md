@@ -45,8 +45,9 @@
       10 -1.13
       # ... with 70 more rows
     Code
-      df %>% bind_cols(predict(mdl2, df, type = "class")) %>% bind_cols(predict(mdl2,
-        df, type = "raw")) %>% distinct(bag_name, bag_label, .pred_class, .pred)
+      df %>% dplyr::bind_cols(predict(mdl2, df, type = "class")) %>% dplyr::bind_cols(
+        predict(mdl2, df, type = "raw")) %>% dplyr::distinct(bag_name, bag_label,
+        .pred_class, .pred)
     Output
          bag_label bag_name .pred_class      .pred
       1          0     bag1           0 -0.5932349
@@ -76,8 +77,7 @@
       set.seed(8)
       mild_data <- generate_mild_df(nbag = 7, ninst = 3, nsample = 20, ncov = 2,
         nimp_pos = 1, dist = rep("mvnormal", 3), mean = list(rep(5, 1), rep(15, 2), 0))
-      library(dplyr)
-      distinct(mild_data, bag_label, bag_name, instance_name)
+      dplyr::distinct(mild_data, bag_label, bag_name, instance_name)
     Output
       # An MILD data frame: 21 x 3 with 7 bags, 21 instances
       # and instance labels: 0, 0, 0, 0, 0, ...
@@ -482,10 +482,10 @@
         y_bag <- classify_bags(y, bags, condense = FALSE)
         mdl1 <- mior(X, y_bag, bags)
         predict(mdl1, X, new_bags = bags)
-        df1 <- bind_cols(y = y_bag, bags = bags, as.data.frame(X))
-        df1 %>% bind_cols(predict(mdl1, df1, new_bags = bags, type = "class")) %>%
-          bind_cols(predict(mdl1, df1, new_bags = bags, type = "raw")) %>% distinct(y,
-          bags, .pred_class, .pred)
+        df1 <- dplyr::bind_cols(y = y_bag, bags = bags, as.data.frame(X))
+        df1 %>% dplyr::bind_cols(predict(mdl1, df1, new_bags = bags, type = "class")) %>%
+          dplyr::bind_cols(predict(mdl1, df1, new_bags = bags, type = "raw")) %>%
+          dplyr::distinct(y, bags, .pred_class, .pred)
       }
     Message <message>
       [Step 1] The optimization solution suggests that two intercepts are equal: b[1] == b[2].
@@ -565,9 +565,9 @@
       10 -0.289
       # ... with 1,190 more rows
     Code
-      mil_data %>% bind_cols(predict(mdl2, mil_data, type = "class")) %>% bind_cols(
-        predict(mdl2, mil_data, type = "raw")) %>% distinct(bag_name, bag_label,
-        .pred_class, .pred)
+      mil_data %>% dplyr::bind_cols(predict(mdl2, mil_data, type = "class")) %>%
+        dplyr::bind_cols(predict(mdl2, mil_data, type = "raw")) %>% dplyr::distinct(
+        bag_name, bag_label, .pred_class, .pred)
     Output
       # A tibble: 15 x 4
          bag_label bag_name .pred_class   .pred
@@ -594,9 +594,9 @@
       mil_data <- generate_mild_df(nbag = 15, nsample = 20, positive_prob = 0.15,
         sd_of_mean = rep(0.1, 3))
       mdl1 <- mismm(mil_data, control = list(sigma = 1 / 5))
-      mil_data %>% bind_cols(predict(mdl1, mil_data, type = "class")) %>% bind_cols(
-        predict(mdl1, mil_data, type = "raw")) %>% distinct(bag_name, bag_label,
-        .pred_class, .pred)
+      mil_data %>% dplyr::bind_cols(predict(mdl1, mil_data, type = "class")) %>%
+        dplyr::bind_cols(predict(mdl1, mil_data, type = "raw")) %>% dplyr::distinct(
+        bag_name, bag_label, .pred_class, .pred)
     Output
       # A tibble: 15 x 4
          bag_label bag_name .pred_class   .pred
@@ -617,9 +617,9 @@
       14         1 bag14    1            0.223 
       15         1 bag15    1            0.459 
     Code
-      mil_data %>% bind_cols(predict(mdl1, mil_data, type = "class", layer = "instance")) %>%
-        bind_cols(predict(mdl1, mil_data, type = "raw", layer = "instance")) %>%
-        distinct(bag_name, instance_name, bag_label, .pred_class, .pred)
+      mil_data %>% dplyr::bind_cols(predict(mdl1, mil_data, type = "class", layer = "instance")) %>%
+        dplyr::bind_cols(predict(mdl1, mil_data, type = "raw", layer = "instance")) %>%
+        dplyr::distinct(bag_name, instance_name, bag_label, .pred_class, .pred)
     Output
       # An MILD data frame: 60 x 5 with 15 bags, 60 instances
       # and instance labels: 0, 0, 0, 0, 0, ...
@@ -665,10 +665,10 @@
       10 3          
       # ... with 990 more rows
     Code
-      df1 <- bind_cols(y = y, bags = bags, as.data.frame(x))
-      df1 %>% bind_cols(predict(mdl1, df1, new_bags = bags, type = "class")) %>%
-        bind_cols(predict(mdl1, df1, new_bags = bags, type = "raw")) %>% select(
-        -starts_with("V")) %>% distinct()
+      df1 <- dplyr::bind_cols(y = y, bags = bags, as.data.frame(x))
+      df1 %>% dplyr::bind_cols(predict(mdl1, df1, new_bags = bags, type = "class")) %>%
+        dplyr::bind_cols(predict(mdl1, df1, new_bags = bags, type = "raw")) %>%
+        dplyr::select(-starts_with("V")) %>% dplyr::distinct()
     Output
           y bags .pred_class      .pred_1     .pred_2      .pred_3      .pred_4
       1   2    1           2  0.072054072  1.24157688 -0.005075918 -0.783087461
@@ -1102,8 +1102,9 @@
       10 -1.00
       # ... with 70 more rows
     Code
-      df %>% bind_cols(predict(mdl2, df, type = "class")) %>% bind_cols(predict(mdl2,
-        df, type = "raw")) %>% distinct(bag_name, bag_label, .pred_class, .pred)
+      df %>% dplyr::bind_cols(predict(mdl2, df, type = "class")) %>% dplyr::bind_cols(
+        predict(mdl2, df, type = "raw")) %>% dplyr::distinct(bag_name, bag_label,
+        .pred_class, .pred)
     Output
          bag_label bag_name .pred_class       .pred
       1          0     bag1           0 -0.11805071
@@ -1137,10 +1138,10 @@
         bags <- ordmvnorm$bag_name
         mdl1 <- omisvm(x, y, bags, weights = NULL)
         predict(mdl1, x, new_bags = bags)
-        df1 <- bind_cols(y = y, bags = bags, as.data.frame(x))
-        df1 %>% bind_cols(predict(mdl1, df1, new_bags = bags, type = "class")) %>%
-          bind_cols(predict(mdl1, df1, new_bags = bags, type = "raw")) %>% distinct(y,
-          bags, .pred_class, .pred)
+        df1 <- dplyr::bind_cols(y = y, bags = bags, as.data.frame(x))
+        df1 %>% dplyr::bind_cols(predict(mdl1, df1, new_bags = bags, type = "class")) %>%
+          dplyr::bind_cols(predict(mdl1, df1, new_bags = bags, type = "raw")) %>%
+          dplyr::distinct(y, bags, .pred_class, .pred)
       }
     Warning <warning>
       Dropping 'mi_df' class as required column was removed.

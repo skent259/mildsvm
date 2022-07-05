@@ -1,5 +1,3 @@
-suppressMessages(suppressWarnings(library(dplyr)))
-
 ## Generic data set to work with
 set.seed(8)
 n_instances <- 10
@@ -44,14 +42,14 @@ test_that("smm() works for data-frame-like inputs", {
   expect_equal(length(unique(pred$.pred)), length(unique(c(instances, new_inst))))
 
   # data.frame(instance_name = instances, y = y, x) %>%
-  #   bind_cols(predict(mdl, type = "raw", new_data = x, new_instances = instances)) %>%
-  #   bind_cols(predict(mdl, type = "class", new_data = x, new_instances = instances)) %>%
-  #   distinct(instance_name, y, .pred, .pred_class)
+  #   dplyr::bind_cols(predict(mdl, type = "raw", new_data = x, new_instances = instances)) %>%
+  #   dplyr::bind_cols(predict(mdl, type = "class", new_data = x, new_instances = instances)) %>%
+  #   dplyr::distinct(instance_name, y, .pred, .pred_class)
   #
   # data.frame(instance_name = new_inst, y = new_y, new_x) %>%
-  #   bind_cols(predict(mdl, type = "raw", new_data = new_x, new_instances = new_inst)) %>%
-  #   bind_cols(predict(mdl, type = "class", new_data = new_x, new_instances = new_inst)) %>%
-  # distinct(instance_name, y, .pred, .pred_class)
+  #   dplyr::bind_cols(predict(mdl, type = "raw", new_data = new_x, new_instances = new_inst)) %>%
+  #   dplyr::bind_cols(predict(mdl, type = "class", new_data = new_x, new_instances = new_inst)) %>%
+  # dplyr::distinct(instance_name, y, .pred, .pred_class)
 })
 
 test_that("smm() works with formula method", {
@@ -298,15 +296,15 @@ test_that("predict.smm() works when fit with smm.mild_df()", {
   )
   expect_equal(
     predict(mdl, new_data = mil_df, type = "raw", layer = "bag"),
-    predict(mdl, new_data = mil_df %>% select(-bag_name),
+    predict(mdl, new_data = mil_df %>% dplyr::select(-bag_name),
             type = "raw", layer = "bag", new_bags = mil_df$bag_name)
   )
 
   pred <- predict(mdl, new_data = mil_df, type = "raw", layer = "bag")
-  expect_lte(nrow(distinct(pred)), length(unique(mil_df$bag_name)))
+  expect_lte(nrow(dplyr::distinct(pred)), length(unique(mil_df$bag_name)))
 
   pred <- predict(mdl, new_data = mil_df, type = "raw", layer = "instance")
-  expect_lte(nrow(distinct(pred)), length(unique(mil_df$instance_name)))
+  expect_lte(nrow(dplyr::distinct(pred)), length(unique(mil_df$instance_name)))
 
 })
 
@@ -325,33 +323,33 @@ test_that("predict.smm returns labels that match the input labels", {
   df <- data.frame(y = y, instance_name = instances, x)
 
   # -1/1
-  df1 <- df %>% mutate(y = factor(y, labels = c(-1, 1)))
+  df1 <- df %>% dplyr::mutate(y = factor(y, labels = c(-1, 1)))
   test_prediction_levels_equal(df1)
   test_prediction_levels_equal(df1, class = "formula")
 
   # 0/1
-  df1 <- df %>% mutate(y = factor(y, labels = c(0, 1)))
+  df1 <- df %>% dplyr::mutate(y = factor(y, labels = c(0, 1)))
   test_prediction_levels_equal(df1)
   test_prediction_levels_equal(df1, class = "formula")
 
   # 1/0
-  df1 <- df %>% mutate(y = factor(y, labels = c(1, 0)))
+  df1 <- df %>% dplyr::mutate(y = factor(y, labels = c(1, 0)))
   test_prediction_levels_equal(df1)
   test_prediction_levels_equal(df1, class = "formula")
 
   # TRUE/FALSE
-  df1 <- df %>% mutate(y = factor(y, labels = c(TRUE, FALSE)))
+  df1 <- df %>% dplyr::mutate(y = factor(y, labels = c(TRUE, FALSE)))
   test_prediction_levels_equal(df1)
   test_prediction_levels_equal(df1, class = "formula")
 
   # Yes/No
-  df1 <- df %>% mutate(y = factor(y, labels = c("No", "Yes")))
+  df1 <- df %>% dplyr::mutate(y = factor(y, labels = c("No", "Yes")))
   expect_message(test_prediction_levels_equal(df1))
   expect_message(test_prediction_levels_equal(df1, class = "formula"))
 
   # check that -1/1 and 1/-1 return the same predictions
-  df1 <- df %>% mutate(y = factor(y, levels = c(-1, 1)))
-  df2 <- df %>% mutate(y = factor(y, levels = c(1, -1)))
+  df1 <- df %>% dplyr::mutate(y = factor(y, levels = c(-1, 1)))
+  df2 <- df %>% dplyr::mutate(y = factor(y, levels = c(1, -1)))
   mdl1 <- smm(y ~ ., data = df1)
   mdl2 <- smm(y ~ ., data = df2)
   expect_equal(predict(mdl1, df1, type = "class"),
@@ -363,7 +361,7 @@ test_that("Re-ordering data doesn't reduce performance", {
 
   set.seed(8)
   mdl1 <- smm(mil_df, control = list(sigma = 0.1))
-  mdl2 <- smm(mil_df[sample(1:nrow(mil_df)), ], control = list(sigma = 0.1))
+  mdl2 <- smm(mil_df[sample(seq_len(nrow(mil_df))), ], control = list(sigma = 0.1))
 
   pred1 <- predict(mdl1, mil_df_test, type = "raw", layer = "bag")
   pred2 <- predict(mdl2, mil_df_test, type = "raw", layer = "bag")

@@ -1,14 +1,8 @@
-suppressMessages(suppressWarnings({
-  library(dplyr)
-  library(tibble)
-}))
-
-
 data("ordmvnorm")
 df <- ordmvnorm
 df$y <- attr(ordmvnorm, "instance_label")
 df <- df[, c(1, 2, 8, 3:7)]
-df <- as_tibble(df)
+df <- tibble::as_tibble(df)
 
 train <- df$bag_name %in% 1:30
 df1 <- df[train, ]
@@ -169,26 +163,27 @@ test_that("predict.svor_exc() returns labels that match the input labels", {
   }
 
   # 1:5
-  df2 <- df1 %>% mutate(y = factor(y))
+  df2 <- df1 %>% dplyr::mutate(y = factor(y))
   test_prediction_levels_equal(df2)
   test_prediction_levels_equal(df2, class = "formula")
 
   # 1/0
-  df2 <- df1 %>% mutate(y = factor(y, levels = 5:1))
+  df2 <- df1 %>% dplyr::mutate(y = factor(y, levels = 5:1))
   test_prediction_levels_equal(df2)
   test_prediction_levels_equal(df2, class = "formula")
 
   # Characters
-  df2 <- df1 %>% mutate(y = factor(y, labels = c("A", "B", "C", "D", "E")))
+  df2 <- df1 %>% dplyr::mutate(y = factor(y, labels = c("A", "B", "C", "D", "E")))
   test_prediction_levels_equal(df2)
   test_prediction_levels_equal(df2, class = "formula")
 
   # check re-naming of factors returns the same predictions
   df2 <- df1
-  df3 <- df1 %>% mutate(y = ordered(y, labels = letters[1:5]))
+  df3 <- df1 %>% dplyr::mutate(y = ordered(y, labels = letters[1:5]))
   mdl2 <- svor_exc(y ~ V1 + V2, data = df2, weights = NULL)
   expect_message(mdl3 <- svor_exc(y ~ V1 + V2, data = df3, weights = NULL))
-  expect_equal(predict(mdl2, df2, type = "class") %>% mutate(.pred_class = ordered(.pred_class, labels = letters[1:5])),
+  expect_equal(predict(mdl2, df2, type = "class") %>%
+                 dplyr::mutate(.pred_class = ordered(.pred_class, labels = letters[1:5])),
                predict(mdl3, df3, type = "class"),
                ignore_attr = TRUE)
   # NOTE: re-ordering of the factors in this case WILL NOT return the same model, and this is expected
@@ -196,7 +191,7 @@ test_that("predict.svor_exc() returns labels that match the input labels", {
 })
 
 test_that("Dots work in svor_exc() formula", {
-  df2 <- df1 %>% select(y, V1, V2, V3)
+  df2 <- df1 %>% dplyr::select(y, V1, V2, V3)
 
   suppressMessages({
     misvm_dot <- svor_exc(y ~ ., data = df2)
@@ -217,30 +212,6 @@ test_that("svor_exc() has correct argument handling", {
     expect_warning(svor_exc(y ~ ., data = df1, weights = TRUE))
     svor_exc(y ~ ., data = df1, weights = NULL)
   })
-  # svor_exc(y ~ ., data = df1, weights = TRUE)
-  # mdl1 <- svor_exc(y ~ ., data = df1, weights = c("0" = 1, "1" = 1))
-  # mdl1$weights <- NULL
-  # mdl2 <- svor_exc(y ~ ., data = df1, weights = FALSE)
-  # expect_equal(mdl1, mdl2)
-  #
-  # df2 <- df1 %>% mutate(y = factor(y, levels = c(1, 0)))
-  # dimnames(df2) <- dimnames(df1)
-  # expect_equal(
-  #   svor_exc(y ~ ., data = df1, weights = c("0" = 2, "1" = 1)),
-  #   svor_exc(y ~ ., data = df2, weights = c("0" = 2, "1" = 1))
-  # )
-  #
-  # df2 <- df1 %>% mutate(y = factor(y, labels = c("No", "Yes")))
-  # dimnames(df2) <- dimnames(df1)
-  # expect_equal(
-  #   svor_exc(y ~ ., data = df1, weights = c("0" = 2, "1" = 1))$svm_fit,
-  #   svor_exc(y ~ ., data = df2, weights = c("No" = 2, "Yes" = 1))$svm_fit
-  # )
-  #
-  # expect_false(isTRUE(all.equal(
-  #   svor_exc(y ~ ., data = df1, weights = c("0" = 2, "1" = 1))$gurobi_fit,
-  #   svor_exc(y ~ ., data = df1, weights = c("0" = 1e-6, "1" = 1))$model
-  # )))
 
   # `kernel`
   expect_false(isTRUE(all.equal(

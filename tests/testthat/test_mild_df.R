@@ -1,8 +1,3 @@
-suppressMessages(suppressWarnings({
-  library(tibble)
-  library(dplyr)
-}))
-
 x_main <- data.frame("bag_label" = factor(c(1, 1, 0)),
                      "bag_name" = c(rep("bag_1", 2), "bag_2"),
                      'instance_name' = c('bag_1_inst_1', 'bag_1_inst_2', 'bag_2_inst_1'),
@@ -54,7 +49,7 @@ test_that("`mild_df()` works for typical input", {
 })
 
 test_that("`as_mild_df()` retains tibble typing", {
-  x <- as_tibble(x_main)
+  x <- tibble::as_tibble(x_main)
 
   expect_s3_class(as_mild_df(x), "mild_df")
   expect_s3_class(as_mild_df(x), "tbl")
@@ -78,7 +73,7 @@ test_that("Printing methods work as expected", {
     suppressMessages()
   expect_snapshot(print(df))
 
-  x <- as_tibble(x)
+  x <- tibble::as_tibble(x)
   df <- as_mild_df(x) %>%
     suppressMessages()
   expect_snapshot(print(df))

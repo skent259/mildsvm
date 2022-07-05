@@ -1,5 +1,3 @@
-suppressMessages(suppressWarnings(library(dplyr)))
-
 set.seed(8)
 mil_data <- generate_mild_df(nbag = 20,
                              nsample = 20,
@@ -18,10 +16,10 @@ mil_data_test <- generate_mild_df(nbag = 40,
                                   sd_of_mean = rep(0.1, 3))
 
 df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10)) %>%
-  select(-instance_name)
+  dplyr::select(-instance_name)
 
 df1_test <- build_instance_feature(mil_data_test, seq(0.05, 0.95, length.out = 10)) %>%
-  select(-instance_name)
+  dplyr::select(-instance_name)
 
 run_misvm <- function(df = df1, features = 3:122, ...) {
   misvm.default(x = df[, features],
@@ -58,9 +56,9 @@ test_that("misvm() works for data-frame-like inputs", {
 
   bag_preds <-
     df1 %>%
-    bind_cols(predict(mdl2, df1, type = "class")) %>%
-    group_by(bag_name) %>%
-    summarize(bag_label = unique(bag_label),
+    dplyr::bind_cols(predict(mdl2, df1, type = "class")) %>%
+    dplyr::group_by(bag_name) %>%
+    dplyr::summarize(bag_label = unique(bag_label),
               .pred = unique(.pred_class))
 
   expect_equal(nrow(bag_preds), length(unique(df1$bag_name)))
@@ -80,10 +78,10 @@ test_that("misvm() works for data-frame-like inputs", {
   predict(mdl3, new_data = df1, type = "raw", layer = "instance")
 
   df1 %>%
-    bind_cols(predict(mdl3, new_data = df1, type = "raw", layer = "bag")) %>%
-    bind_cols(predict(mdl3, new_data = df1, type = "class", layer = "bag")) %>%
-    distinct(bag_label, bag_name, .pred, .pred_class) %>%
-    as_tibble()
+    dplyr::bind_cols(predict(mdl3, new_data = df1, type = "raw", layer = "bag")) %>%
+    dplyr::bind_cols(predict(mdl3, new_data = df1, type = "class", layer = "bag")) %>%
+    dplyr::distinct(bag_label, bag_name, .pred, .pred_class) %>%
+    tibble::as_tibble()
 
 })
 
@@ -135,36 +133,36 @@ test_that("predict.misvm returns labels that match the input labels", {
   }
 
   # 0/1
-  df2 <- df1 %>% mutate(bag_label = factor(bag_label))
+  df2 <- df1 %>% dplyr::mutate(bag_label = factor(bag_label))
   test_prediction_levels_equal(df2, method = "heuristic")
   test_prediction_levels_equal(df2, method = "mip")
   test_prediction_levels_equal(df2, method = "qp-heuristic")
   test_prediction_levels_equal(df2, method = "heuristic", class = "formula")
 
   # 1/0
-  df2 <- df1 %>% mutate(bag_label = factor(bag_label, levels = c(1, 0)))
+  df2 <- df1 %>% dplyr::mutate(bag_label = factor(bag_label, levels = c(1, 0)))
   test_prediction_levels_equal(df2, method = "heuristic")
   test_prediction_levels_equal(df2, method = "mip")
   test_prediction_levels_equal(df2, method = "qp-heuristic")
   test_prediction_levels_equal(df2, method = "heuristic", class = "formula")
 
   # TRUE/FALSE
-  df2 <- df1 %>% mutate(bag_label = factor(bag_label, labels = c(TRUE, FALSE)))
+  df2 <- df1 %>% dplyr::mutate(bag_label = factor(bag_label, labels = c(TRUE, FALSE)))
   test_prediction_levels_equal(df2, method = "heuristic")
   test_prediction_levels_equal(df2, method = "mip")
   test_prediction_levels_equal(df2, method = "qp-heuristic")
   test_prediction_levels_equal(df2, method = "heuristic", class = "formula")
 
   # Yes/No
-  df2 <- df1 %>% mutate(bag_label = factor(bag_label, labels = c("No", "Yes")))
+  df2 <- df1 %>% dplyr::mutate(bag_label = factor(bag_label, labels = c("No", "Yes")))
   expect_message(test_prediction_levels_equal(df2, method = "heuristic"))
   expect_message(test_prediction_levels_equal(df2, method = "mip"))
   expect_message(test_prediction_levels_equal(df2, method = "qp-heuristic"))
   expect_message(test_prediction_levels_equal(df2, method = "heuristic", class = "formula"))
 
   # check that 0/1 and 1/0 return the same predictions
-  df2 <- df1 %>% mutate(bag_label = factor(bag_label, levels = c(0, 1)))
-  df3 <- df1 %>% mutate(bag_label = factor(bag_label, levels = c(1, 0)))
+  df2 <- df1 %>% dplyr::mutate(bag_label = factor(bag_label, levels = c(0, 1)))
+  df3 <- df1 %>% dplyr::mutate(bag_label = factor(bag_label, levels = c(1, 0)))
   mdl2 <- misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean, data = df2)
   mdl3 <- misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean, data = df3)
   expect_equal(predict(mdl2, df2, type = "class"),
@@ -174,7 +172,7 @@ test_that("predict.misvm returns labels that match the input labels", {
 
 test_that("Dots work in misvm() formula", {
   skip_if_not_installed("gurobi")
-  df2 <- df1 %>% select(bag_label, bag_name, X1_mean, X2_mean, X3_mean)
+  df2 <- df1 %>% dplyr::select(bag_label, bag_name, X1_mean, X2_mean, X3_mean)
 
   misvm_dot <- misvm(mi(bag_label, bag_name) ~ ., data = df2)
   misvm_nodot <- misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean + X3_mean, data = df2)
@@ -196,7 +194,7 @@ test_that("misvm() has correct argument handling", {
   mdl2 <- misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = FALSE)
   expect_equal(mdl1, mdl2)
 
-  df2 <- df1 %>% mutate(bag_label = factor(bag_label, levels = c(1, 0)))
+  df2 <- df1 %>% dplyr::mutate(bag_label = factor(bag_label, levels = c(1, 0)))
   dimnames(df2) <- dimnames(df1)
   expect_equal(
     misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 2, "1" = 1)),
@@ -207,7 +205,7 @@ test_that("misvm() has correct argument handling", {
     misvm(mi(bag_label, bag_name) ~ ., data = df2, weights = c("0" = 2, "1" = 1), method = "mip")
   )
 
-  df2 <- df1 %>% mutate(bag_label = factor(bag_label, labels = c("No", "Yes")))
+  df2 <- df1 %>% dplyr::mutate(bag_label = factor(bag_label, labels = c("No", "Yes")))
   dimnames(df2) <- dimnames(df1)
   expect_equal(
     misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 2, "1" = 1))$svm_fit,
@@ -368,13 +366,13 @@ test_that("misvm() works on 'mild_df' objects", {
   scrambled <- mil_data_test[sample(seq_len(nrow(mil_data_test))), ]
 
   instance_level <- scrambled %>%
-    bind_cols(predict(mdl, scrambled, type = "raw", layer = "instance")) %>%
-    distinct(bag_label, instance_name, .pred)
+    dplyr::bind_cols(predict(mdl, scrambled, type = "raw", layer = "instance")) %>%
+    dplyr::distinct(bag_label, instance_name, .pred)
   expect_equal(nrow(instance_level), length(unique(scrambled$instance_name)))
 
   bag_level <- scrambled %>%
-    bind_cols(predict(mdl, scrambled, type = "raw", layer = "bag")) %>%
-    distinct(bag_label, bag_name, .pred)
+    dplyr::bind_cols(predict(mdl, scrambled, type = "raw", layer = "bag")) %>%
+    dplyr::distinct(bag_label, bag_name, .pred)
   expect_equal(nrow(bag_level), length(unique(scrambled$bag_name)))
 
   # cor = TRUE

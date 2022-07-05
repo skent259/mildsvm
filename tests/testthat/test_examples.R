@@ -1,8 +1,3 @@
-suppressMessages(suppressWarnings({
-  library(mildsvm)
-  library(dplyr)
-}))
-
 test_that("`build_fm()`, `kfm_exact()`, `kfm_nystrom()` examples work", {
   skip_on_cran()
   skip_on_ci()
@@ -58,9 +53,9 @@ test_that("`cv_misvm()` examples work", {
 
     # summarize predictions at the bag layer
     df %>%
-      bind_cols(predict(mdl2, df, type = "class")) %>%
-      bind_cols(predict(mdl2, df, type = "raw")) %>%
-      distinct(bag_name, bag_label, .pred_class, .pred)
+      dplyr::bind_cols(predict(mdl2, df, type = "class")) %>%
+      dplyr::bind_cols(predict(mdl2, df, type = "raw")) %>%
+      dplyr::distinct(bag_name, bag_label, .pred_class, .pred)
   })
 
   expect_s3_class(mdl1, "cv_misvm")
@@ -84,8 +79,7 @@ test_that("`generate_mild_df()` examples work", {
                                     0
                                   ))
 
-    library(dplyr)
-    distinct(mild_data, bag_label, bag_name, instance_name)
+    dplyr::distinct(mild_data, bag_label, bag_name, instance_name)
     split(mild_data[, 4:5], mild_data$instance_name) %>%
       sapply(colMeans) %>%
       round(2) %>%
@@ -204,11 +198,11 @@ test_that("`mior()` examples work", {
       predict(mdl1, X, new_bags = bags)
 
       # summarize predictions at the bag layer
-      df1 <- bind_cols(y = y_bag, bags = bags, as.data.frame(X))
+      df1 <- dplyr::bind_cols(y = y_bag, bags = bags, as.data.frame(X))
       df1 %>%
-        bind_cols(predict(mdl1, df1, new_bags = bags, type = "class")) %>%
-        bind_cols(predict(mdl1, df1, new_bags = bags, type = "raw")) %>%
-        distinct(y, bags, .pred_class, .pred)
+        dplyr::bind_cols(predict(mdl1, df1, new_bags = bags, type = "class")) %>%
+        dplyr::bind_cols(predict(mdl1, df1, new_bags = bags, type = "raw")) %>%
+        dplyr::distinct(y, bags, .pred_class, .pred)
     }
   })
 
@@ -239,9 +233,9 @@ test_that("`mismm()` example works", {
 
     # summarize predictions at the bag layer
     mil_data %>%
-      bind_cols(predict(mdl2, mil_data, type = "class")) %>%
-      bind_cols(predict(mdl2, mil_data, type = "raw")) %>%
-      distinct(bag_name, bag_label, .pred_class, .pred)
+      dplyr::bind_cols(predict(mdl2, mil_data, type = "class")) %>%
+      dplyr::bind_cols(predict(mdl2, mil_data, type = "raw")) %>%
+      dplyr::distinct(bag_name, bag_label, .pred_class, .pred)
   })
 
   expect_s3_class(mdl1, "mismm")
@@ -261,15 +255,15 @@ test_that("`predict.mismm()` examples work", {
 
     # bag level predictions
     mil_data %>%
-      bind_cols(predict(mdl1, mil_data, type = "class")) %>%
-      bind_cols(predict(mdl1, mil_data, type = "raw")) %>%
-      distinct(bag_name, bag_label, .pred_class, .pred)
+      dplyr::bind_cols(predict(mdl1, mil_data, type = "class")) %>%
+      dplyr::bind_cols(predict(mdl1, mil_data, type = "raw")) %>%
+      dplyr::distinct(bag_name, bag_label, .pred_class, .pred)
 
     # instance level prediction
     mil_data %>%
-      bind_cols(predict(mdl1, mil_data, type = "class", layer = "instance")) %>%
-      bind_cols(predict(mdl1, mil_data, type = "raw", layer = "instance")) %>%
-      distinct(bag_name, instance_name, bag_label, .pred_class, .pred)
+      dplyr::bind_cols(predict(mdl1, mil_data, type = "class", layer = "instance")) %>%
+      dplyr::bind_cols(predict(mdl1, mil_data, type = "raw", layer = "instance")) %>%
+      dplyr::distinct(bag_name, instance_name, bag_label, .pred_class, .pred)
   })
 
   expect_s3_class(mdl1, "mismm")
@@ -289,12 +283,12 @@ test_that("`misvm_orova()` examples work", {
     predict(mdl1, x, new_bags = bags)
 
     # summarize predictions at the bag layer
-    df1 <- bind_cols(y = y, bags = bags, as.data.frame(x))
+    df1 <- dplyr::bind_cols(y = y, bags = bags, as.data.frame(x))
     df1 %>%
-      bind_cols(predict(mdl1, df1, new_bags = bags, type = "class")) %>%
-      bind_cols(predict(mdl1, df1, new_bags = bags, type = "raw")) %>%
-      select(-starts_with("V")) %>%
-      distinct()
+      dplyr::bind_cols(predict(mdl1, df1, new_bags = bags, type = "class")) %>%
+      dplyr::bind_cols(predict(mdl1, df1, new_bags = bags, type = "raw")) %>%
+      dplyr::select(-starts_with("V")) %>%
+      dplyr::distinct()
   })
 
   expect_s3_class(mdl1, "misvm_orova")
@@ -326,11 +320,10 @@ test_that("`misvm()` examples work", {
     predict(mdl1, new_data = df, type = "raw", layer = "bag")
 
     # summarize predictions at the bag layer
-    # library(dplyr)
     df %>%
-      bind_cols(predict(mdl2, df, type = "class")) %>%
-      bind_cols(predict(mdl2, df, type = "raw")) %>%
-      distinct(bag_name, bag_label, .pred_class, .pred)
+      dplyr::bind_cols(predict(mdl2, df, type = "class")) %>%
+      dplyr::bind_cols(predict(mdl2, df, type = "raw")) %>%
+      dplyr::distinct(bag_name, bag_label, .pred_class, .pred)
 
   })
 
@@ -354,11 +347,11 @@ test_that("`omisvm()` examples work", {
       mdl1 <- omisvm(x, y, bags, weights = NULL)
       predict(mdl1, x, new_bags = bags)
 
-      df1 <- bind_cols(y = y, bags = bags, as.data.frame(x))
+      df1 <- dplyr::bind_cols(y = y, bags = bags, as.data.frame(x))
       df1 %>%
-        bind_cols(predict(mdl1, df1, new_bags = bags, type = "class")) %>%
-        bind_cols(predict(mdl1, df1, new_bags = bags, type = "raw")) %>%
-        distinct(y, bags, .pred_class, .pred)
+        dplyr::bind_cols(predict(mdl1, df1, new_bags = bags, type = "class")) %>%
+        dplyr::bind_cols(predict(mdl1, df1, new_bags = bags, type = "raw")) %>%
+        dplyr::distinct(y, bags, .pred_class, .pred)
     }
   })
 

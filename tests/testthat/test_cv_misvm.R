@@ -1,5 +1,3 @@
-suppressMessages(suppressWarnings(library(dplyr)))
-
 set.seed(8)
 mil_data <- mildsvm::generate_mild_df(nbag = 20,
                                       positive_prob = 0.15,
@@ -34,13 +32,13 @@ test_that("cv_misvm() works for data-frame-like inputs", {
 
   pred <-
     df_test %>%
-    bind_cols(predict(model, new_data = df_test)) %>%
-    bind_cols(predict(model, new_data = df_test, type = "raw"))
+    dplyr::bind_cols(predict(model, new_data = df_test)) %>%
+    dplyr::bind_cols(predict(model, new_data = df_test, type = "raw"))
 
   pred_bag <-
     pred %>%
-    group_by(bag_name) %>%
-    distinct(bag_label, .pred, .pred_class)
+    dplyr::group_by(bag_name) %>%
+    dplyr::distinct(bag_label, .pred, .pred_class)
   expect_equal(dim(pred_bag), c(20, 4))
   expect_snapshot({
     pROC::auc(response = pred_bag$bag_label, predictor = pred_bag$.pred) %>%
@@ -57,13 +55,13 @@ test_that("cv_misvm() works for data-frame-like inputs", {
 
   pred <-
     df_test %>%
-    bind_cols(predict(model, new_data = df_test)) %>%
-    bind_cols(predict(model, new_data = df_test, type = "raw"))
+    dplyr::bind_cols(predict(model, new_data = df_test)) %>%
+    dplyr::bind_cols(predict(model, new_data = df_test, type = "raw"))
 
   pred_bag <-
     pred %>%
-    group_by(bag_name) %>%
-    distinct(bag_label, .pred, .pred_class)
+    dplyr::group_by(bag_name) %>%
+    dplyr::distinct(bag_label, .pred, .pred_class)
 
   expect_equal(dim(pred_bag), c(20, 4))
   expect_snapshot({
@@ -82,13 +80,13 @@ test_that("cv_misvm() works for data-frame-like inputs", {
 
   pred <-
     df_test %>%
-    bind_cols(predict(model, new_data = df_test)) %>%
-    bind_cols(predict(model, new_data = df_test, type = "raw"))
+    dplyr::bind_cols(predict(model, new_data = df_test)) %>%
+    dplyr::bind_cols(predict(model, new_data = df_test, type = "raw"))
 
   pred_bag <-
     pred %>%
-    group_by(bag_name) %>%
-    distinct(bag_label, .pred, .pred_class)
+    dplyr::group_by(bag_name) %>%
+    dplyr::distinct(bag_label, .pred, .pred_class)
 
   expect_equal(dim(pred_bag), c(20, 4))
   expect_snapshot({
@@ -183,32 +181,32 @@ test_that("predict.cv_misvm returns labels that match the input labels", {
   df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
 
   # 0/1
-  df2 <- df1 %>% mutate(bag_label = factor(bag_label))
+  df2 <- df1 %>% dplyr::mutate(bag_label = factor(bag_label))
   test_prediction_levels_equal(df2, method = "heuristic")
   test_prediction_levels_equal(df2, method = "mip")
   test_prediction_levels_equal(df2, method = "heuristic", class = "formula")
 
   # 1/0
-  df2 <- df1 %>% mutate(bag_label = factor(bag_label, levels = c(1, 0)))
+  df2 <- df1 %>% dplyr::mutate(bag_label = factor(bag_label, levels = c(1, 0)))
   test_prediction_levels_equal(df2, method = "heuristic")
   test_prediction_levels_equal(df2, method = "mip")
   test_prediction_levels_equal(df2, method = "heuristic", class = "formula")
 
   # TRUE/FALSE
-  df2 <- df1 %>% mutate(bag_label = factor(bag_label, labels = c(TRUE, FALSE)))
+  df2 <- df1 %>% dplyr::mutate(bag_label = factor(bag_label, labels = c(TRUE, FALSE)))
   test_prediction_levels_equal(df2, method = "heuristic")
   test_prediction_levels_equal(df2, method = "mip")
   test_prediction_levels_equal(df2, method = "heuristic", class = "formula")
 
   # Yes/No
-  df2 <- df1 %>% mutate(bag_label = factor(bag_label, labels = c("No", "Yes")))
+  df2 <- df1 %>% dplyr::mutate(bag_label = factor(bag_label, labels = c("No", "Yes")))
   expect_message(test_prediction_levels_equal(df2, method = "heuristic"))
   expect_message(test_prediction_levels_equal(df2, method = "mip"))
   expect_message(test_prediction_levels_equal(df2, method = "heuristic", class = "formula"))
 
   # check that 0/1 and 1/0 return the same predictions
-  df2 <- df1 %>% mutate(bag_label = factor(bag_label, levels = c(0, 1)))
-  df3 <- df1 %>% mutate(bag_label = factor(bag_label, levels = c(1, 0)))
+  df2 <- df1 %>% dplyr::mutate(bag_label = factor(bag_label, levels = c(0, 1)))
+  df3 <- df1 %>% dplyr::mutate(bag_label = factor(bag_label, levels = c(1, 0)))
   mdl2 <- misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean, data = df2)
   mdl3 <- misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean, data = df3)
   expect_equal(predict(mdl2, df2, type = "class"),
@@ -225,7 +223,7 @@ test_that("Dots work in cv_misvm() formula", {
                                sd_of_mean = rep(0.15, 3))
 
   df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10)) %>%
-    select(bag_label, bag_name, X1_mean, X2_mean, X3_mean)
+    dplyr::select(bag_label, bag_name, X1_mean, X2_mean, X3_mean)
 
   set.seed(8)
   misvm_dot <- cv_misvm(mi(bag_label, bag_name) ~ .,
