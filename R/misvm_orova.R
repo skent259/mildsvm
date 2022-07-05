@@ -240,9 +240,9 @@ print.misvm_orova <- function(x, digits = getOption("digits"), ...) {
   cat("Model info:", "\n")
   cat("  Number of models:", length(x$fits), "\n")
   cat("  Levels of `y`:")
-  str(x$levels, width = getOption("width")-14)
+  utils::str(x$levels, width = getOption("width")-14)
   cat("  Features:")
-  str(x$features, width = getOption("width")-14)
+  utils::str(x$features, width = getOption("width")-14)
   if (method == "heuristic" || method == "qp-heuristic") {
     cat("  Number of iterations:", n_steps, "\n")
   }

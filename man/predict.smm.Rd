@@ -10,7 +10,7 @@
   type = c("class", "raw"),
   layer = "instance",
   new_instances = "instance_name",
-  new_bags = NULL,
+  new_bags = "bag_name",
   kernel = NULL,
   ...
 )
