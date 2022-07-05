@@ -70,6 +70,7 @@ test_that("`cv_misvm()` examples work", {
 
 test_that("`generate_mild_df()` examples work", {
   skip_on_cran()
+  skip_on_ci()
 
   expect_snapshot({
     set.seed(8)
@@ -268,6 +269,7 @@ test_that("`predict.mismm()` examples work", {
 
 test_that("`misvm_orova()` examples work", {
   skip_on_cran()
+  skip_on_ci()
 
   expect_snapshot({
     data("ordmvnorm")
@@ -400,6 +402,7 @@ test_that("`summarize_samples()` examples work", {
 
 test_that("`svor_exc()` examples work", {
   skip_on_cran()
+  skip_on_ci()
 
   expect_snapshot({
     data("ordmvnorm")
