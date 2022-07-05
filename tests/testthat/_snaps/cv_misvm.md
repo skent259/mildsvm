@@ -4,7 +4,7 @@
       pROC::auc(response = pred_bag$bag_label, predictor = pred_bag$.pred) %>%
         suppressMessages()
     Output
-      Area under the curve: 0.7033
+      Area under the curve: 1
 
 ---
 
@@ -20,5 +20,5 @@
       pROC::auc(response = pred_bag$bag_label, predictor = pred_bag$.pred) %>%
         suppressMessages()
     Output
-      Area under the curve: 0.978
+      Area under the curve: 1
 
