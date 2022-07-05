@@ -52,13 +52,15 @@ validate_omisvm <- function(x) {
 #' @seealso [predict.omisvm()] for prediction on new data.
 #'
 #' @examples
-#' data("ordmvnorm")
-#' x <- ordmvnorm[, 3:7]
-#' y <- ordmvnorm$bag_label
-#' bags <- ordmvnorm$bag_name
+#' if (require(gurobi)) {
+#'   data("ordmvnorm")
+#'   x <- ordmvnorm[, 3:7]
+#'   y <- ordmvnorm$bag_label
+#'   bags <- ordmvnorm$bag_name
 #'
-#' mdl1 <- omisvm(x, y, bags, weights = NULL)
-#' predict(mdl1, x, new_bags = bags)
+#'   mdl1 <- omisvm(x, y, bags, weights = NULL)
+#'   predict(mdl1, x, new_bags = bags)
+#' }
 #'
 #' @author Sean Kent
 #' @name omisvm
@@ -234,20 +236,22 @@ omisvm.mi_df <- function(x, ...) {
 #' @seealso [omisvm()] for fitting the `omisvm` object.
 #'
 #' @examples
-#' data("ordmvnorm")
-#' x <- ordmvnorm[, 3:7]
-#' y <- ordmvnorm$bag_label
-#' bags <- ordmvnorm$bag_name
+#' if (require(gurobi)) {
+#'   data("ordmvnorm")
+#'   x <- ordmvnorm[, 3:7]
+#'   y <- ordmvnorm$bag_label
+#'   bags <- ordmvnorm$bag_name
 #'
-#' mdl1 <- omisvm(x, y, bags, weights = NULL)
+#'   mdl1 <- omisvm(x, y, bags, weights = NULL)
 #'
-#' # summarize predictions at the bag layer
-#' library(dplyr)
-#' df1 <- bind_cols(y = y, bags = bags, as.data.frame(x))
-#' df1 %>%
-#'   bind_cols(predict(mdl1, df1, new_bags = bags, type = "class")) %>%
-#'   bind_cols(predict(mdl1, df1, new_bags = bags, type = "raw")) %>%
-#'   distinct(y, bags, .pred_class, .pred)
+#'   # summarize predictions at the bag layer
+#'   library(dplyr)
+#'   df1 <- bind_cols(y = y, bags = bags, as.data.frame(x))
+#'   df1 %>%
+#'     bind_cols(predict(mdl1, df1, new_bags = bags, type = "class")) %>%
+#'     bind_cols(predict(mdl1, df1, new_bags = bags, type = "raw")) %>%
+#'     distinct(y, bags, .pred_class, .pred)
+#' }
 #'
 #' @export
 #' @author Sean Kent

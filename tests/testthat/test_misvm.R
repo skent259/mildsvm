@@ -31,7 +31,7 @@ run_misvm <- function(df = df1, features = 3:122, ...) {
 }
 
 test_that("misvm() works for data-frame-like inputs", {
-  skip_if_no_gurobi()
+  skip_if_not_installed("gurobi")
   mdl1 <- run_misvm(method = "mip")
 
   expect_equal(
@@ -88,7 +88,7 @@ test_that("misvm() works for data-frame-like inputs", {
 })
 
 test_that("misvm() works with formula method", {
-  skip_if_no_gurobi()
+  skip_if_not_installed("gurobi")
   mdl1 <- misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean + X3_mean, data = df1)
   mdl2 <- run_misvm(features = c("X1_mean", "X2_mean", "X3_mean"))
 
@@ -123,7 +123,7 @@ test_that("misvm() works with formula method", {
 })
 
 test_that("predict.misvm returns labels that match the input labels", {
-  skip_if_no_gurobi()
+  skip_if_not_installed("gurobi")
   test_prediction_levels_equal <- function(df, method, class = "default") {
     mdl <- switch(class,
                   "default" = run_misvm(df, method = method),
@@ -173,7 +173,7 @@ test_that("predict.misvm returns labels that match the input labels", {
 })
 
 test_that("Dots work in misvm() formula", {
-  skip_if_no_gurobi()
+  skip_if_not_installed("gurobi")
   df2 <- df1 %>% select(bag_label, bag_name, X1_mean, X2_mean, X3_mean)
 
   misvm_dot <- misvm(mi(bag_label, bag_name) ~ ., data = df2)
@@ -188,7 +188,7 @@ test_that("Dots work in misvm() formula", {
 })
 
 test_that("misvm() has correct argument handling", {
-  skip_if_no_gurobi()
+  skip_if_not_installed("gurobi")
   ## weights
   misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = TRUE)
   mdl1 <- misvm(mi(bag_label, bag_name) ~ ., data = df1, weights = c("0" = 1, "1" = 1))
@@ -263,7 +263,7 @@ test_that("misvm() has correct argument handling", {
 })
 
 test_that("misvm mip can warm start", {
-  skip_if_no_gurobi()
+  skip_if_not_installed("gurobi")
   verbose <- interactive()
 
   # manually check that the output says "User MIP start produced solution with objective ..."
@@ -281,7 +281,7 @@ test_that("misvm mip can warm start", {
 })
 
 test_that("misvm mip works with radial kernel", {
-  skip_if_no_gurobi()
+  skip_if_not_installed("gurobi")
   set.seed(8)
   mil_data <- generate_mild_df(nbag = 10,
                                nsample = 20,
@@ -342,7 +342,7 @@ test_that("`misvm()` works with `mi_df` method", {
 })
 
 test_that("misvm() works on 'mild_df' objects", {
-  skip_if_no_gurobi()
+  skip_if_not_installed("gurobi")
   # minimal arguments
   mdl <- misvm(mil_data)
   expect_equal(mdl$call_type, "misvm.mild_df")
@@ -404,7 +404,7 @@ test_that("misvm() works on 'mild_df' objects", {
 })
 
 test_that("`misvm()` value returns make sense", {
-  skip_if_no_gurobi()
+  skip_if_not_installed("gurobi")
 
   expect_snapshot({
     models <- list(
@@ -431,7 +431,7 @@ test_that("`misvm()` value returns make sense", {
 })
 
 test_that("Ordering of data doesn't change `misvm()` results", {
-  skip_if_no_gurobi()
+  skip_if_not_installed("gurobi")
   expect_predictions_equal <- function(model1, model2, data) {
     # If predictions match for `type = 'raw` and `layer = 'instance'`, they will
     # match for all other options.
@@ -486,7 +486,7 @@ test_that("Ordering of data doesn't change `misvm()` results", {
 })
 
 test_that("`misvm()` works even when there are Nan columns or idential columns", {
-  skip_if_no_gurobi()
+  skip_if_not_installed("gurobi")
   df2 <- df1
   df2$nan_feature <- NaN
 
@@ -512,7 +512,7 @@ test_that("`misvm()` works even when there are Nan columns or idential columns",
 })
 
 test_that("`misvm()` works with a few bags with only one instance", {
-  skip_if_no_gurobi()
+  skip_if_not_installed("gurobi")
   df2 <- df1[-(2:4), ]
   table(df2$bag_name)
 
@@ -522,7 +522,7 @@ test_that("`misvm()` works with a few bags with only one instance", {
 })
 
 test_that("`misvm()` works fine with matrices", {
-  skip_if_no_gurobi()
+  skip_if_not_installed("gurobi")
   for (method in c("heuristic", "mip", "qp-heuristic")) {
     mdl <- misvm(x = as.matrix(df1[, 3:10]),
                  y = df1$bag_label,
@@ -534,7 +534,7 @@ test_that("`misvm()` works fine with matrices", {
 
 
 test_that("`misvm.formula()` handles identical columns correctly.", {
-  skip_if_no_gurobi()
+  skip_if_not_installed("gurobi")
   df2 <- df1
   df2$constant <- 1
 
@@ -564,7 +564,7 @@ test_that("`misvm.formula()` handles identical columns correctly.", {
 })
 
 test_that("Extra factor levels don't cause problems for `misvm()`", {
-  skip_if_no_gurobi()
+  skip_if_not_installed("gurobi")
   df2 <- df1
   df2$bag_name <- as.factor(as.numeric(factor(df2$bag_name)))
   # all sorts of factor mutilations
@@ -583,7 +583,7 @@ test_that("Extra factor levels don't cause problems for `misvm()`", {
 })
 
 test_that("Formulas with spaces in names work for `misvm()`", {
-  skip_if_no_gurobi()
+  skip_if_not_installed("gurobi")
   df2 <- df1[, 1:10]
 
   colnames(df2)[3] <- "space name"

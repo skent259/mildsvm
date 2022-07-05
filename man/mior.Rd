@@ -131,32 +131,34 @@ names, labels, and all covariates.
 }}
 
 \examples{
-set.seed(8)
-# make some data
-n <- 15
-X <- rbind(
-  mvtnorm::rmvnorm(n/3, mean = c(4, -2, 0)),
-  mvtnorm::rmvnorm(n/3, mean = c(0, 0, 0)),
-  mvtnorm::rmvnorm(n/3, mean = c(-2, 1, 0))
-)
-score <- X \%*\% c(2, -1, 0)
-y <- as.numeric(cut(score, c(-Inf, quantile(score, probs = 1:2 / 3), Inf)))
-bags <- 1:length(y)
+if (require(gurobi)) {
+  set.seed(8)
+  # make some data
+  n <- 15
+  X <- rbind(
+    mvtnorm::rmvnorm(n/3, mean = c(4, -2, 0)),
+    mvtnorm::rmvnorm(n/3, mean = c(0, 0, 0)),
+    mvtnorm::rmvnorm(n/3, mean = c(-2, 1, 0))
+  )
+  score <- X \%*\% c(2, -1, 0)
+  y <- as.numeric(cut(score, c(-Inf, quantile(score, probs = 1:2 / 3), Inf)))
+  bags <- 1:length(y)
 
-# add in points outside boundaries
-X <- rbind(
-  X,
-  mvtnorm::rmvnorm(n, mean = c(6, -3, 0)),
-  mvtnorm::rmvnorm(n, mean = c(-6, 3, 0))
-)
-y <- c(y, rep(-1, 2*n))
-bags <- rep(bags, 3)
-repr <- c(rep(1, n), rep(0, 2*n))
+  # add in points outside boundaries
+  X <- rbind(
+    X,
+    mvtnorm::rmvnorm(n, mean = c(6, -3, 0)),
+    mvtnorm::rmvnorm(n, mean = c(-6, 3, 0))
+  )
+  y <- c(y, rep(-1, 2*n))
+  bags <- rep(bags, 3)
+  repr <- c(rep(1, n), rep(0, 2*n))
 
-y_bag <- classify_bags(y, bags, condense = FALSE)
+  y_bag <- classify_bags(y, bags, condense = FALSE)
 
-mdl1 <- mior(X, y_bag, bags)
-predict(mdl1, X, new_bags = bags)
+  mdl1 <- mior(X, y_bag, bags)
+  predict(mdl1, X, new_bags = bags)
+}
 
 }
 \seealso{

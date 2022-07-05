@@ -13,6 +13,7 @@ set.seed(8)
 # Tests ------------------------------------------------------------------------
 
 test_that("omisvm() has reasonable performance", {
+  skip_if_not_installed("gurobi")
 
   check_performance <- function(model, df, roc_cutoff, mzoe_cutoff, mae_cutoff) {
     preds <- predict(model, new_data = df)
@@ -54,6 +55,7 @@ df1$inst_label <- NULL
 df1_test <- ordmvnorm[!train, ]
 
 test_that("omisvm() works for data-frame-like inputs", {
+  skip_if_not_installed("gurobi")
 
   # qp-heuristic method
   expect_warning({
@@ -94,6 +96,8 @@ test_that("omisvm() works for data-frame-like inputs", {
 })
 
 test_that("omisvm() works with formula method", {
+  skip_if_not_installed("gurobi")
+
   # qp-heuristic
   expect_warning(expect_warning({
     set.seed(8)
@@ -144,6 +148,8 @@ test_that("omisvm() works with formula method", {
 })
 
 test_that("`misvm()` works with `mi_df` method", {
+  skip_if_not_installed("gurobi")
+
   predictors <- paste0("V", 1:5)
   suppressWarnings({
     mdl1 <- omisvm(df1)
@@ -177,6 +183,8 @@ test_that("`misvm()` works with `mi_df` method", {
 })
 
 test_that("predict.omisvm() returns labels that match the input labels", {
+  skip_if_not_installed("gurobi")
+
   set.seed(9)
   test_prediction_levels_equal <- function(df, method,
                                            class = "default",
@@ -230,6 +238,8 @@ test_that("predict.omisvm() returns labels that match the input labels", {
 })
 
 test_that("Dots work in omisvm() formula", {
+  skip_if_not_installed("gurobi")
+
   df2 <- df1 %>% select(bag_label, bag_name, V1, V2, V3)
 
   suppressWarnings({
@@ -248,6 +258,8 @@ test_that("Dots work in omisvm() formula", {
 })
 
 test_that("omisvm() has correct argument handling", {
+  skip_if_not_installed("gurobi")
+
   # `weights`
   expect_warning(omisvm(mi(bag_label, bag_name) ~ ., data = df1, weights = TRUE))
   omisvm(mi(bag_label, bag_name) ~ ., data = df1, weights = NULL)
@@ -271,6 +283,8 @@ test_that("omisvm() has correct argument handling", {
 })
 
 test_that("`omisvm()` value returns make sense", {
+  skip_if_not_installed("gurobi")
+
   df1 <- as.data.frame(df1)
   expect_snapshot({
     models <- list(
@@ -290,6 +304,8 @@ test_that("`omisvm()` value returns make sense", {
 })
 
 test_that("Ordering of data doesn't change `omisvm()` results", {
+  skip_if_not_installed("gurobi")
+
   expect_predictions_equal <- function(model1, model2, data) {
     # If predictions match for `type = 'raw` and `layer = 'instance'`, they will
     # match for all other options.
@@ -326,6 +342,7 @@ test_that("Ordering of data doesn't change `omisvm()` results", {
 })
 
 test_that("`omisvm()` can use all values of `s`", {
+  skip_if_not_installed("gurobi")
 
   form <- mi(bag_label, bag_name) ~ V1 + V2 + V3
   omisvm(form, data = df1, s = 4, weights = NULL, control = list(kernel = "radial"))
@@ -337,6 +354,7 @@ test_that("`omisvm()` can use all values of `s`", {
 })
 
 test_that("`omisvm()` works when passing label with 2 levels", {
+  skip_if_not_installed("gurobi")
 
   ind <- df1$bag_label %in% c(2, 5)
   expect_warning({mdl1 <- omisvm(df1[ind, ])},

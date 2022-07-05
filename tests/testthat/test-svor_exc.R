@@ -48,6 +48,8 @@ test_that("svor_exc() internal functions work on simple examples", {
 })
 
 test_that("svor_exc() has reasonable performance", {
+  skip_on_cran()
+  skip_on_ci()
 
   mdl1 <- svor_exc(y ~ ., data = df1, weights = NULL) %>%
     suppressMessages()
@@ -257,6 +259,9 @@ test_that("svor_exc() has correct argument handling", {
 })
 
 test_that("`svor_exc()` value returns make sense", {
+  skip_on_covr()
+  skip_on_ci()
+
   df2 <- df1
   df2$bag_name <- seq_len(nrow(df2))
 

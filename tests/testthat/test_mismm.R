@@ -17,7 +17,7 @@ mil_data_test <- generate_mild_df(nbag = 20,
                                   mean = list(rep(15, 5), rep(0, 5), 0))
 
 test_that("mismm() works for data-frame-like inputs", {
-  skip_if_no_gurobi()
+  skip_if_not_installed("gurobi")
   # mip method
   # df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
   mdl1 <- mismm.default(x = mil_data[, 4:13],
@@ -115,7 +115,7 @@ test_that("mismm() works for data-frame-like inputs", {
 
 
 test_that("mismm() works with formula method", {
-  skip_if_no_gurobi()
+  skip_if_not_installed("gurobi")
   mdl1 <- mismm(mild(bag_label, bag_name, instance_name) ~ X1 + X2 + X3, data = mil_data)
   mdl2 <- mismm.default(x = mil_data[, c("X1", "X2", "X3")],
                           y = mil_data$bag_label,
@@ -154,7 +154,7 @@ test_that("mismm() works with formula method", {
 })
 
 test_that("mismm() works with mild_df method", {
-  skip_if_no_gurobi()
+  skip_if_not_installed("gurobi")
   mdl1 <- mismm(mil_data)
   mdl2 <- mismm.default(x = mil_data[, 4:13],
                           y = mil_data$bag_label,
@@ -177,7 +177,7 @@ test_that("mismm() works with mild_df method", {
 })
 
 test_that("predict.mismm returns labels that match the input labels", {
-  skip_if_no_gurobi()
+  skip_if_not_installed("gurobi")
   test_prediction_levels_equal <- function(df, method, class = "default") {
     mdl <- switch(class,
                   "default" = mismm(x = as.data.frame(df)[, 4:13],
@@ -231,7 +231,7 @@ test_that("predict.mismm returns labels that match the input labels", {
 })
 
 test_that("Dots work in mismm() formula", {
-  skip_if_no_gurobi()
+  skip_if_not_installed("gurobi")
   mil_data2 <- mil_data %>% select(bag_label, bag_name, instance_name, X1, X2, X3)
 
   mismm_dot <- mismm(mild(bag_label, bag_name, instance_name) ~ ., data = mil_data2)
@@ -246,7 +246,7 @@ test_that("Dots work in mismm() formula", {
 })
 
 test_that("mismm() has correct argument handling", {
-  skip_if_no_gurobi()
+  skip_if_not_installed("gurobi")
   ## weights
   mismm(mil_data, weights = TRUE)
   mdl1 <- mismm(mil_data, weights = c("0" = 1, "1" = 1))
@@ -347,7 +347,7 @@ test_that("mismm() has correct argument handling", {
 
 
 test_that("mismm mip can warm start", {
-  skip_if_no_gurobi()
+  skip_if_not_installed("gurobi")
   verbose <- interactive()
 
   # manually check that the output says "User MIP start produced solution with objective ..."
@@ -380,7 +380,7 @@ test_that("mismm mip can warm start", {
 
 
 test_that("mismm mip works with radial kernel", {
-  skip_if_no_gurobi()
+  skip_if_not_installed("gurobi")
   mdl1 <- mismm.default(x = as.data.frame(mil_data)[, 4:12],
                           y = mil_data$bag_label,
                           bags = mil_data$bag_name,
@@ -430,7 +430,7 @@ test_that("mismm mip works with radial kernel", {
 })
 
 test_that("Passing kernel matrix into mismm works", {
-  skip_if_no_gurobi()
+  skip_if_not_installed("gurobi")
   set.seed(8)
   mil_data_shuf <- mil_data[sample(seq_len(nrow(mil_data))), ]
 
@@ -459,7 +459,7 @@ test_that("Passing kernel matrix into mismm works", {
 })
 
 test_that("Re-ordering data doesn't reduce performance", {
-  skip_if_no_gurobi()
+  skip_if_not_installed("gurobi")
   check_auc_after_reordering <- function(method) {
     set.seed(8)
     mdl1 <- mismm(mil_data, method = method, control = list(sigma = 0.1))
@@ -491,7 +491,7 @@ test_that("Re-ordering data doesn't reduce performance", {
 })
 
 test_that("`mismm()` value returns make sense", {
-  skip_if_no_gurobi()
+  skip_if_not_installed("gurobi")
 
   expect_snapshot({
     models <- list(
@@ -518,7 +518,7 @@ test_that("`mismm()` value returns make sense", {
 })
 
 test_that("`predict.mismm()` works without new_data", {
-  skip_if_no_gurobi()
+  skip_if_not_installed("gurobi")
   check_prediction_no_data <- function(method) {
     mdl1 <- mismm(mil_data, method = method,
                     control = list(scale = FALSE, sigma = 1/10))

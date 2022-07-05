@@ -41,6 +41,7 @@ df1_test <- df[!train, ]
 # Tests ------------------------------------------------------------------------
 
 test_that("`mior()` has reasonable performance", {
+  skip_if_not_installed("gurobi")
 
   check_performance <- function(model, df, roc_cutoff, mzoe_cutoff, mae_cutoff) {
     preds <- predict(model, new_data = df)
@@ -74,6 +75,7 @@ test_that("`mior()` has reasonable performance", {
 })
 
 test_that("`mior()` works for data-frame-like inputs", {
+  skip_if_not_installed("gurobi")
 
   # qp-heuristic method
   mdl2 <- mior(x = df1[, paste0("V", 1:3)],
@@ -121,6 +123,8 @@ test_that("`mior()` works for data-frame-like inputs", {
 })
 
 test_that("`mior()` works with formula method", {
+  skip_if_not_installed("gurobi")
+
   suppressMessages(suppressWarnings({
     set.seed(8)
     mdl1 <- mior(mi(bag_label, bag_name) ~ V1 + V2 + V3, data = df1)
@@ -173,6 +177,8 @@ test_that("`mior()` works with formula method", {
 })
 
 test_that("`misvm()` works with `mi_df` method", {
+  skip_if_not_installed("gurobi")
+
   predictors <- paste0("V", 1:3)
   df1_mi <- as_mi_df(df1[, c("bag_label", "bag_name", predictors)], instance_label = NULL)
   suppressWarnings(suppressMessages({
@@ -196,6 +202,8 @@ test_that("`misvm()` works with `mi_df` method", {
 })
 
 test_that("`predict.mior()` returns labels that match the input labels", {
+  skip_if_not_installed("gurobi")
+
   test_prediction_levels_equal <- function(df, method,
                                            class = "default",
                                            kernel = "linear") {
@@ -250,6 +258,8 @@ test_that("`predict.mior()` returns labels that match the input labels", {
 })
 
 test_that("Dots work in `mior()` formula", {
+  skip_if_not_installed("gurobi")
+
   df2 <- df1 %>% select(bag_label, bag_name, V1, V2, V3)
 
   suppressMessages(suppressWarnings({
@@ -268,6 +278,8 @@ test_that("Dots work in `mior()` formula", {
 })
 
 test_that("`mior()` has correct argument handling", {
+  skip_if_not_installed("gurobi")
+
   set.seed(8)
   # `weights`
   expect_warning(mior(mi(bag_label, bag_name) ~ ., data = df1, weights = TRUE), "Weights") %>%
@@ -302,6 +314,7 @@ test_that("`mior()` has correct argument handling", {
 })
 
 test_that("`mior()` value returns make sense", {
+  skip_if_not_installed("gurobi")
 
   expect_snapshot({
     models <- list(
@@ -324,6 +337,8 @@ test_that("`mior()` value returns make sense", {
 })
 
 test_that("Ordering of data doesn't change `mior()` results", {
+  skip_if_not_installed("gurobi")
+
   expect_predictions_equal <- function(model1, model2, data) {
     # If predictions match for `type = 'raw` and `layer = 'instance'`, they will
     # match for all other options.
