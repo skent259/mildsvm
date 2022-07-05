@@ -1,17 +1,8 @@
 suppressMessages(suppressWarnings({library(dplyr)}))
 
-#' Skip test when MilDistribution package not present
-#'
-#' @noRd
-skip_if_no_MilDistrubution <- function() {
-  if (!suppressMessages(requireNamespace("MilDistribution", quietly = TRUE))) {
-    testthat::skip("The package MilDistribution is not available.")
-  }
-}
-
-
 test_that("GenerateData.R functions have identical output", {
-  skip_if_no_MilDistrubution()
+  skip_if_not_installed("MilDistribution")
+  
   # Note: as of updates to 0.3.2 of mildsvm, no longer expect fidelity of
   # `generate_mild_df()`.  Just check for similarity here
 
@@ -40,7 +31,7 @@ test_that("GenerateData.R functions have identical output", {
 })
 
 test_that("kme.R functions have identical output", {
-  skip_if_no_MilDistrubution()
+  skip_if_not_installed("MilDistribution")
   set.seed(8)
   mil_data <- mildsvm::generate_mild_df(ncov = 5, nbag = 7, nsample = 7)
 
@@ -67,7 +58,7 @@ test_that("kme.R functions have identical output", {
 
 test_that("mismm.R functions have identical output", {
   skip_if_not_installed("gurobi")
-  skip_if_no_MilDistrubution()
+  skip_if_not_installed("MilDistribution")
   set.seed(8)
   mil_data <- mildsvm::generate_mild_df(ncov = 5, nbag = 10, nsample = 7,
                                         positive_prob = 0.15,
@@ -149,7 +140,7 @@ test_that("mismm.R functions have identical output", {
 
 test_that("misvm.R functions have identical output.", {
   skip_if_not_installed("gurobi")
-  skip_if_no_MilDistrubution()
+  skip_if_not_installed("MilDistribution")
   set.seed(8)
   mil_data <- mildsvm::generate_mild_df(nbag = 10, nsample = 7,
                                         positive_prob = 0.15,
@@ -200,7 +191,7 @@ test_that("misvm.R functions have identical output.", {
 
 test_that("cv_misvm.R functions have identical output.", {
   skip_if_not_installed("gurobi")
-  skip_if_no_MilDistrubution()
+  skip_if_not_installed("MilDistribution")
   set.seed(8)
   mil_data <- mildsvm::generate_mild_df(nbag = 10, nsample = 7,
                                         positive_prob = 0.15,
@@ -257,7 +248,7 @@ test_that("cv_misvm.R functions have identical output.", {
 
 test_that("smm.R functions have identical output", {
   skip_if_not_installed("gurobi")
-  skip_if_no_MilDistrubution()
+  skip_if_not_installed("MilDistribution")
   set.seed(8)
   n_instances <- 10
   n_samples <- 20
@@ -296,7 +287,7 @@ test_that("smm.R functions have identical output", {
 
 test_that("misvm.R functions have identical output on MilData object.", {
   skip_if_not_installed("gurobi")
-  skip_if_no_MilDistrubution()
+  skip_if_not_installed("MilDistribution")
   set.seed(8)
   mil_data <- mildsvm::generate_mild_df(nbag = 10, nsample = 7,
                                         positive_prob = 0.15,
