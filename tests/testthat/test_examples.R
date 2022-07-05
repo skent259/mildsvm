@@ -3,8 +3,6 @@ suppressMessages(suppressWarnings({
   library(dplyr)
 }))
 
-
-
 test_that("`build_fm()`, `kfm_exact()`, `kfm_nystrom()` examples work", {
   skip_on_cran()
   skip_on_ci()
@@ -158,6 +156,7 @@ test_that("`mild_df()` examples work", {
 
 test_that("`mild()` examples work", {
   skip_on_cran()
+  skip_on_ci()
 
   expect_snapshot({
     mil_data <- generate_mild_df(positive_degree = 3, nbag = 10)
