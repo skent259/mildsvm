@@ -24,15 +24,14 @@ jobs:
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           dependencies: '"hard"'
-          cache: false
           extra-packages: |
-            covr
             any::rcmdcheck
             any::testthat
+            any::covr
             any::knitr
             any::rmarkdown
           needs: check
-          
+
       - name: Test coverage
         run: covr::codecov()
         shell: Rscript {0}
