@@ -384,7 +384,6 @@ predict.misvm <- function(object,
 
   new_x <- .get_new_x(object, new_data)
 
-  # kernel
   if (method == "qp-heuristic") {
     kernel <- compute_kernel(as.matrix(new_x),
                              object$gurobi_fit$xmatrix,
@@ -392,28 +391,22 @@ predict.misvm <- function(object,
                              sigma = object$gurobi_fit$sigma)
   }
 
-  if (method == "heuristic") {
-    pos <- predict(object = object$svm_fit, newdata = new_x, decision.values = TRUE)
-    scores <- attr(pos, "decision.values")
-    pos <- as.numeric(as.character(pos))
-
-  } else if (method == "mip") {
-    scores <- as.matrix(new_x) %*% object$gurobi_fit$w + object$gurobi_fit$b
-    pos <- 2 * (scores > 0) - 1
-
-  } else if (method == "qp-heuristic") {
-    scores <- kernel %*% object$gurobi_fit$ay + object$gurobi_fit$b
-    pos <- 2 * (scores > 0) - 1
-
-  } else {
-    stop("predict.misvm requires method = 'heuristic' or 'mip'.")
-  }
+  scores <- switch(
+    method,
+    "heuristic" = {
+        pos <- predict(object = object$svm_fit, newdata = new_x, decision.values = TRUE)
+        as.numeric(attr(pos, "decision.values"))
+    },
+    "mip" = as.matrix(new_x) %*% object$gurobi_fit$w + object$gurobi_fit$b,
+    "qp-heuristic" = kernel %*% object$gurobi_fit$ay + object$gurobi_fit$b
+  )
 
   if (layer == "bag") {
     bags <- .get_bags(object, new_data, new_bags)
     scores <- classify_bags(scores, bags, condense = FALSE)
-    pos <- classify_bags(pos, bags, condense = FALSE)
   }
+
+  pos <- .to_plus_minus(scores)
   pos <- factor(pos, levels = c(-1, 1), labels = object$levels)
 
   res <- .pred_output(type, scores, pos)

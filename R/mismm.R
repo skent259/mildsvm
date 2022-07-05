@@ -389,7 +389,9 @@ predict.mismm <- function(object,
   type <- match.arg(type)
   layer <- match.arg(layer)
   method <- attr(object, "method")
-  if (!is.null(new_data)) new_data <- as.data.frame(new_data)
+  if (!is.null(new_data)) {
+    new_data <- as.data.frame(new_data)
+  }
 
   if (method == "heuristic") {
     # pass on to the predict.smm method
@@ -401,68 +403,28 @@ predict.mismm <- function(object,
     return(predict.smm(object, new_data, type, layer, new_instances, new_bags, kernel, ...))
   }
 
-  # Find the instance information
-  if (object$call_type == "mismm.formula" & new_instances[1] == "instance_name" & length(new_instances) == 1) {
-    new_instances <- object$instance_name
-  }
-  if (length(new_instances) == 1 & new_instances[1] %in% colnames(new_data)) {
-    instances <- new_data[[new_instances]]
-  } else {
-    instances <- new_instances
-  }
-
-  if (object$call_type == "mismm.formula") {
-    new_x <- x_from_mild_formula(object$formula, new_data)
-  } else {
-    new_x <- new_data[, object$features, drop = FALSE]
-  }
-  if ("kfm_fit" %in% names(object)) {
-    new_x <- build_fm(object$kfm_fit, as.matrix(new_x))
-    new_x <- average_over_instances(new_x, instances)
-  }
-  if (method == "qp-heuristic") {
-    old_instances <- object$gurobi_fit$instances
-    used_instance_names <- unique(old_instances)[object$repr_inst == 1]
-    ind <- which(old_instances %in% used_instance_names)
-
-    if (is.null(kernel)) {
-      traindata <- data.frame(instance_name = old_instances[ind], object$x[ind, , drop = FALSE])
-      kernel <- kme(data.frame(instance_name = instances, new_x),
-                    traindata,
-                    sigma = object$gurobi_fit$sigma)
-    } else {
-      kernel <- kernel[, object$repr_inst == 1]
-    }
-    colnames(kernel) <- unique(old_instances[ind])
-  }
+  instances <- .get_instances(object, new_data, new_instances)
+  new_x <- .get_new_x(object, new_data, instances = instances)
 
   if (method == "mip") {
-    # these scores are at the instance level
-    scores <- as.matrix(new_x) %*% object$gurobi_fit$w + object$gurobi_fit$b
-    # map scores back to the sample level to match nrow(new_data)
-    scores <- sapply(instances, function(i) scores[which(rownames(scores) == i)])
+    scores <- as.matrix(new_x) %*% object$gurobi_fit$w + object$gurobi_fit$b # instance level
+    scores <- sapply(instances, function(i) scores[which(rownames(scores) == i)]) # sample level
   } else if (method == "qp-heuristic") {
+    kernel <- .calculate_pred_kernel_mismm(object, kernel, instances, new_x)
     ay_order <- names(object$gurobi_fit$ay)
     scores <- kernel[, ay_order] %*% object$gurobi_fit$ay + object$gurobi_fit$b
-    scores <- as.numeric(scores)
+    scores <- as.numeric(scores) # instance level
     names(scores) <- unique(instances)
-    scores <- scores[instances]
+    scores <- scores[instances] # sample level
   } else {
     stop("predict.mismm requires method = 'heuristic', 'mip', 'qp-heuristic'.")
   }
-  pos <- 2 * (scores > 0) - 1
+
+  pos <- .to_plus_minus(scores)
 
   if (layer == "bag") {
-    if (object$call_type == "mismm.formula" & new_bags[1] == "bag_name" & length(new_bags) == 1) {
-      new_bags <- object$bag_name
-    }
-    if (length(new_bags) == 1 & new_bags[1] %in% colnames(new_data)) {
-      bags <- new_data[[new_bags]]
-    } else {
-      bags <- new_bags
-    }
+    bags <- .get_bags(object, new_data, new_bags)
     scores <- classify_bags(scores, bags, condense = FALSE)
-    pos <- classify_bags(pos, bags, condense = FALSE)
   }
   pos <- factor(pos, levels = c(-1, 1), labels = object$levels)
 

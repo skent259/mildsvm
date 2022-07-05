@@ -257,7 +257,6 @@ convert_y <- function(y, to = "0,1") {
   return(w)
 }
 
-
 #' Warn about no weights
 #' @inheritParams .set_weights
 #' @param fun The function name to use in the warning message
@@ -320,6 +319,7 @@ convert_y <- function(y, to = "0,1") {
     )
   }
 }
+
 #' Calculate x-matrix from a standard formula
 #' @inheritParams smm
 #' @param skip a vector of variable names to skip, or `NULL` to keep all
@@ -389,7 +389,7 @@ x_from_mild_formula <- function(formula, data) {
 #' @inheritParams predict.smm
 #' @noRd
 .get_instances <- function(object, new_data, new_instances) {
-  if (object$call_type == "smm.formula" & new_instances[1] == "instance_name" & length(new_instances) == 1) {
+  if (grepl("formula", object$call_type) & new_instances[1] == "instance_name" & length(new_instances) == 1) {
     new_instances <- object$instance_name
   }
   if (length(new_instances) == 1 & new_instances[1] %in% colnames(new_data)) {
@@ -404,21 +404,26 @@ x_from_mild_formula <- function(formula, data) {
 #' Used in `misvm()`, `omisvm()`
 #' @inheritParams predict.misvm
 #' @noRd
-.get_new_x <- function(object, new_data, kernel = NULL) {
-
+.get_new_x <- function(object, new_data, kernel = NULL, instances = NULL) {
   method <- attr(object, "method")
+  call_type <- object$call_type
 
-  if (grepl("smm.formula", object$call_type)) {
+  if (grepl("mismm.formula", call_type)) {
+    new_x <- x_from_mild_formula(object$formula, new_data)
+  } else if (grepl("smm.formula", call_type)) {
     new_x <- x_from_formula(object$formula, new_data, skip = object$instance_name)
-    new_x <- new_x[, object$features, drop = FALSE]
-  } else if (grepl("formula", object$call_type)) {
+  } else if (grepl("formula", call_type)) {
     new_x <- x_from_mi_formula(object$formula, new_data)
-    new_x <- new_x[, object$features, drop = FALSE]
   } else {
-    new_x <- new_data[, object$features, drop = FALSE]
+    new_x <- new_data
   }
+  new_x <- new_x[, object$features, drop = FALSE]
+
   if ("kfm_fit" %in% names(object)) {
     new_x <- build_fm(object$kfm_fit, as.matrix(new_x))
+    if (grepl("mismm", object$call_type)) {
+      new_x <- average_over_instances(new_x, instances)
+    }
   }
   scale_eligible <- method == "qp-heuristic" || grepl("smm", object$call_type)
   if (scale_eligible & "x_scale" %in% names(object) & is.null(kernel)) {
@@ -453,6 +458,29 @@ x_from_mild_formula <- function(formula, data) {
                     sigma = object$sigma)
   }
   return(kernlab::as.kernelMatrix(kernel_m))
+}
+
+#' Calculate a kernel for prediction in `mismm()`
+#'
+#' @inheritParams .calculate_pred_kernel_smm
+#' @noRd
+.calculate_pred_kernel_mismm <- function(object, kernel, instances, new_x) {
+
+  train_inst <- object$gurobi_fit$instances
+  sv_inst_names <- unique(train_inst)[object$repr_inst == 1]
+  sv_inst <- which(train_inst %in% sv_inst_names)
+
+  if (is.null(kernel)) {
+    train_df <- data.frame(instance_name = train_inst[sv_inst], object$x[sv_inst, , drop = FALSE])
+    new_df <- data.frame(instance_name = instances, new_x)
+    kernel_m <- kme(new_df,
+                    train_df,
+                    sigma = object$gurobi_fit$sigma)
+  } else {
+    kernel_m <- kernel[, object$repr_inst == 1]
+  }
+  colnames(kernel_m) <- unique(train_inst[sv_inst])
+  return(kernel_m)
 }
 
 #' Return prediction output
