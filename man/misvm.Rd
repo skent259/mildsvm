@@ -30,8 +30,10 @@
 }
 \arguments{
 \item{x}{A data.frame, matrix, or similar object of covariates, where each
-row represents a sample. If a \code{mild_df} object is passed, \verb{y, bags, instances} are automatically extracted, and all other columns will be used
-as predictors.}
+row represents an instance. If a \code{mi_df} object is passed, \verb{y, bags} are
+automatically extracted, and all other columns will be used as predictors.
+If a \code{mild_df} object is passed, \verb{y, bags, instances} are automatically
+extracted, and all other columns will be used as predictors.}
 
 \item{y}{A numeric, character, or factor vector of bag labels for each
 instance.  Must satisfy \code{length(y) == nrow(x)}. Suggest that one of the

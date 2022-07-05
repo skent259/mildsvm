@@ -26,9 +26,10 @@ validate_misvm <- function(x) {
 #' using the gurobi package optimization back-end.
 #'
 #' @param x A data.frame, matrix, or similar object of covariates, where each
-#'   row represents a sample. If a `mild_df` object is passed, `y, bags,
-#'   instances` are automatically extracted, and all other columns will be used
-#'   as predictors.
+#'   row represents an instance. If a `mi_df` object is passed, `y, bags` are
+#'   automatically extracted, and all other columns will be used as predictors.
+#'   If a `mild_df` object is passed, `y, bags, instances` are automatically
+#'   extracted, and all other columns will be used as predictors.
 #' @param y A numeric, character, or factor vector of bag labels for each
 #'   instance.  Must satisfy `length(y) == nrow(x)`. Suggest that one of the
 #'   levels is 1, '1', or TRUE, which becomes the positive class; otherwise, a

@@ -18,9 +18,13 @@ validate_smm <- function(x) {
 #' train the appropriate SVM model.
 #'
 #' @inheritParams mismm
-#' @param formula A formula that defines the outcome `y` and covariates `x`.
-#'   This argument is an alternative to the `x, y, bags, instances ` arguments,
-#'   but requires the `data` argument. See examples.
+#' @param x A data.frame, matrix, or similar object of covariates, where each
+#'   row represents a sample. If a `mild_df` object is passed, `y, instances`
+#'   are automatically extracted, `bags` is ignored, and all other columns will
+#'   be used as predictors.
+#' @param formula A formula with specification `y ~ x`. This argument is an
+#'   alternative to the `x`, `y` arguments, but requires the `data` and
+#'   `instances` argument. See examples.
 #' @param cost The cost parameter in SVM, fed to the `C` argument in
 #'   `kernlab::ksvm()`.
 #' @param control A list of additional parameters passed to the method that

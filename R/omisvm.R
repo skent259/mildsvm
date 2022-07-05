@@ -23,7 +23,8 @@ validate_omisvm <- function(x) {
 #'
 #' @inheritParams misvm
 #' @param x A data.frame, matrix, or similar object of covariates, where each
-#'   row represents a sample.
+#'   row represents an instance. If a `mi_df` object is passed, `y, bags` are
+#'   automatically extracted, and all other columns will be used as predictors.
 #' @param h A scalar that controls the trade-off between maximizing the margin
 #'   and minimizing distance between hyperplanes.
 #' @param s An integer for how many replication points to add to the dataset. If

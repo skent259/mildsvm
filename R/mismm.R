@@ -25,6 +25,10 @@ validate_mismm <- function(x) {
 #' using the gurobi package optimization back-end.
 #'
 #' @inheritParams misvm
+#' @param x A data.frame, matrix, or similar object of covariates, where each
+#'   row represents a sample. If a `mild_df` object is passed, `y, bags,
+#'   instances` are automatically extracted, and all other columns will be used
+#'   as predictors.
 #' @param instances A vector specifying which samples belong to each instance.
 #'   Can be a string, numeric, of factor.
 #' @param method The algorithm to use in fitting (default `'heuristic'`).  When
