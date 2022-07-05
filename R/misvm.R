@@ -436,7 +436,7 @@ print.misvm <- function(x, digits = getOption("digits"), ...) {
   cat("", "\n")
   cat("Model info:", "\n")
   cat("  Features:")
-  str(x$features, width = getOption("width")-14)
+  utils::str(x$features, width = getOption("width")-14)
   if (method == "heuristic" || method == "qp-heuristic") {
     cat("  Number of iterations:", x$n_step, "\n")
   }

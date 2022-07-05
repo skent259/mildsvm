@@ -261,9 +261,9 @@ print.svor_exc <- function(x, digits = getOption("digits"), ...) {
   cat("", "\n")
   cat("Model info:", "\n")
   cat("  Levels of `y`:")
-  str(x$levels, width = getOption("width")-14)
+  utils::str(x$levels, width = getOption("width")-14)
   cat("  Features:")
-  str(x$features, width = getOption("width")-14)
+  utils::str(x$features, width = getOption("width")-14)
   cat("  Number of iterations:", x$n_step, "\n")
   cat("\n")
 }
