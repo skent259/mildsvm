@@ -38,13 +38,16 @@ jobs:
           r-version: ${{ matrix.config.r }}
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
-
+          
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: rcmdcheck, package=gurobi?ignore
+          dependencies: '"hard"'
+          extra-packages: any::rcmdcheck
           needs: check
-        
+
       - uses: r-lib/actions/check-r-package@v2
         env:
           _R_CHECK_FORCE_SUGGESTS_: false
-
+        with:
+          upload-snapshots: true
+          
