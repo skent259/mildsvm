@@ -38,3 +38,30 @@ saveRDS(test_df, test_path("fixtures", "misvm-test_df.rds"))
 
 
 
+## test-mismm -----------------------------------------------------------------#
+
+set.seed(8)
+train_mild_df <- generate_mild_df(
+  nbag = 10,
+  nsample = 5,
+  ninst = 3,
+  ncov = 3,
+  nimp_pos = 1, nimp_neg = 1,
+  dist = rep("mvnormal", 3),
+  mean = list(15, 0, 0)
+)
+
+set.seed(9)
+test_mild_df <- generate_mild_df(
+  nbag = 20,
+  nsample = 5,
+  ninst = 3,
+  ncov = 3,
+  nimp_pos = 1, nimp_neg = 1,
+  dist = rep("mvnormal", 3),
+  mean = list(15, 0, 0)
+)
+
+saveRDS(train_mild_df, test_path("fixtures", "mimmm-train_mild_df.rds"))
+saveRDS(test_mild_df, test_path("fixtures", "mimmm-test_mild_df.rds"))
+

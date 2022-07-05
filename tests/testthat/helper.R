@@ -1,7 +1,6 @@
 #' Combine data frame with its 'class' and 'raw' predictions
 .get_pred_matrix <- function(df, fit) {
-  pred <-
-    df %>%
+  df %>%
     dplyr::bind_cols(predict(fit, new_data = df)) %>%
     dplyr::bind_cols(predict(fit, new_data = df, type = "raw"))
 }
@@ -27,3 +26,14 @@
            ...)
 }
 
+#' Thin wrapper to run `mismm()` in tests
+.run_mismm <- function(df,
+                       features = 4:6,
+                       ...) {
+  df <- tibble::as_tibble(df)
+  mismm(x = df[, features],
+        y = df$bag_label,
+        bags = df$bag_name,
+        instances = df$instance_name,
+        ...)
+}

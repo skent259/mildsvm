@@ -536,16 +536,16 @@
       # A tibble: 1,200 x 1
          .pred_class
          <fct>      
-       1 0          
-       2 0          
-       3 0          
-       4 0          
-       5 0          
-       6 0          
-       7 0          
-       8 0          
-       9 0          
-      10 0          
+       1 1          
+       2 1          
+       3 1          
+       4 1          
+       5 1          
+       6 1          
+       7 1          
+       8 1          
+       9 1          
+      10 1          
       # ... with 1,190 more rows
     Code
       predict(mdl1, new_data = mil_data, type = "raw", layer = "bag")

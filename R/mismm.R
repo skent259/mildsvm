@@ -390,8 +390,8 @@ predict.mismm <- function(object,
                           new_instances = "instance_name",
                           kernel = NULL,
                           ...) {
-  type <- match.arg(type)
-  layer <- match.arg(layer)
+  type <- match.arg(type, c("class", "raw"))
+  layer <- match.arg(layer, c("bag", "instance"))
   method <- attr(object, "method")
   if (!is.null(new_data)) {
     new_data <- as.data.frame(new_data)
@@ -424,12 +424,11 @@ predict.mismm <- function(object,
     stop("predict.mismm requires method = 'heuristic', 'mip', 'qp-heuristic'.")
   }
 
-  pos <- .to_plus_minus(scores)
-
   if (layer == "bag") {
     bags <- .get_bags(object, new_data, new_bags)
     scores <- classify_bags(scores, bags, condense = FALSE)
   }
+  pos <- .to_plus_minus(scores)
   pos <- factor(pos, levels = c(-1, 1), labels = object$levels)
 
   res <- .pred_output(type, scores, pos)
