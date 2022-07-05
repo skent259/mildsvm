@@ -4,6 +4,8 @@
 # mildsvm
 
 <!-- badges: start -->
+
+[![R-CMD-check](https://github.com/skent259/mildsvm/workflows/R-CMD-check/badge.svg)](https://github.com/skent259/mildsvm/actions)
 <!-- badges: end -->
 
 mildsvm contains popular methods for training classifiers on
@@ -63,23 +65,26 @@ set.seed(4)
   ninst = 2, 
   nsample = 2
 ))
-#>    bag_label bag_name instance_name          X1
-#> 1          0     bag1     bag1inst1  1.50708444
-#> 2          0     bag1     bag1inst1 -0.46343763
-#> 3          0     bag1     bag1inst2  1.78996761
-#> 4          0     bag1     bag1inst2  1.67029095
-#> 5          0     bag2     bag2inst1  0.29902170
-#> 6          0     bag2     bag2inst1  0.66635959
-#> 7          0     bag2     bag2inst2  0.01178335
-#> 8          0     bag2     bag2inst2  0.14645822
-#> 9          1     bag3     bag3inst1  0.54609520
-#> 10         1     bag3     bag3inst1  0.47338270
-#> 11         1     bag3     bag3inst2  1.94206806
-#> 12         1     bag3     bag3inst2  1.24670812
-#> 13         1     bag4     bag4inst1  1.11441218
-#> 14         1     bag4     bag4inst1  0.76836731
-#> 15         1     bag4     bag4inst2  0.11066462
-#> 16         1     bag4     bag4inst2 -0.28980224
+#> # An MILD data frame: 16 × 4 with 4 bags, 8 instances
+#> # and instance labels: 0, 0, 0, 0, 0, ...
+#>    bag_label bag_name instance_name      X1
+#>        <dbl> <chr>    <chr>           <dbl>
+#>  1         0 bag1     bag1inst1      1.51  
+#>  2         0 bag1     bag1inst1     -0.463 
+#>  3         0 bag1     bag1inst2      1.79  
+#>  4         0 bag1     bag1inst2      1.67  
+#>  5         0 bag2     bag2inst1      0.299 
+#>  6         0 bag2     bag2inst1      0.666 
+#>  7         0 bag2     bag2inst2      0.0118
+#>  8         0 bag2     bag2inst2      0.146 
+#>  9         1 bag3     bag3inst1      0.546 
+#> 10         1 bag3     bag3inst1      0.473 
+#> 11         1 bag3     bag3inst2      1.94  
+#> 12         1 bag3     bag3inst2      1.25  
+#> 13         1 bag4     bag4inst1      1.11  
+#> 14         1 bag4     bag4inst1      0.768 
+#> 15         1 bag4     bag4inst2      0.111 
+#> 16         1 bag4     bag4inst2     -0.290
 ```
 
 If you summarize a MILD data set (for example, by taking the mean of
@@ -133,11 +138,13 @@ mild_df %>%
   dplyr::bind_cols(predict(fit2, mild_df, type = "raw")) %>% 
   dplyr::bind_cols(predict(fit2, mild_df, type = "class")) %>% 
   dplyr::distinct(bag_label, bag_name, .pred, .pred_class)
-#>   bag_label bag_name      .pred .pred_class
-#> 1         0     bag1 -1.1802769           0
-#> 2         0     bag2  0.4819931           1
-#> 3         1     bag3  1.0000008           1
-#> 4         1     bag4  1.0000017           1
+#> # A tibble: 4 × 4
+#>   bag_label bag_name  .pred .pred_class
+#>       <dbl> <chr>     <dbl> <fct>      
+#> 1         0 bag1     -1.18  0          
+#> 2         0 bag2      0.482 1          
+#> 3         1 bag3      1.00  1          
+#> 4         1 bag4      1.00  1
 ```
 
 <!-- TODO: create a vignette and link -->
