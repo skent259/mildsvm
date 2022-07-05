@@ -66,7 +66,7 @@ test_that("kme.R functions have identical output", {
 })
 
 test_that("mismm.R functions have identical output", {
-  skip_if_no_gurobi()
+  skip_if_not_installed("gurobi")
   skip_if_no_MilDistrubution()
   set.seed(8)
   mil_data <- mildsvm::generate_mild_df(ncov = 5, nbag = 10, nsample = 7,
@@ -148,7 +148,7 @@ test_that("mismm.R functions have identical output", {
 })
 
 test_that("misvm.R functions have identical output.", {
-  skip_if_no_gurobi()
+  skip_if_not_installed("gurobi")
   skip_if_no_MilDistrubution()
   set.seed(8)
   mil_data <- mildsvm::generate_mild_df(nbag = 10, nsample = 7,
@@ -199,7 +199,7 @@ test_that("misvm.R functions have identical output.", {
 })
 
 test_that("cv_misvm.R functions have identical output.", {
-  skip_if_no_gurobi()
+  skip_if_not_installed("gurobi")
   skip_if_no_MilDistrubution()
   set.seed(8)
   mil_data <- mildsvm::generate_mild_df(nbag = 10, nsample = 7,
@@ -256,7 +256,7 @@ test_that("cv_misvm.R functions have identical output.", {
 })
 
 test_that("smm.R functions have identical output", {
-  skip_if_no_gurobi()
+  skip_if_not_installed("gurobi")
   skip_if_no_MilDistrubution()
   set.seed(8)
   n_instances <- 10
@@ -295,7 +295,7 @@ test_that("smm.R functions have identical output", {
 })
 
 test_that("misvm.R functions have identical output on MilData object.", {
-  skip_if_no_gurobi()
+  skip_if_not_installed("gurobi")
   skip_if_no_MilDistrubution()
   set.seed(8)
   mil_data <- mildsvm::generate_mild_df(nbag = 10, nsample = 7,

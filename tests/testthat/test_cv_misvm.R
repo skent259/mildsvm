@@ -16,7 +16,7 @@ df_test <- mildsvm::build_instance_feature(mil_data_test, seq(0.05, 0.95, length
 cost_seq = 2^c(-2, 4)
 
 test_that("cv_misvm() works for data-frame-like inputs", {
-  skip_if_no_gurobi()
+  skip_if_not_installed("gurobi")
   set.seed(8)
   model <- cv_misvm(x = df1[, 4:123],
                     y = df1$bag_label,
@@ -99,7 +99,7 @@ test_that("cv_misvm() works for data-frame-like inputs", {
 })
 
 test_that("cv_misvm() works with formula method", {
-  skip_if_no_gurobi()
+  skip_if_not_installed("gurobi")
   set.seed(8)
   mil_data <- mildsvm::generate_mild_df(nbag = 20,
                                         nsample = 20,
@@ -157,7 +157,7 @@ test_that("cv_misvm() works with formula method", {
 })
 
 test_that("predict.cv_misvm returns labels that match the input labels", {
-  skip_if_no_gurobi()
+  skip_if_not_installed("gurobi")
   test_prediction_levels_equal <- function(df, method, class = "default") {
     mdl <- switch(class,
                   "default" = cv_misvm(x = df[, 4:123],
@@ -218,7 +218,7 @@ test_that("predict.cv_misvm returns labels that match the input labels", {
 
 
 test_that("Dots work in cv_misvm() formula", {
-  skip_if_no_gurobi()
+  skip_if_not_installed("gurobi")
   set.seed(8)
   mil_data <- generate_mild_df(nbag = 7,
                                positive_prob = 0.15,

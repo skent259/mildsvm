@@ -3,7 +3,11 @@ suppressMessages(suppressWarnings({
   library(dplyr)
 }))
 
+
+
 test_that("`build_fm()`, `kfm_exact()`, `kfm_nystrom()` examples work", {
+  skip_on_cran()
+
   expect_snapshot({
     df <- data.frame(
       X1 = c(2,   3,   4,   5,   6, 7, 8),
@@ -23,6 +27,9 @@ test_that("`build_fm()`, `kfm_exact()`, `kfm_nystrom()` examples work", {
 })
 
 test_that("`cv_misvm()` examples work", {
+  skip_on_cran()
+  skip_if_not_installed("gurobi")
+
   expect_snapshot({
     set.seed(8)
     mil_data <- generate_mild_df(nbag = 20,
@@ -62,6 +69,8 @@ test_that("`cv_misvm()` examples work", {
 })
 
 test_that("`generate_mild_df()` examples work", {
+  skip_on_cran()
+
   expect_snapshot({
     set.seed(8)
     mild_data <- generate_mild_df(nbag = 7, ninst = 3, nsample = 20,
@@ -86,6 +95,8 @@ test_that("`generate_mild_df()` examples work", {
 })
 
 test_that("`kme()` examples work", {
+  skip_on_cran()
+
   expect_snapshot({
     x = data.frame('instance_name' = c('inst_1', 'inst_2', 'inst_1'),
                    'X1' = c(-0.4, 0.5, 2))
@@ -99,6 +110,8 @@ test_that("`kme()` examples work", {
 })
 
 test_that("`mi_df()` examples work", {
+  skip_on_cran()
+
   expect_snapshot({
     mi_df('bag_label' = factor(c(1, 1, 0)),
           'bag_name' = c(rep('bag_1', 2), 'bag_2'),
@@ -110,6 +123,8 @@ test_that("`mi_df()` examples work", {
 })
 
 test_that("`mi()` examples work", {
+  skip_on_cran()
+
   expect_snapshot({
     mil_data <- generate_mild_df(positive_degree = 3, nbag = 10)
     with(mil_data, head(mi(bag_label, bag_name)))
@@ -121,6 +136,8 @@ test_that("`mi()` examples work", {
 })
 
 test_that("`mild_df()` examples work", {
+  skip_on_cran()
+
   expect_snapshot({
     mild_df('bag_label' = factor(c(1, 1, 0)),
             'bag_name' = c(rep('bag_1', 2), 'bag_2'),
@@ -133,6 +150,8 @@ test_that("`mild_df()` examples work", {
 })
 
 test_that("`mild()` examples work", {
+  skip_on_cran()
+
   expect_snapshot({
     mil_data <- generate_mild_df(positive_degree = 3, nbag = 10)
     with(mil_data, head(mild(bag_label, bag_name, instance_name)))
@@ -145,46 +164,53 @@ test_that("`mild()` examples work", {
 })
 
 test_that("`mior()` examples work", {
+  skip_on_cran()
+  skip_if_not_installed("gurobi")
+
   expect_snapshot({
-    set.seed(8)
-    # make some data
-    n <- 15
-    X <- rbind(
-      mvtnorm::rmvnorm(n/3, mean = c(4, -2, 0)),
-      mvtnorm::rmvnorm(n/3, mean = c(0, 0, 0)),
-      mvtnorm::rmvnorm(n/3, mean = c(-2, 1, 0))
-    )
-    score <- X %*% c(2, -1, 0)
-    y <- as.numeric(cut(score, c(-Inf, quantile(score, probs = 1:2 / 3), Inf)))
-    bags <- seq_along(y)
+    if (require(gurobi)) {
+      set.seed(8)
+      # make some data
+      n <- 15
+      X <- rbind(
+        mvtnorm::rmvnorm(n/3, mean = c(4, -2, 0)),
+        mvtnorm::rmvnorm(n/3, mean = c(0, 0, 0)),
+        mvtnorm::rmvnorm(n/3, mean = c(-2, 1, 0))
+      )
+      score <- X %*% c(2, -1, 0)
+      y <- as.numeric(cut(score, c(-Inf, quantile(score, probs = 1:2 / 3), Inf)))
+      bags <- seq_along(y)
 
-    # add in points outside boundaries
-    X <- rbind(
-      X,
-      mvtnorm::rmvnorm(n, mean = c(6, -3, 0)),
-      mvtnorm::rmvnorm(n, mean = c(-6, 3, 0))
-    )
-    y <- c(y, rep(-1, 2*n))
-    bags <- rep(bags, 3)
-    repr <- c(rep(1, n), rep(0, 2*n))
+      # add in points outside boundaries
+      X <- rbind(
+        X,
+        mvtnorm::rmvnorm(n, mean = c(6, -3, 0)),
+        mvtnorm::rmvnorm(n, mean = c(-6, 3, 0))
+      )
+      y <- c(y, rep(-1, 2*n))
+      bags <- rep(bags, 3)
+      repr <- c(rep(1, n), rep(0, 2*n))
 
-    y_bag <- classify_bags(y, bags, condense = FALSE)
+      y_bag <- classify_bags(y, bags, condense = FALSE)
 
-    mdl1 <- mior(X, y_bag, bags)
-    predict(mdl1, X, new_bags = bags)
+      mdl1 <- mior(X, y_bag, bags)
+      predict(mdl1, X, new_bags = bags)
 
-    # summarize predictions at the bag layer
-    df1 <- bind_cols(y = y_bag, bags = bags, as.data.frame(X))
-    df1 %>%
-      bind_cols(predict(mdl1, df1, new_bags = bags, type = "class")) %>%
-      bind_cols(predict(mdl1, df1, new_bags = bags, type = "raw")) %>%
-      distinct(y, bags, .pred_class, .pred)
+      # summarize predictions at the bag layer
+      df1 <- bind_cols(y = y_bag, bags = bags, as.data.frame(X))
+      df1 %>%
+        bind_cols(predict(mdl1, df1, new_bags = bags, type = "class")) %>%
+        bind_cols(predict(mdl1, df1, new_bags = bags, type = "raw")) %>%
+        distinct(y, bags, .pred_class, .pred)
+    }
   })
 
   expect_s3_class(mdl1, "mior")
 })
 
 test_that("`mismm()` example works", {
+  skip_on_cran()
+  skip_if_not_installed("gurobi")
 
   expect_snapshot({
     set.seed(8)
@@ -215,6 +241,8 @@ test_that("`mismm()` example works", {
 })
 
 test_that("`predict.mismm()` examples work", {
+  skip_on_cran()
+
   set.seed(8)
   expect_snapshot({
     mil_data <- generate_mild_df(nbag = 15, nsample = 20, positive_prob = 0.15,
@@ -239,6 +267,8 @@ test_that("`predict.mismm()` examples work", {
 })
 
 test_that("`misvm_orova()` examples work", {
+  skip_on_cran()
+
   expect_snapshot({
     data("ordmvnorm")
     x <- ordmvnorm[, 3:7]
@@ -261,6 +291,9 @@ test_that("`misvm_orova()` examples work", {
 })
 
 test_that("`misvm()` examples work", {
+  skip_on_cran()
+  skip_if_not_installed("gurobi")
+
   expect_snapshot({
     set.seed(8)
     mil_data <- generate_mild_df(nbag = 20,
@@ -295,27 +328,34 @@ test_that("`misvm()` examples work", {
 })
 
 test_that("`omisvm()` examples work", {
+  skip_on_cran()
+  skip_if_not_installed("gurobi")
+
   set.seed(8)
   expect_snapshot({
-    data("ordmvnorm")
-    x <- ordmvnorm[, 3:7]
-    y <- ordmvnorm$bag_label
-    bags <- ordmvnorm$bag_name
+    if (require(gurobi)) {
+      data("ordmvnorm")
+      x <- ordmvnorm[, 3:7]
+      y <- ordmvnorm$bag_label
+      bags <- ordmvnorm$bag_name
 
-    mdl1 <- omisvm(x, y, bags, weights = NULL)
-    predict(mdl1, x, new_bags = bags)
+      mdl1 <- omisvm(x, y, bags, weights = NULL)
+      predict(mdl1, x, new_bags = bags)
 
-    df1 <- bind_cols(y = y, bags = bags, as.data.frame(x))
-    df1 %>%
-      bind_cols(predict(mdl1, df1, new_bags = bags, type = "class")) %>%
-      bind_cols(predict(mdl1, df1, new_bags = bags, type = "raw")) %>%
-      distinct(y, bags, .pred_class, .pred)
+      df1 <- bind_cols(y = y, bags = bags, as.data.frame(x))
+      df1 %>%
+        bind_cols(predict(mdl1, df1, new_bags = bags, type = "class")) %>%
+        bind_cols(predict(mdl1, df1, new_bags = bags, type = "raw")) %>%
+        distinct(y, bags, .pred_class, .pred)
+    }
   })
 
   expect_s3_class(mdl1, "omisvm")
 })
 
 test_that("`smm()` examples work", {
+  skip_on_cran()
+
   expect_snapshot({
     set.seed(8)
     n_instances <- 10
@@ -343,6 +383,8 @@ test_that("`smm()` examples work", {
 })
 
 test_that("`summarize_samples()` examples work", {
+  skip_on_cran()
+
   expect_snapshot({
     fns <- list(mean = mean, sd = sd)
     suppressMessages({
@@ -357,6 +399,8 @@ test_that("`summarize_samples()` examples work", {
 })
 
 test_that("`svor_exc()` examples work", {
+  skip_on_cran()
+
   expect_snapshot({
     data("ordmvnorm")
     x <- ordmvnorm[, 3:7]

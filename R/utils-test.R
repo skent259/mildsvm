@@ -1,13 +1,3 @@
-#' Skip test when gurobi package not present
-#'
-#' @noRd
-skip_if_no_gurobi <- function() {
-  if (!requireNamespace("gurobi", quietly = TRUE)) {
-    testthat::skip("The package gurobi is not available.")
-  }
-}
-
-
 #' Evaluate ROC, MZOE, MAE from predictions
 #' @noRd
 .evaluate_ordinal_predictions <- function(true, pred, roc_cutoff, mzoe_cutoff, mae_cutoff) {

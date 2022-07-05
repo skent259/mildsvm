@@ -31,6 +31,8 @@ df1_test <- df[!train, ]
 # Tests ------------------------------------------------------------------------
 
 test_that("misvm_orova() has reasonable performance", {
+  skip_if_not_installed("gurobi")
+
   set.seed(8)
   mdl1 <- misvm_orova(mi(bag_label, bag_name) ~ .,
                       data = df1,
@@ -67,11 +69,11 @@ test_that("misvm_orova() has reasonable performance", {
 
 test_that("misvm_orova() works for data-frame-like inputs", {
 
-  # qp-heuristic method
+  # heuristic method
   mdl2 <- misvm_orova(x = as.data.frame(X),
                       y = y,
                       bags = bags,
-                      method = "qp-heuristic")
+                      method = "heuristic")
 
   expect_equal(
     predict(mdl2, new_data = df1, type = "class", layer = "bag"),
@@ -145,6 +147,8 @@ test_that("`misvm_orova()` works with `mi_df` method", {
 })
 
 test_that("predict.misvm_orova() returns labels that match the input labels", {
+  skip_if_not_installed("gurobi")
+
   test_prediction_levels_equal <- function(df, method, class = "default") {
     mdl <- switch(class,
                   "default" = misvm_orova(x = df[, 3:7],
@@ -215,15 +219,18 @@ test_that("misvm_orova() has correct argument handling", {
   mdl2 <- misvm_orova(mi(bag_label, bag_name) ~ ., data = df2, weights = FALSE)
   expect_equal(mdl1, mdl2)
 
-  expect_false(isTRUE(all.equal(
-    misvm_orova(mi(bag_label, bag_name) ~ ., data = df2, weights = c("0" = 2, "1" = 1), method = "qp-heuristic")$fits,
-    misvm_orova(mi(bag_label, bag_name) ~ ., data = df2, weights = c("0" = 1e-6, "1" = 1), method = "qp-heuristic")$fits
-  )))
-
   # `kernel`
   expect_false(isTRUE(all.equal(
     misvm_orova(mi(bag_label, bag_name) ~ ., data = df2, method = "heuristic", control = list(kernel = "radial")),
     misvm_orova(mi(bag_label, bag_name) ~ ., data = df2, method = "heuristic", control = list(kernel = "linear"))
+  )))
+
+  skip_if_not_installed("gurobi")
+
+  # `weights`
+  expect_false(isTRUE(all.equal(
+    misvm_orova(mi(bag_label, bag_name) ~ ., data = df2, weights = c("0" = 2, "1" = 1), method = "qp-heuristic")$fits,
+    misvm_orova(mi(bag_label, bag_name) ~ ., data = df2, weights = c("0" = 1e-6, "1" = 1), method = "qp-heuristic")$fits
   )))
 
   # `scale`
@@ -235,6 +242,8 @@ test_that("misvm_orova() has correct argument handling", {
 })
 
 test_that("`misvm_orova()` value returns make sense", {
+  skip_if_not_installed("gurobi")
+
   df2 <- df1[1:100, ]
 
   expect_snapshot({
@@ -255,6 +264,8 @@ test_that("`misvm_orova()` value returns make sense", {
 })
 
 test_that("Ordering of data doesn't change `misvm_orova()` results", {
+  skip_if_not_installed("gurobi")
+
   expect_predictions_equal <- function(model1, model2, data) {
     # If predictions match for `type = 'raw` and `layer = 'instance'`, they will
     # match for all other options.
