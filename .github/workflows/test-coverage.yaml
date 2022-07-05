@@ -24,7 +24,12 @@ jobs:
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           dependencies: '"hard"'
-          extra-packages: covr
+          extra-packages: |
+            any::rcmdcheck
+            any::testthat
+            any::covr
+            any::knitr
+            any::rmarkdown
           needs: check
 
       - name: Test coverage
