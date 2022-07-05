@@ -66,12 +66,20 @@
 #' @param size An integer for the expected row and column size of `kernel`
 #' @param size_str A character for the size warning that represents what the
 #'   size is
+#' @inheritParams mismm
+#' @param fun A string for the function used
 #' @noRd
-.set_kernel <- function(kernel, size, size_str) {
+.set_kernel <- function(kernel, size, size_str, method = "default", fun = "smm") {
   if (all(kernel != "radial") && !is.matrix(kernel)) {
     kernel <- "radial"
     rlang::warn(c(
       "Argument `control$kernel` must either be 'radial' or a square matrix.",
+      i = "Setting `control$kernel` = 'radial'."
+    ))
+  } else if (fun == "mismm" && method == "mip" && is.matrix(kernel)) {
+    kernel <- "radial"
+    rlang::warn(c(
+      "Must not pass `control$kernel` as matrix when using `mismm()` with `method == 'mip'`.",
       i = "Setting `control$kernel` = 'radial'."
     ))
   } else if (is.matrix(kernel)) {
@@ -223,28 +231,32 @@ convert_y <- function(y, to = "0,1") {
 #'   instances with given label, where we only count one positive instance per
 #'   bag. Otherwise, names must match the levels of `y`.
 #' @param y Output from `.convert_y()`
+#' @param pos_group A vector indicating groups for counting positive
+#'   contributions (usually bags)
+#' @param neg_group A vector indicating groups for counting negative
+#'   contributions (usually instances)
 #' @inheritParams misvm
 #' @noRd
-.set_weights <- function(w, y, bags = NULL) {
+.set_weights <- function(w, y, pos_group = NULL, neg_group = NULL) {
   lev <- y$lev
   y <- y$y
-
-  if (is.null(bags)) {
-    bags <- seq_along(y)
-  }
+  pos_group <- pos_group %||% seq_along(y)
+  neg_group <- neg_group %||% seq_along(y)
 
   if (is.numeric(w)) {
     stopifnot(names(w) == lev | names(w) == rev(lev))
     w <- w[lev]
     names(w) <- c("-1", "1")
   } else if (isTRUE(w)) {
-    bag_labels <- sapply(split(y, factor(bags)), unique)
-    w <- c("-1" = sum(bag_labels == 1) / sum(y == 0), "1" = 1)
+    pos_y <- sapply(split(y, factor(pos_group)), unique)
+    neg_y <- sapply(split(y, factor(neg_group)), unique)
+    w <- c("-1" = sum(pos_y == 1) / sum(neg_y == 0), "1" = 1)
   } else {
     w <- NULL
   }
   return(w)
 }
+
 
 #' Warn about no weights
 #' @inheritParams .set_weights

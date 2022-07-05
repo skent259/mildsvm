@@ -451,8 +451,10 @@ test_that("Passing kernel matrix into mismm works", {
     expect_equal(pred1, pred2)
   }
 
-  check_kernel_matrix_works(method = "heuristic")
-  check_kernel_matrix_works(method = "qp-heuristic")
+  check_kernel_matrix_works(method = "heuristic") %>%
+    expect_message()
+  check_kernel_matrix_works(method = "qp-heuristic") %>%
+    expect_message()
 
 })
 

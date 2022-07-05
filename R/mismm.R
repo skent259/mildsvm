@@ -151,51 +151,24 @@ mismm.default <- function(
     start = FALSE
   )
   control <- .set_default(control, defaults)
-  if ("scale" %ni% names(control) && inherits(control$kernel, "matrix")) {
-    # if kernel matrix is passed in, then really no re-scaling was done.
-    control$scale <- FALSE
-  } else if ("scale" %ni% names(control)) {
-    control$scale <- TRUE
-  }
+  control$kernel <- .set_kernel(control$kernel,
+                                size = length(unique(instances)),
+                                size_str = "unique instances",
+                                method, fun = "mismm")
+  control <- .set_scale(control)
+  kernel_arg_passed <- .set_kernel_arg_passed(control)
+
+  x_info <- .convert_x(x, scale = FALSE) # scaling done internally
+  x <- as.data.frame(x_info$x)
+  col_x <- x_info$col_x
 
   # store the levels of y and convert to 0,1 numeric format.
   y_info <- convert_y(y)
   y <- y_info$y
   lev <- y_info$lev
 
-  # store column names of x
-  col_x <- colnames(x)
-  x <- as.data.frame(x)
+  weights <- .set_weights(weights, y_info, pos_group = bags, neg_group = instances)
 
-  # weights
-  if (is.numeric(weights)) {
-    stopifnot(names(weights) == lev | names(weights) == rev(lev))
-    weights <- weights[lev]
-    names(weights) <- c("-1", "1")
-  } else if (weights) {
-    bag_labels <- sapply(split(y, factor(bags)), unique)
-    inst_labels <- sapply(split(y, factor(instances)), unique)
-    weights <- c("-1" = sum(bag_labels == 1) / sum(inst_labels == 0), "1" = 1)
-  } else {
-    weights <- NULL
-  }
-
-  # kernel
-  is_matrix_kernel <- is.matrix(control$kernel)
-  n_instances <- length(unique(instances))
-  if (all(control$kernel != "radial") && !is_matrix_kernel) {
-    warning("control$kernel must either be 'radial' or a square matrix.  Defaulting to 'radial'.")
-    control$kernel <- "radial"
-  } else if (method == "mip" && is_matrix_kernel) {
-    warning("Cannot pass matrix to control$kernel when method = 'mip'. Defaulting to 'radial'.")
-    control$kernel <- "radial"
-  } else if (is_matrix_kernel) {
-    if (all(dim(control$kernel) != c(n_instances, n_instances))) {
-      warning("Matrix passed to control$kernel is not of correct size. Defaulting to 'radial'.")
-      control$kernel <- "radial"
-    }
-  }
-  kernel_arg_passed <- .set_kernel_arg_passed(control)
   if (method == "qp-heuristic") {
     if (all(control$kernel == "radial")) {
       control$kernel <- kme(df = data.frame(instance_name = instances, x), sigma = control$sigma)
@@ -222,7 +195,7 @@ mismm.default <- function(
       scale <- attr(x, "scaled:scale")
       x <- as.data.frame(x)
     }
-    y <- 2*y - 1 # convert {0,1} to {-1, 1}
+    y <- .to_plus_minus(y)
 
     r <- .reorder(y, bags, x, instances)
 
@@ -252,7 +225,7 @@ mismm.default <- function(
     stopifnot(length(y) == nrow(x))
     stopifnot(length(bags) == nrow(x))
 
-    y <- 2*y - 1 # convert {0, 1} to {-1, 1}
+    y <- .to_plus_minus(y)
     res <- misvm_mip_fit(y, bags, x,
                          c = cost,
                          rescale = control$scale,
@@ -266,7 +239,7 @@ mismm.default <- function(
     bags <- classify_bags(bags, instances)
     ind <- sapply(unique(instances), function(i) min(which(instances == i)))
 
-    y <- 2*y - 1 # convert {0,1} to {-1, 1}
+    y <- .to_plus_minus(y)
     res <- misvm_dualqpheuristic_fit(y, bags, x[ind, , drop = FALSE],
                                      c = cost,
                                      rescale = control$scale,
