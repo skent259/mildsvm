@@ -466,20 +466,27 @@
 # `mior()` examples work
 
     Code
-      set.seed(8)
-      n <- 15
-      X <- rbind(mvtnorm::rmvnorm(n / 3, mean = c(4, -2, 0)), mvtnorm::rmvnorm(n / 3,
-      mean = c(0, 0, 0)), mvtnorm::rmvnorm(n / 3, mean = c(-2, 1, 0)))
-      score <- X %*% c(2, -1, 0)
-      y <- as.numeric(cut(score, c(-Inf, quantile(score, probs = 1:2 / 3), Inf)))
-      bags <- seq_along(y)
-      X <- rbind(X, mvtnorm::rmvnorm(n, mean = c(6, -3, 0)), mvtnorm::rmvnorm(n,
-        mean = c(-6, 3, 0)))
-      y <- c(y, rep(-1, 2 * n))
-      bags <- rep(bags, 3)
-      repr <- c(rep(1, n), rep(0, 2 * n))
-      y_bag <- classify_bags(y, bags, condense = FALSE)
-      mdl1 <- mior(X, y_bag, bags)
+      if (require(gurobi)) {
+        set.seed(8)
+        n <- 15
+        X <- rbind(mvtnorm::rmvnorm(n / 3, mean = c(4, -2, 0)), mvtnorm::rmvnorm(n /
+        3, mean = c(0, 0, 0)), mvtnorm::rmvnorm(n / 3, mean = c(-2, 1, 0)))
+        score <- X %*% c(2, -1, 0)
+        y <- as.numeric(cut(score, c(-Inf, quantile(score, probs = 1:2 / 3), Inf)))
+        bags <- seq_along(y)
+        X <- rbind(X, mvtnorm::rmvnorm(n, mean = c(6, -3, 0)), mvtnorm::rmvnorm(n,
+          mean = c(-6, 3, 0)))
+        y <- c(y, rep(-1, 2 * n))
+        bags <- rep(bags, 3)
+        repr <- c(rep(1, n), rep(0, 2 * n))
+        y_bag <- classify_bags(y, bags, condense = FALSE)
+        mdl1 <- mior(X, y_bag, bags)
+        predict(mdl1, X, new_bags = bags)
+        df1 <- bind_cols(y = y_bag, bags = bags, as.data.frame(X))
+        df1 %>% bind_cols(predict(mdl1, df1, new_bags = bags, type = "class")) %>%
+          bind_cols(predict(mdl1, df1, new_bags = bags, type = "raw")) %>% distinct(y,
+          bags, .pred_class, .pred)
+      }
     Message <message>
       [Step 1] The optimization solution suggests that two intercepts are equal: b[1] == b[2].
       [Step 1] The optimization solution suggests that two intercepts are equal: b[2] == b[3].
@@ -494,28 +501,6 @@
       [Step 3] The optimization solution suggests that two intercepts are equal: b[2] == b[3].
     Warning <warning>
       [Step 3] There were NA values in `b`.  Replacing with 0.
-    Code
-      predict(mdl1, X, new_bags = bags)
-    Output
-      # A tibble: 45 x 1
-         .pred_class
-         <fct>      
-       1 2          
-       2 2          
-       3 1          
-       4 2          
-       5 2          
-       6 2          
-       7 2          
-       8 1          
-       9 1          
-      10 1          
-      # ... with 35 more rows
-    Code
-      df1 <- bind_cols(y = y_bag, bags = bags, as.data.frame(X))
-      df1 %>% bind_cols(predict(mdl1, df1, new_bags = bags, type = "class")) %>%
-        bind_cols(predict(mdl1, df1, new_bags = bags, type = "raw")) %>% distinct(y,
-        bags, .pred_class, .pred)
     Output
          y bags .pred_class       .pred
       1  3    1           2 -1.27106961
@@ -1145,35 +1130,20 @@
 # `omisvm()` examples work
 
     Code
-      data("ordmvnorm")
-      x <- ordmvnorm[, 3:7]
+      if (require(gurobi)) {
+        data("ordmvnorm")
+        x <- ordmvnorm[, 3:7]
+        y <- ordmvnorm$bag_label
+        bags <- ordmvnorm$bag_name
+        mdl1 <- omisvm(x, y, bags, weights = NULL)
+        predict(mdl1, x, new_bags = bags)
+        df1 <- bind_cols(y = y, bags = bags, as.data.frame(x))
+        df1 %>% bind_cols(predict(mdl1, df1, new_bags = bags, type = "class")) %>%
+          bind_cols(predict(mdl1, df1, new_bags = bags, type = "raw")) %>% distinct(y,
+          bags, .pred_class, .pred)
+      }
     Warning <warning>
       Dropping 'mi_df' class as required column was removed.
-    Code
-      y <- ordmvnorm$bag_label
-      bags <- ordmvnorm$bag_name
-      mdl1 <- omisvm(x, y, bags, weights = NULL)
-      predict(mdl1, x, new_bags = bags)
-    Output
-      # A tibble: 1,000 x 1
-         .pred_class
-         <fct>      
-       1 2          
-       2 2          
-       3 2          
-       4 2          
-       5 2          
-       6 4          
-       7 4          
-       8 4          
-       9 4          
-      10 4          
-      # ... with 990 more rows
-    Code
-      df1 <- bind_cols(y = y, bags = bags, as.data.frame(x))
-      df1 %>% bind_cols(predict(mdl1, df1, new_bags = bags, type = "class")) %>%
-        bind_cols(predict(mdl1, df1, new_bags = bags, type = "raw")) %>% distinct(y,
-        bags, .pred_class, .pred)
     Output
           y bags .pred_class       .pred
       1   2    1           2  2.12567387
