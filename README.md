@@ -6,6 +6,8 @@
 <!-- badges: start -->
 
 [![R-CMD-check](https://github.com/skent259/mildsvm/workflows/R-CMD-check/badge.svg)](https://github.com/skent259/mildsvm/actions)
+[![Codecov test
+coverage](https://codecov.io/gh/skent259/mildsvm/branch/master/graph/badge.svg)](https://app.codecov.io/gh/skent259/mildsvm?branch=master)
 <!-- badges: end -->
 
 mildsvm contains popular methods for training classifiers on

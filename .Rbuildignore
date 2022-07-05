@@ -8,3 +8,4 @@ local/
 ^data-raw$
 ^\.vscode$
 ^\.github$
+^codecov\.yml$
