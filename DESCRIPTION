@@ -32,7 +32,8 @@ Imports:
     tibble,
     tidyr
 Suggests: 
-    gurobi,  
+    covr,
+    gurobi,
     Matrix,
     testthat,
     utils

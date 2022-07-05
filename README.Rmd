@@ -16,6 +16,8 @@ knitr::opts_chunk$set(
 # mildsvm
 
 <!-- badges: start -->
+[![R-CMD-check](https://github.com/skent259/mildsvm/workflows/R-CMD-check/badge.svg)](https://github.com/skent259/mildsvm/actions)
+[![Codecov test coverage](https://codecov.io/gh/skent259/mildsvm/branch/master/graph/badge.svg)](https://app.codecov.io/gh/skent259/mildsvm?branch=master)
 <!-- badges: end -->
 
 mildsvm contains popular methods for training classifiers on multiple-instance learning (MIL) data.  A core feature of MIL data is that instances are grouped into bags, and only the bag label is observed (in contrast to supervised learning where all instances will have an instance label).  

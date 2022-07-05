@@ -7,3 +7,5 @@ local/
 ^\.lintr$
 ^data-raw$
 ^\.vscode$
+^\.github$
+^codecov\.yml$
