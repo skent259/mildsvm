@@ -45,8 +45,6 @@ jobs:
           extra-packages: |
             any::rcmdcheck
             any::testthat
-            any::utils
-            any::rmarkdow
           needs: check
 
       - uses: r-lib/actions/check-r-package@v2
