@@ -16,7 +16,7 @@ validate_omisvm <- function(x) {
 #' Fit MI-SVM-OR model to ordinal outcome data
 #'
 #' This function fits a modification of MI-SVM to ordinal outcome data based on
-#' the reserach method proposed by Kent and Yu.
+#' the research method proposed by Kent and Yu.
 #'
 #' Currently, the only method available is a heuristic algorithm in linear SVM
 #' space. Additional methods should be available shortly.

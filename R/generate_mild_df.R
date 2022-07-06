@@ -82,7 +82,7 @@
 #'   `n_noise_inst`, in which case `positive_prob` is ignored.  If `NULL` (the
 #'   default), instance labels are sampled first according to `positive_prob`.
 #' @param n_noise_inst An integer indicating the number of negative instances in
-#'   a positive bag. Must be specifid jointly with `positive_bag_prob`.
+#'   a positive bag. Must be specified jointly with `positive_bag_prob`.
 #'   `n_noise_inst` should be less than `ninst`.
 #' @param ... Arguments passed to or from other methods.
 #'

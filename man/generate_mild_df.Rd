@@ -81,7 +81,7 @@ probability of a bag being positive. Must be specified jointly with
 default), instance labels are sampled first according to \code{positive_prob}.}
 
 \item{n_noise_inst}{An integer indicating the number of negative instances in
-a positive bag. Must be specifid jointly with \code{positive_bag_prob}.
+a positive bag. Must be specified jointly with \code{positive_bag_prob}.
 \code{n_noise_inst} should be less than \code{ninst}.}
 
 \item{...}{Arguments passed to or from other methods.}

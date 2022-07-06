@@ -117,7 +117,7 @@ heuristic algorithm.
 }
 \description{
 This function fits a modification of MI-SVM to ordinal outcome data based on
-the reserach method proposed by Kent and Yu.
+the research method proposed by Kent and Yu.
 }
 \details{
 Currently, the only method available is a heuristic algorithm in linear SVM
