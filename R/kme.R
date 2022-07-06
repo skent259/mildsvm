@@ -50,16 +50,16 @@ kme.default <- function(df, df2 = NULL, sigma = 0.05, ...) {
             s <- lapply(s, as.matrix)
             r <- lapply(s, nrow)
             n <- length(inst_name_set)
-            K <- matrix(NA, n, n)
+            k_mat <- matrix(NA, n, n)
             for (i in 1:n) {
                 for (j in 1:i) {
-                    K[i, j] <- 1 / (r[[i]] * r[[j]]) * sum( rbf_kernel_matrix(sigma, s[[i]], s[[j]]) )
-                    if(j != i) K[j, i] <- K[i, j]
+                    k_mat[i, j] <- 1 / (r[[i]] * r[[j]]) * sum(rbf_kernel_matrix(sigma, s[[i]], s[[j]]))
+                    if (j != i) k_mat[j, i] <- k_mat[i, j]
                 }
             }
         }
     } else {
-        if (is.null(df$instance_name) | is.null(df2$instance_name)) {
+        if (is.null(df$instance_name) || is.null(df2$instance_name)) {
             stop("There should be a column of 'df' and 'df2' called 'instance_name'!")
         } else {
             instances <- df$instance_name
@@ -73,15 +73,15 @@ kme.default <- function(df, df2 = NULL, sigma = 0.05, ...) {
             r2 <- lapply(s2, nrow)
             n <- length(unique(instances))
             n2 <- length(unique(instances2))
-            K <- matrix(NA, n, n2)
+            k_mat <- matrix(NA, n, n2)
             for (i in 1:n) {
                 for (j in 1:n2) {
-                    K[i, j] <- 1 / (r[[i]] * r2[[j]]) * sum( rbf_kernel_matrix(sigma, s[[i]], s2[[j]]) )
+                    k_mat[i, j] <- 1 / (r[[i]] * r2[[j]]) * sum(rbf_kernel_matrix(sigma, s[[i]], s2[[j]]))
                 }
             }
         }
     }
-    return(K)
+    return(k_mat)
 }
 
 #' @describeIn kme S3 method for class `mild_df`
@@ -110,8 +110,8 @@ rbf_kernel_matrix <- function(sigma, x, y) {
     dota <- rowSums(x*x)/2
     dotb <- rowSums(y*y)/2
     res <- x%*%t(y)
-    for( i in 1:m ) {
-        res[,i]<- exp(2*sigma*(res[,i] - dota - rep(dotb[i],n)))
+    for (i in 1:m) {
+        res[, i]<- exp(2 * sigma * (res[, i] - dota - rep(dotb[i], n)))
     }
     return(res)
 }

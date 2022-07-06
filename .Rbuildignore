@@ -4,3 +4,9 @@
 
 local/
 ^LICENSE\.md$
+^\.lintr$
+^data-raw$
+^\.vscode$
+^\.github$
+^codecov\.yml$
+^cran-comments\.md$

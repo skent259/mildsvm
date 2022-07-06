@@ -27,15 +27,17 @@
 NULL
 
 #' @export
-summarize_samples <- function(data, group_cols, .fns, cor = FALSE, ...)
-{
+summarize_samples <- function(data, group_cols, .fns, cor = FALSE, ...) {
   UseMethod("summarize_samples")
 }
 
 #' @describeIn summarize_samples Method for data.frame-like objects.
 #' @export
-summarize_samples.default <- function(data, group_cols, .fns = list(mean = mean), cor = FALSE, ...)
-{
+summarize_samples.default <- function(data,
+                                      group_cols,
+                                      .fns = list(mean = mean),
+                                      cor = FALSE,
+                                      ...) {
   df <- data %>%
     dplyr::group_by(dplyr::all_of(dplyr::across(group_cols))) %>%
     dplyr::summarize_all(.fns) %>%
@@ -49,8 +51,7 @@ summarize_samples.default <- function(data, group_cols, .fns = list(mean = mean)
 
 #' @describeIn summarize_samples Method for `mild_df` objects.
 #' @export
-summarize_samples.mild_df <- function(data, ...)
-{
+summarize_samples.mild_df <- function(data, ...) {
   group_cols <- c("bag_label", "bag_name", "instance_name")
   return(summarize_samples.default(data, group_cols, ...))
 }
@@ -59,8 +60,7 @@ summarize_samples.mild_df <- function(data, ...)
 
 #' Compute correlations between all features of a data.frame
 #' @noRd
-.compute_cor <- function(data, group_cols)
-{
+.compute_cor <- function(data, group_cols) {
   data %>%
     dplyr::group_by(dplyr::all_of(dplyr::across(group_cols))) %>%
     tidyr::nest() %>%

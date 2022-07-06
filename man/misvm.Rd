@@ -4,6 +4,7 @@
 \alias{misvm}
 \alias{misvm.default}
 \alias{misvm.formula}
+\alias{misvm.mi_df}
 \alias{misvm.mild_df}
 \title{Fit MI-SVM model to the data}
 \usage{
@@ -23,11 +24,16 @@
 
 \method{misvm}{formula}(formula, data, ...)
 
-\method{misvm}{mild_df}(data, .fns = list(mean = mean, sd = stats::sd), cor = FALSE, ...)
+\method{misvm}{mi_df}(x, ...)
+
+\method{misvm}{mild_df}(x, .fns = list(mean = mean, sd = stats::sd), cor = FALSE, ...)
 }
 \arguments{
 \item{x}{A data.frame, matrix, or similar object of covariates, where each
-row represents a sample.}
+row represents an instance. If a \code{mi_df} object is passed, \verb{y, bags} are
+automatically extracted, and all other columns will be used as predictors.
+If a \code{mild_df} object is passed, \verb{y, bags, instances} are automatically
+extracted, and all other columns will be used as predictors.}
 
 \item{y}{A numeric, character, or factor vector of bag labels for each
 instance.  Must satisfy \code{length(y) == nrow(x)}. Suggest that one of the
@@ -86,9 +92,7 @@ alternative to the \verb{x, y, bags} arguments, but requires the \code{data}
 argument. See examples.}
 
 \item{data}{If \code{formula} is provided, a data.frame or similar from which
-formula elements will be extracted.  Otherwise, a \code{mild_df} object from
-which \verb{x, y, bags, instances} are automatically extracted. If a \code{mild_df}
-object is used, all columns will be used as predictors.}
+formula elements will be extracted.}
 
 \item{.fns}{(argument for \code{misvm.mild_df()} method) list of functions to
 summarize instances over.}
@@ -134,6 +138,9 @@ using the gurobi package optimization back-end.
 
 \item \code{formula}: Method for passing formula
 
+\item \code{mi_df}: Method for \code{mi_df} objects, automatically handling bag
+names, labels, and all covariates.
+
 \item \code{mild_df}: Method for \code{mild_df} objects. Summarize samples to the
 instance level based on specified functions, then perform \code{misvm()} on
 instance level data.
@@ -141,7 +148,9 @@ instance level data.
 
 \examples{
 set.seed(8)
-mil_data <- generate_mild_df(nbag = 15, nsample = 20, positive_degree = 3)
+mil_data <- generate_mild_df(nbag = 20,
+                             positive_prob = 0.15,
+                             sd_of_mean = rep(0.1, 3))
 df <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
 
 # Heuristic method

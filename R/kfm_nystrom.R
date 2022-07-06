@@ -57,24 +57,31 @@ kfm_nystrom <- function(df, m, r, kernel, sampling, ...) {
 
 #' @describeIn kfm_nystrom For use on objects of class `data.frame` or `matrix`.
 #' @export
-kfm_nystrom.default <- function(df, m = nrow(df), r = m, kernel = "radial", sampling = "random", ...) {
+kfm_nystrom.default <- function(df,
+                                m = nrow(df),
+                                r = m,
+                                kernel = "radial",
+                                sampling = "random",
+                                ...) {
   # TODO: check all columns are numeric
   `%ni%` <- Negate(`%in%`)
   kernel_params <- list(...)
+  sampling_arg <- .set_sampling_arg_passed(sampling)
 
   df <- as.matrix(df)
   # `sampling`
   if (is.numeric(sampling)) {
     if (length(sampling) != m)  {
       warning("Length of input 'sampling' is not equal to 'm', reverting to sampling = 'random'.")
-      sampling <- sample(1:nrow(df), m)
+      sampling <- .resample(seq_len(nrow(df)), m)
     }
-  } else if (sampling == 'random') {
-    sampling <- sample(1:nrow(df), m)
+  } else if (sampling == "random") {
+    sampling <- .resample(seq_len(nrow(df)), m)
   } else {
     stop("parameter 'sampling' must be a numeric vector or the character 'random'. ")
   }
   df_sub <- df[sampling, , drop = FALSE]
+  rownames(df_sub) <- sampling
 
   k_hat <- compute_kernel(df_sub, type = kernel, sigma = kernel_params$sigma)
 
@@ -85,13 +92,18 @@ kfm_nystrom.default <- function(df, m = nrow(df), r = m, kernel = "radial", samp
     r <- r - n_rep
     warning(paste0("Data chosen in subsample appears to be duplicated, reducing number of features to ", r))
   }
-  D <- diag(1 / sqrt(e$values[1:r]))
-  V <- t(e$vectors[, 1:r, drop = FALSE])
+  d_mat <- diag(1 / sqrt(e$values[1:r]))
+  v_mat <- t(e$vectors[, 1:r, drop = FALSE])
 
   return(new_kfm_nystrom(list(
     df_sub = df_sub,
-    dv = D %*% V,
+    dv = d_mat %*% v_mat,
     method = "nystrom",
+    params = list(
+      m = m,
+      r = r,
+      sampling = sampling_arg
+    ),
     kernel = kernel,
     kernel_params = kernel_params
   )))
@@ -100,9 +112,14 @@ kfm_nystrom.default <- function(df, m = nrow(df), r = m, kernel = "radial", samp
 #' @describeIn kfm_nystrom Ignore the information columns `'bag_label'`,
 #'   `'bag_name'`, and `'instance_name'` when calculating kernel approximation.
 #' @export
-kfm_nystrom.mild_df <- function(df, m = nrow(df), r = m, kernel = "radial", sampling = "random", ...) {
+kfm_nystrom.mild_df <- function(df,
+                                m = nrow(df),
+                                r = m,
+                                kernel = "radial",
+                                sampling = "random",
+                                ...) {
 
-  if (all(sampling == 'stratified')) {
+  if (all(sampling == "stratified")) {
     sampling <- bag_instance_sampling(df, m)
   }
   df$bag_label <- df$bag_name <- df$instance_name <- NULL
@@ -110,12 +127,25 @@ kfm_nystrom.mild_df <- function(df, m = nrow(df), r = m, kernel = "radial", samp
   return(kfm_nystrom.default(df, m, r, kernel, sampling, ...))
 }
 
+#' @export
+print.kfm_nystrom <- function(x, digits = getOption("digits"), ...) {
+  kernel_param <- .get_kernel_param_str(x, digits)
+
+  cat("A Nystrom kernel feature map object", "\n")
+  cat("", "\n")
+  cat("Parameters:", "\n")
+  cat("  m:", x$params$m, "\n")
+  cat("  r:", x$params$r, "\n")
+  cat("  kernel:", x$kernel, kernel_param, "\n")
+  cat("  sampling:", x$params$sampling, "\n")
+  cat("\n")
+}
 
 #' @describeIn build_fm Method for `kfm_nystrom` class.
 #' @export
 build_fm.kfm_nystrom <- function(kfm_fit, new_data, ...) {
   if (inherits(new_data, "mild_df")) {
-    info <- new_data[ , c("bag_label", "bag_name", "instance_name"), drop = FALSE]
+    info <- new_data[, c("bag_label", "bag_name", "instance_name"), drop = FALSE]
     new_data$bag_label <- new_data$bag_name <- new_data$instance_name <- NULL
   } else {
     info <- NULL

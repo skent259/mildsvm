@@ -1,219 +1,268 @@
-#' Function to generate mild_df using multivariate t and normal distributions.
+#' Generate mild_df using multivariate t and normal distributions.
 #'
-#' This function generates multiple instance data (a `mild_df` object) where
-#' each row corresponds to a sample from a given instance distribution.
-#' Instances are grouped into bags and the bag labels follow the standard MI
-#' assumption.
+#' This function samples multiple instance distributional data (a `mild_df`
+#' object) where each row corresponds to a sample from a given instance
+#' distribution.  Instance distributions can be multivariate t and normal, with
+#' mean and variance parameters that can be fixed or sampled based on prior
+#' parameters.  These instances are grouped into bags and the bag labels
+#' follow the standard MI assumption.
 #'
-#' To use the function, one needs to provide the total number of covariates
-#' `ncov`, to generate, and the index of the important covariates for positive
-#' and negative instances, `nimp_pos` and `nimp_neg`, respectively. The
-#' distribution of these important covariates will be a multivariate t or
-#' multivariate normal distribution, specified by `positive_dist`,
-#' `negative_dist`. The `remainder_dist` specifies the distribution of the
-#' unimportant covariates where their distributions do not differ in positive or
-#' negative instances. `nsample` i.i.d draws will be taken from the respective
-#' distributions for each instance. The `ninst` parameter specifies the number
-#' of instances in each bag and `nbag` gives how many bags in total will be
-#' generated. Hence in total the number of observations is `nsample` * `nbag` *
-#' `ninst`.
+#' The first consideration to use this function is to determine the number of
+#' bags, instances per bag, and samples per instance using the `nbag`, `ninst`,
+#' and `nsample` arguments. Next, one must consider the number of covariates
+#' `ncov`, and how those covariates will differ between instances with positive
+#' and negative labels.  Some covariates can be common between the positive and
+#' negative instances, which we call the remainder distribution.  Use `nimp_pos`
+#' and `nimp_neg` to specify the index of the important (non-remainder)
+#' covariates in the distributions with positive and negative instance labels.
 #'
-#' The default parameters for the remainder distribution is zero mean and
-#' identity covariance matrix.
+#' The structure of how many instances/bags are positive and negative is
+#' determined by `positive_prob` or the joint specification of
+#' `positive_bag_prob` and `n_noise_inst`. In the first case, instances labels
+#' have independent Bernoulli draws based on `positive_prob` and bag labels are
+#' determined by the standard MI assumption (i.e. positive if any instance in
+#' the bag is positive).  In the second case, bag labels are drawn independently
+#' as Bernoilli with `positive_bag_prob` chance of success.  Each positive bag
+#' will be given `n_noise_inst` values with instance label of 0, and the
+#' remaining with instance label of 1.
 #'
-#' @param positive_dist The distribution to be generated for important
-#'   covariates of positive instances (default 'mvt').
-#' @param negative_dist The distribution to be generated for important
-#'   covariates of negative instances (default 'mvnormal').
-#' @param remainder_dist The distribution to be generated for unimportant
-#'   covariates (default 'mvnormal').
-#' @param ncov The number of total covariates (default 10).
-#' @param nimp_pos An index of important covariates for positve covariates
-#'   (default `1:5`).
-#' @param nimp_neg An index of important covariates for negative covariates
-#'   (default `1:5`).
-#' @param nsample The number of observations for each instance (default 50).
-#' @param ninst The number of instances for each bag (default 4).
+#' The remaining arguments are used to determine the distributions used for the
+#' positive, negative, and remaining features.  Each argument will be a vector
+#' of list of length 3 corresponding to these 3 different groups.  To create
+#' different distributions, the strategy is to first draw the mean parameter
+#' from Normal(`mean`, `sd_of_mean` * I) and the covariance parameter from
+#' Wishart(`df_wishart_cov`, `cov`), with expectation equal to `cov`.  Then we
+#' can sample i.i.d. draws from the specified distribution (either multivariate
+#' normal or student's t). To ensure that each instance distribution has the
+#' same mean, set `sd_of_mean` to 0. To ensure that each instance distribution
+#' has the same covariance, set `sample_cov = FALSE`.
+#'
+#' The final data.frame will have `nsample` * `nbag` * `ninst` rows and `ncov +
+#' 3` columns including the bag_label, bag_name, instance_name, and `ncov`
+#' sampled covariates.
+#'
 #' @param nbag The number of bags (default 50).
-#' @param positive_mean The mean vector of important covariates for positive
-#'   instances. This should be of same length as `nimp_pos`
-#' @param positive_cov The covariance matrix of important covariates for
-#'   positive instances.
-#' @param negative_mean The mean vector of important covariates for negative
-#'   instances, should be of same length as `nimp_neg`
-#' @param negative_cov The covariance matrix of important covariates for
-#'   negative instances.
-#' @param positive_prob A numberic number between 0 and 1 indicating the
-#'   probability of an instance being positive.
-#' @param ... Other covariates when using t distribution or using a different
-#'   bag labeling scheme, such as:
-#'   * `positive_degree` The distribution degree, if `positive_dist = 'mvt'`.
-#'   * `negative_degree` The distribution degree, if `negative_dist = 'mvt'`.
-#'   * `remainder_degree` The distribution degree, if `remainder_dist = 'mvt'`.
-#'   * `positive_bag_prob` The Bernoulli success probability of a bag being a
-#'   positive bag. Specify this argument jointly with `n_noise_inst` to generate
-#'   the label of each bag first.
-#'   * `n_noise_inst` The number of negative instances in a positive bag.  This
-#'   should be strictly less that `ninst`.
+#' @param ninst The number of instances for each bag (default 4).
+#' @param nsample The number of samples for each instance (default 50).
+#' @param ncov The number of total covariates (default 10).
+#' @param nimp_pos An index of important covariates for positve instances
+#'   (default `1:ncov`).
+#' @param nimp_neg An index of important covariates for negative instances
+#'   (default `1:ncov`).
+#'   (default `1:ncov`).
+#' @param positive_prob A numeric value between 0 and 1 indicating the
+#'   probability of an instance being positive (default 0.2).
+#' @param dist A vector (length 3) of distributions for the positive, negative, and
+#'   remaining instances, respectively.  Distributions can be one of
+#'   `'mvnormal'` for multivariate normal or `'mvt'` for multivariate
+#'   student's t.
+#' @param mean A list (length 3) of mean vectors for the positive, negative, and
+#'   remaining distributions.  `mean[[1]]` should match `nimp_pos` in length;
+#'   `mean[[2]]` should match `nimp_neg` in length.
+#' @param sd_of_mean A vector (length 3) of standard deviations in sampling the
+#'   mean for positive, negative, and remaining distributions, where the prior
+#'   is given by `mean`.  Use `sd_of_mean = c(0, 0, 0)` to keep the mean
+#'   consistent across all instances.
+#' @param cov A list (length 3) of covariance matrices for the positive,
+#'   negative, and remaining distributions.  `cov[[3]]` should be an integer
+#'   since the dimension of remaining features can vary depending on if the
+#'   important distribution is positive or negative.
+#' @param sample_cov A logical value for whether to sample the covariance for
+#'   each distribution.  If `FALSE` (the default), each covariance is fixed at
+#'   `cov`. If `TRUE`, the prior is given by `cov` and sampled from a Wishart
+#'   distribution with `df_wishart_cov` degrees of freedom to have an
+#'   expectation of `cov`.
+#' @param df_wishart_cov A vector (length 3) of degrees-of-freedom to use in the
+#'   Wishart covariance matrix sampling.
+#' @param degree A vector (length 3) of degrees-of-freedom used when any of
+#'   `dist` is `'mvt'`.  This parameter is ignored when `dist[i] == 'mvnormal'`,
+#'   in which case `NA` can be specified.
+#' @param positive_bag_prob A numeric value between 0 and 1 indicating the
+#'   probability of a bag being positive. Must be specified jointly with
+#'   `n_noise_inst`, in which case `positive_prob` is ignored.  If `NULL` (the
+#'   default), instance labels are sampled first according to `positive_prob`.
+#' @param n_noise_inst An integer indicating the number of negative instances in
+#'   a positive bag. Must be specifid jointly with `positive_bag_prob`.
+#'   `n_noise_inst` should be less than `ninst`.
+#' @param ... Arguments passed to or from other methods.
 #'
-#' @return A mild_df object.
+#' @return A `mild_df` object.
 #'
 #' @examples
-#' mild_df1 <- generate_mild_df(positive_dist = 'mvt',
-#'                              negative_dist = 'mvnormal',
-#'                              remainder_dist = 'mvnormal',
-#'                              positive_degree = 3)
+#' set.seed(8)
+#' mild_data <- generate_mild_df(nbag = 7, ninst = 3, nsample = 20,
+#'                               ncov = 2,
+#'                               nimp_pos = 1,
+#'                               dist = rep("mvnormal", 3),
+#'                               mean = list(
+#'                                 rep(5, 1),
+#'                                 rep(15, 2),
+#'                                 0
+#'                               ))
+#'
+#' library(dplyr)
+#' distinct(mild_data, bag_label, bag_name, instance_name)
+#' split(mild_data[, 4:5], mild_data$instance_name) %>%
+#'   sapply(colMeans) %>%
+#'   round(2) %>%
+#'   t()
 #' @export
-#' @author Yifei Liu
-generate_mild_df <- function(positive_dist = c("mvt", "mvnormal"),
-                             negative_dist = c("mvnormal", "mvt"),
-                             remainder_dist = c("mvnormal", "mvt"),
-                             ncov = 10,
-                             nimp_pos = 1:5,
-                             nimp_neg = 1:5,
-                             nsample = 50,
-                             ninst = 4,
-                             nbag = 50,
-                             positive_mean = rep(0, length(nimp_pos)),
-                             positive_cov = diag(1, nrow = length(nimp_pos)),
-                             negative_mean = rep(0, length(nimp_neg)),
-                             negative_cov = diag(1, nrow = length(nimp_neg)),
-                             positive_prob = 0.2, ...)
-{
-    # remainder follows a distr with mean 0 and scale matrix identity. (Hence
-    # different cov matrix for t and normal) the positive_cov and negative_cov's
-    # are exactly the cov for the positive or negative distributions, whether or
-    # not they are t or normal.  should pass 'positive_degree',
-    # 'negative_degree' or 'remainder_degree' in '...' if any of these
-    # distributions is specified as 'mvt' sanity check
+#' @author Yifei Liu, Sean Kent
+generate_mild_df <- function(
+    nbag = 50,
+    ninst = 4,
+    nsample = 50,
+    ncov = 10,
+    nimp_pos = 1:ncov,
+    nimp_neg = 1:ncov,
+    positive_prob = 0.2,
+    dist = c("mvt", "mvnormal", "mvnormal"),
+    mean = list(rep(0, length(nimp_pos)), rep(0, length(nimp_neg)), 0),
+    sd_of_mean = c(0.5, 0.5, 0.5),
+    cov = list(diag(1, nrow = length(nimp_pos)), diag(1, nrow = length(nimp_neg)), 1),
+    sample_cov = FALSE,
+    df_wishart_cov = c(length(nimp_pos), length(nimp_neg), ncov - length(nimp_pos)),
+    degree = c(3, NA, NA),
+    positive_bag_prob = NULL,
+    n_noise_inst = NULL,
+    ...) {
+  pos <- 1
+  neg <- 2
+  rem <- 3
 
-    positive_dist <- match.arg(positive_dist)
-    negative_dist <- match.arg(negative_dist)
-    remainder_dist <- match.arg(remainder_dist)
-    dots = list(...)
+  .check_args(dist, degree, nimp_pos, nimp_neg, ncov)
+  dist[pos] <- match.arg(dist[pos], c("mvnormal", "mvt"))
+  dist[neg] <- match.arg(dist[neg], c("mvnormal", "mvt"))
+  dist[rem] <- match.arg(dist[rem], c("mvnormal", "mvt"))
 
-    data <- NULL
-    for (i in 1:nbag) {
-        data_i <- NULL
-        if (!is.null(dots$positive_bag_prob)) {
-            bag_label <- stats::rbinom(1, 1, dots$positive_bag_prob)
-            if (is.null(dots$n_noise_inst)) {
-                stop("Needs to supply 'n_noise_inst' in '...' when using 'positive_bag_prob' as an argument!")
-            } else if (dots$n_noise_inst >= ninst) {
-                stop(" 'args$n_noise_inst' should be at least 1 less than 'ninst'!")
-            }
-            if (bag_label == 1) {
-                ins_labels <- c(rep(0, dots$n_noise_inst), rep(1, ninst - dots$n_noise_inst))  ## positive label
-            } else ins_labels <- rep(0, ninst)
-        } else {
-            ins_labels <- NULL
-            bag_label <- NULL
-        }
+  # Create bag, instance, label structure
+  bag_name <- paste0("bag", 1:nbag)
+  bag_name <- rep(bag_name, each = ninst)
+  inst_name <- paste0(bag_name, paste0("inst", 1:ninst))
 
-        for (j in 1:ninst) {
-            if (is.null(ins_labels)) {
-                instance_label <- stats::rbinom(1, 1, positive_prob)
-            } else {
-                instance_label <- ins_labels[j]
-            }
-
-            if (instance_label == 1) {
-                positive_features <- switch(
-                    positive_dist,
-                    mvt = if (is.null(dots$positive_degree)) {
-                        stop("Needs to supply 'positive_degree' in '...' when using mvt for positive distribution!")
-                    } else {
-                        mvtnorm::rmvt(n = nsample,
-                                      sigma = positive_cov/(dots$positive_degree/(dots$positive_degree - 2)),
-                                      df = dots$positive_degree,
-                                      delta = positive_mean,
-                                      type = "shifted")
-                    },
-                    mvnormal = mvtnorm::rmvnorm(n = nsample,
-                                                mean = positive_mean,
-                                                sigma = positive_cov)
-                )
-                remainder_p <- ncov - length(nimp_pos)
-                data_ij <- matrix(NA, nsample, ncov)
-                data_ij[, nimp_pos] <- positive_features
-                if (remainder_p > 0) {
-                    remainder_features <- switch(
-                        remainder_dist,
-                        mvt = if (is.null(dots$remainder_degree)) {
-                            stop("Needs to supply 'remainder_degree' in '...' when using mvt for remainder distribution!")
-                        } else {
-                            mvtnorm::rmvt(n = nsample,
-                                          sigma = diag(1, remainder_p)/(dots$remainder_degree/(dots$remainder_degree - 2)),
-                                          df = dots$remainder_degree,
-                                          delta = rep(0, remainder_p),
-                                          type = "shifted")
-                        },
-                        mvnormal = mvtnorm::rmvnorm(n = nsample,
-                                                    mean = rep(0, remainder_p), sigma = diag(1, remainder_p))
-                    )
-                    data_ij[, -nimp_pos] <- remainder_features
-                } else if (remainder_p < 0) {
-                    stop("The number of important variables exceeds the number of total variables!")
-                }
-
-            } else {
-                negative_features <- switch(
-                    negative_dist,
-                    mvt = if (is.null(dots$negative_degree)) {
-                        stop("Needs to supply 'negative_degree' in '...' when using mvt for negative distribution!")
-                    } else {
-                        mvtnorm::rmvt(n = nsample,
-                                      sigma = negative_cov/(dots$negative_degree/(dots$negative_degree - 2)),
-                                      df = dots$negative_degree,
-                                      delta = negative_mean,
-                                      type = "shifted")
-                    },
-                    mvnormal = mvtnorm::rmvnorm(n = nsample,
-                                                mean = negative_mean,
-                                                sigma = negative_cov)
-                )
-                remainder_p <- ncov - length(nimp_neg)
-
-                data_ij <- matrix(NA, nsample, ncov)
-                data_ij[, nimp_neg] <- negative_features
-                if (remainder_p > 0) {
-                    remainder_features <- switch(
-                        remainder_dist,
-                        mvt = if (is.null(dots$remainder_degree)) {
-                            stop("Needs to supply 'remainder_degree' in '...' when using mvt for remainder distribution!")
-                        } else {
-                            mvtnorm::rmvt(n = nsample,
-                                          sigma = diag(1, remainder_p)/(dots$remainder_degree/(dots$remainder_degree - 2)),
-                                          df = dots$remainder_degree,
-                                          delta = rep(0, remainder_p),
-                                          type = "shifted")
-                        },
-                        mvnormal = mvtnorm::rmvnorm(n = nsample,
-                                                    mean = rep(0, remainder_p),
-                                                    sigma = diag(1, remainder_p))
-                    )
-                    data_ij[, -nimp_neg] <- remainder_features
-                } else if (remainder_p < 0) {
-                    stop("The number of important variables exceeds the number of total variables!")
-                }
-            }
-
-            data_ij <- cbind(rep(paste0("bag", i, "inst", j), nsample),
-                             as.data.frame(data_ij), rep(instance_label, nsample))
-            data_i <- rbind(data_i, data_ij)
-        }
-        bag_name <- rep(paste0("bag", i), nrow(data_i))
-        if (is.null(bag_label)) {
-            bag_label <- rep(any(data_i[, ncov + 2] == 1), nrow(data_i))
-        }
-        data <- rbind(data, cbind(bag_label, bag_name, data_i))
+  if (!is.null(positive_bag_prob)) {
+    if (is.null(n_noise_inst)) {
+      stop("Must specify `n_noise_inst` when `positive_bag_prob` is specified.")
+    } else if (n_noise_inst >= ninst) {
+      stop("Must have `n_noise_inst` < `ninst`.")
     }
-    colnames(data) = c("bag_label", "bag_name", "instance_name",
-                       paste0("X", 1:ncov), "instance_label")
+    bag_label <- stats::rbinom(nbag, 1, positive_bag_prob)
+    inst_label <- lapply(1:nbag, function(i) {
+      if (bag_label[i] == 1) {
+        rep(c(0, 1), c(n_noise_inst, ninst-n_noise_inst))
+      } else {
+        rep(0, ninst)
+      }
+    })
+    inst_label <- unlist(inst_label)
+  } else {
+    inst_label <- stats::rbinom(nbag * ninst, 1, positive_prob)
+    bag_label <- classify_bags(inst_label, bag_name, condense = FALSE)
+  }
 
-    data$bag_label <- as.numeric(data$bag_label)
-    data$bag_name <- as.character(data$bag_name)
-    data$instance_name <- as.character(data$instance_name)
+  # Sample features for each instance
+  .generate_instance_samples <- function(j) {
+    x_ij <- matrix(NA, nsample, ncov)
 
-    return(as_mild_df(data))
+    if (inst_label[j] == 1) {
+      imp <- pos
+      nimp <- nimp_pos
+    } else if (inst_label[j] == 0) {
+      imp <- neg
+      nimp <- nimp_neg
+    }
+
+    dist_mean <- sapply(mean[[imp]], stats::rnorm, n = 1, sd = sd_of_mean[[imp]])
+    if (sample_cov) {
+      dist_cov <- stats::rWishart(1, df_wishart_cov[[imp]], cov[[imp]])
+      dist_cov <- dist_cov[, , 1] / df_wishart_cov[[imp]]
+    } else {
+      dist_cov <- cov[[imp]]
+    }
+
+    imp_features <- switch(
+      dist[imp],
+      mvt = mvtnorm::rmvt(n = nsample,
+                          sigma = dist_cov / (degree[imp] / (degree[imp] - 2)),
+                          df = degree[imp],
+                          delta = dist_mean,
+                          type = "shifted"),
+      mvnormal = mvtnorm::rmvnorm(n = nsample,
+                                  mean = dist_mean,
+                                  sigma = dist_cov)
+    )
+
+    p_rem <- ncov - length(nimp)
+    if (p_rem > 0) {
+
+      dist_mean <- stats::rnorm(p_rem, mean[[rem]], sd_of_mean[[rem]])
+      if (sample_cov) {
+        dist_cov <- stats::rWishart(1, df_wishart_cov[[rem]], diag(cov[[rem]], p_rem))
+        dist_cov <- dist_cov[, , 1] / df_wishart_cov[[rem]]
+      } else {
+        dist_cov <- diag(cov[[rem]], p_rem)
+      }
+
+      rem_features <- switch(
+        dist[rem],
+        mvt = mvtnorm::rmvt(n = nsample,
+                            sigma = dist_cov / (degree[rem] / (degree[rem] - 2)),
+                            df = degree[rem],
+                            delta = dist_mean,
+                            type = "shifted"),
+        mvnormal = mvtnorm::rmvnorm(n = nsample,
+                                    mean = dist_mean,
+                                    sigma = dist_cov)
+      )
+    } else {
+      rem_features <- numeric(nsample)
+    }
+
+    x_ij[, nimp] <- imp_features
+    x_ij[, -nimp] <- rem_features
+    colnames(x_ij) <- paste0("X", 1:ncov)
+    return(as.data.frame(x_ij))
+  }
+
+  x <- lapply(1:(nbag*ninst), .generate_instance_samples)
+  x <- do.call(rbind, x)
+
+  # Combine for output
+  bag_label <- rep(bag_label, each = nsample)
+  bag_name <- rep(bag_name, each = nsample)
+  inst_name <- rep(inst_name, each = nsample)
+  inst_label <- rep(inst_label, each = nsample)
+
+  bag_label <- as.numeric(bag_label)
+
+  out <- tibble::tibble(
+    bag_label,
+    bag_name,
+    instance_name = inst_name,
+    x,
+    instance_label = inst_label
+  )
+
+  return(as_mild_df(out))
+}
+
+#' Check arguments for `generate_mild_df()`
+#' @inheritParams generate_mild_df
+#' @param pos Index of positive distribution (default = 1)
+#' @param neg Index of positive distribution (default = 2)
+#' @param rem Index of positive distribution (default = 3)
+#' @noRd
+.check_args <- function(dist, degree, nimp_pos, nimp_neg, ncov, pos = 1, neg = 2, rem = 3) {
+  for (k in c(pos, neg, rem)) {
+    if (dist[k] == "mvt" && is.na(degree[k])) {
+      msg <- paste0("Must specify `degree[", k, "]` when `dist[", k, "] == 'mvt'`.")
+      stop(msg, call. = FALSE)
+    }
+  }
+  if (length(nimp_pos) > ncov) {
+    stop("The number of important variables `length(nimp_pos)` can't exceed `ncov`.", call. = FALSE)
+  }
+  if (length(nimp_neg) > ncov) {
+    stop("The number of important variables `length(nimp_neg)` can't exceed `ncov`.", call. = FALSE)
+  }
 }

@@ -1,39 +1,45 @@
-Package: mildsvm
 Type: Package
+Package: mildsvm
 Title: Multiple-instance Learning in R
-Version: 0.3.1
-Authors@R: 
-    c(person("Sean", "Kent",
-             email = "skent259@gmail.com",
-             role = c("aut", "cre")),
-      person("Yifei", "Liou", 
-             role = c("aut")))
-Description: mildsvm contains popular methods for training classifiers on 
-    multiple-instance learning (MIL) data. A core feature of MIL data is that 
-    instances are grouped into bags, and only the bag label is observed (in 
-    contrast to supervised learning where all instances will have an instance 
-    label).
+Version: 0.4.0
+Authors@R: c(
+    person("Sean", "Kent", , "skent259@gmail.com", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0001-8697-9069")),
+    person("Yifei", "Liou", role = "aut")
+  )
+Description: Weakly supervised (WS), multiple instance (MI) data lives in 
+    numerous interesting applications such as drug discovery, object 
+    detection, and tumor prediction on whole slide images. The mildsvm
+    package provides an easy way to learn from this data by training 
+    Support Vector Machine (SVM)-based classifiers. It also contains 
+    helpful functions for building and printing multiple instance data 
+    frames. 
 License: MIT + file LICENSE
 URL: https://github.com/skent259/mildsvm
 BugReports: https://github.com/skent259/mildsvm/issues
-Encoding: UTF-8
-LazyData: true
+Depends: 
+    R (>= 3.5.0)
 Imports:
     dplyr,
     e1071,
     kernlab,
     magrittr,
     mvtnorm,
+    pillar,
     pROC,
-    purrr, 
+    purrr,
     rlang,
-    stats, 
+    stats,
     tibble,
-    tidyr
-Suggests: 
-    gurobi,  
-    Matrix,
-    testthat,
+    tidyr,
     utils
-RoxygenNote: 7.1.1
+Suggests: 
+    covr,
+    gurobi,
+    Matrix,
+    testthat
+Config/testthat/edition: 3
+Encoding: UTF-8
+LazyData: true
 Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.2

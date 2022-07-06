@@ -4,6 +4,7 @@
 \alias{cv_misvm}
 \alias{cv_misvm.default}
 \alias{cv_misvm.formula}
+\alias{cv_misvm.mi_df}
 \title{Fit MI-SVM model to the data using cross-validation}
 \usage{
 \method{cv_misvm}{default}(
@@ -22,6 +23,8 @@
 )
 
 \method{cv_misvm}{formula}(formula, data, cost_seq, n_fold, fold_id, ...)
+
+\method{cv_misvm}{mi_df}(x, ...)
 }
 \arguments{
 \item{x}{A data.frame, matrix, or similar object of covariates, where each
@@ -91,9 +94,7 @@ alternative to the \verb{x, y, bags} arguments, but requires the \code{data}
 argument. See examples.}
 
 \item{data}{If \code{formula} is provided, a data.frame or similar from which
-formula elements will be extracted.  Otherwise, a \code{mild_df} object from
-which \verb{x, y, bags, instances} are automatically extracted. If a \code{mild_df}
-object is used, all columns will be used as predictors.}
+formula elements will be extracted.}
 }
 \value{
 An object of class \code{cv_misvm}.  The object contains the following
@@ -121,15 +122,18 @@ more details on the fitting function.
 \item \code{default}: Method for data.frame-like objects
 
 \item \code{formula}: Method for passing formula
+
+\item \code{mi_df}: Method for \code{mi_df} objects, automatically handling bag
+names, labels, and all covariates.
 }}
 
 \examples{
 set.seed(8)
-mil_data <- generate_mild_df(
-  nbag = 10,
-  nsample = 20,
-  positive_degree = 3
-)
+mil_data <- generate_mild_df(nbag = 20,
+                             positive_prob = 0.15,
+                             dist = rep("mvnormal", 3),
+                             mean = list(rep(1, 10), rep(2, 10)),
+                             sd_of_mean = rep(0.1, 3))
 df <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
 cost_seq <- 2^seq(-5, 7, length.out = 3)
 

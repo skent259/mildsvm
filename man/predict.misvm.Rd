@@ -46,12 +46,9 @@ When the object was fitted using the \code{formula} method, then the parameters
 the original function call.
 }
 \examples{
-mil_data <- generate_mild_df(
-    nbag = 20,
-    ncov = 5,
-    positive_degree = 3,
-    positive_mean = rep(5, 5)
-)
+mil_data <- generate_mild_df(nbag = 20,
+                             positive_prob = 0.15,
+                             sd_of_mean = rep(0.1, 3))
 df1 <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
 mdl1 <- misvm(x = df1[, 4:63], y = df1$bag_label,
               bags = df1$bag_name, method = "heuristic")
