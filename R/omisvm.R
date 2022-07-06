@@ -327,8 +327,7 @@ print.omisvm <- function(x, digits = getOption("digits"), ...) {
   utils::str(x$levels, width = getOption("width")-14)
   cat("  Features:")
   utils::str(x$features, width = getOption("width")-14)
-  cat("  Number of iterations:", x$n_step, "\n")
-  cat("  Gap to optimality:", x$gurobi_fit$mipgap, "\n")
+  cat("  Number of iterations:", x$gurobi_fit$n_selections, "\n")
   cat("\n")
 }
 

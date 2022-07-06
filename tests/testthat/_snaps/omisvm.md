@@ -193,8 +193,7 @@
       Model info: 
         Levels of `y`: chr [1:3] "1" "2" "3"
         Features: chr [1:5] "V1" "V2" "V3" "V4" "V5"
-        Number of iterations: 
-        Gap to optimality: 
+        Number of iterations: 2 
       
       
       $formula
@@ -212,8 +211,7 @@
       Model info: 
         Levels of `y`: chr [1:3] "1" "2" "3"
         Features: chr [1:2] "V1" "V2"
-        Number of iterations: 
-        Gap to optimality: 
+        Number of iterations: 1 
       
       
       $mi_df
@@ -231,8 +229,7 @@
       Model info: 
         Levels of `y`: chr [1:3] "1" "2" "3"
         Features: chr [1:5] "V1" "V2" "V3" "V4" "V5"
-        Number of iterations: 
-        Gap to optimality: 
+        Number of iterations: 2 
       
       
       $`no-scale`
@@ -250,8 +247,7 @@
       Model info: 
         Levels of `y`: chr [1:3] "1" "2" "3"
         Features: chr [1:5] "V1" "V2" "V3" "V4" "V5"
-        Number of iterations: 
-        Gap to optimality: 
+        Number of iterations: 3 
       
       
 
