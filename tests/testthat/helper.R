@@ -37,3 +37,13 @@
         instances = df$instance_name,
         ...)
 }
+
+#' Thin wrapper to run `omisvm()` in tests
+.run_omisvm <- function(df, .features = paste0("V", 1:5), .seed = 8, ...) {
+  set.seed(.seed) # random selection of instances
+  df <- tibble::as_tibble(df)
+  omisvm(x = df[, .features],
+         y = df$bag_label,
+         bags = df$bag_name,
+         ...)
+}

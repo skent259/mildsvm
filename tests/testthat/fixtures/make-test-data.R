@@ -65,3 +65,22 @@ test_mild_df <- generate_mild_df(
 saveRDS(train_mild_df, test_path("fixtures", "mimmm-train_mild_df.rds"))
 saveRDS(test_mild_df, test_path("fixtures", "mimmm-test_mild_df.rds"))
 
+
+## test-omisvm ----------------------------------------------------------------#
+
+# make data smaller for fast testing
+data("ordmvnorm")
+
+df <- ordmvnorm %>%
+  dplyr::filter(bag_label %in% c(1:3))
+
+train <- df$bag_name %in% unique(df$bag_name)[1:10]
+train_df <- df[train, ]
+attr(train_df, "instance_label") <- NULL
+
+test_df <- df[!train, ]
+
+saveRDS(train_df, test_path("fixtures", "omisvm-train_df.rds"))
+saveRDS(test_df, test_path("fixtures", "omisvm-test_df.rds"))
+
+
