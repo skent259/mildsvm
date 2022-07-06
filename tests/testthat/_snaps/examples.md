@@ -45,8 +45,9 @@
       10 -1.13
       # ... with 70 more rows
     Code
-      df %>% bind_cols(predict(mdl2, df, type = "class")) %>% bind_cols(predict(mdl2,
-        df, type = "raw")) %>% distinct(bag_name, bag_label, .pred_class, .pred)
+      df %>% dplyr::bind_cols(predict(mdl2, df, type = "class")) %>% dplyr::bind_cols(
+        predict(mdl2, df, type = "raw")) %>% dplyr::distinct(bag_name, bag_label,
+        .pred_class, .pred)
     Output
          bag_label bag_name .pred_class      .pred
       1          0     bag1           0 -0.5932349
@@ -76,8 +77,7 @@
       set.seed(8)
       mild_data <- generate_mild_df(nbag = 7, ninst = 3, nsample = 20, ncov = 2,
         nimp_pos = 1, dist = rep("mvnormal", 3), mean = list(rep(5, 1), rep(15, 2), 0))
-      library(dplyr)
-      distinct(mild_data, bag_label, bag_name, instance_name)
+      dplyr::distinct(mild_data, bag_label, bag_name, instance_name)
     Output
       # An MILD data frame: 21 x 3 with 7 bags, 21 instances
       # and instance labels: 0, 0, 0, 0, 0, ...
@@ -466,20 +466,27 @@
 # `mior()` examples work
 
     Code
-      set.seed(8)
-      n <- 15
-      X <- rbind(mvtnorm::rmvnorm(n / 3, mean = c(4, -2, 0)), mvtnorm::rmvnorm(n / 3,
-      mean = c(0, 0, 0)), mvtnorm::rmvnorm(n / 3, mean = c(-2, 1, 0)))
-      score <- X %*% c(2, -1, 0)
-      y <- as.numeric(cut(score, c(-Inf, quantile(score, probs = 1:2 / 3), Inf)))
-      bags <- seq_along(y)
-      X <- rbind(X, mvtnorm::rmvnorm(n, mean = c(6, -3, 0)), mvtnorm::rmvnorm(n,
-        mean = c(-6, 3, 0)))
-      y <- c(y, rep(-1, 2 * n))
-      bags <- rep(bags, 3)
-      repr <- c(rep(1, n), rep(0, 2 * n))
-      y_bag <- classify_bags(y, bags, condense = FALSE)
-      mdl1 <- mior(X, y_bag, bags)
+      if (require(gurobi)) {
+        set.seed(8)
+        n <- 15
+        X <- rbind(mvtnorm::rmvnorm(n / 3, mean = c(4, -2, 0)), mvtnorm::rmvnorm(n /
+        3, mean = c(0, 0, 0)), mvtnorm::rmvnorm(n / 3, mean = c(-2, 1, 0)))
+        score <- X %*% c(2, -1, 0)
+        y <- as.numeric(cut(score, c(-Inf, quantile(score, probs = 1:2 / 3), Inf)))
+        bags <- seq_along(y)
+        X <- rbind(X, mvtnorm::rmvnorm(n, mean = c(6, -3, 0)), mvtnorm::rmvnorm(n,
+          mean = c(-6, 3, 0)))
+        y <- c(y, rep(-1, 2 * n))
+        bags <- rep(bags, 3)
+        repr <- c(rep(1, n), rep(0, 2 * n))
+        y_bag <- classify_bags(y, bags, condense = FALSE)
+        mdl1 <- mior(X, y_bag, bags)
+        predict(mdl1, X, new_bags = bags)
+        df1 <- dplyr::bind_cols(y = y_bag, bags = bags, as.data.frame(X))
+        df1 %>% dplyr::bind_cols(predict(mdl1, df1, new_bags = bags, type = "class")) %>%
+          dplyr::bind_cols(predict(mdl1, df1, new_bags = bags, type = "raw")) %>%
+          dplyr::distinct(y, bags, .pred_class, .pred)
+      }
     Message <message>
       [Step 1] The optimization solution suggests that two intercepts are equal: b[1] == b[2].
       [Step 1] The optimization solution suggests that two intercepts are equal: b[2] == b[3].
@@ -494,28 +501,6 @@
       [Step 3] The optimization solution suggests that two intercepts are equal: b[2] == b[3].
     Warning <warning>
       [Step 3] There were NA values in `b`.  Replacing with 0.
-    Code
-      predict(mdl1, X, new_bags = bags)
-    Output
-      # A tibble: 45 x 1
-         .pred_class
-         <fct>      
-       1 2          
-       2 2          
-       3 1          
-       4 2          
-       5 2          
-       6 2          
-       7 2          
-       8 1          
-       9 1          
-      10 1          
-      # ... with 35 more rows
-    Code
-      df1 <- bind_cols(y = y_bag, bags = bags, as.data.frame(X))
-      df1 %>% bind_cols(predict(mdl1, df1, new_bags = bags, type = "class")) %>%
-        bind_cols(predict(mdl1, df1, new_bags = bags, type = "raw")) %>% distinct(y,
-        bags, .pred_class, .pred)
     Output
          y bags .pred_class       .pred
       1  3    1           2 -1.27106961
@@ -551,16 +536,16 @@
       # A tibble: 1,200 x 1
          .pred_class
          <fct>      
-       1 0          
-       2 0          
-       3 0          
-       4 0          
-       5 0          
-       6 0          
-       7 0          
-       8 0          
-       9 0          
-      10 0          
+       1 1          
+       2 1          
+       3 1          
+       4 1          
+       5 1          
+       6 1          
+       7 1          
+       8 1          
+       9 1          
+      10 1          
       # ... with 1,190 more rows
     Code
       predict(mdl1, new_data = mil_data, type = "raw", layer = "bag")
@@ -580,9 +565,9 @@
       10 -0.289
       # ... with 1,190 more rows
     Code
-      mil_data %>% bind_cols(predict(mdl2, mil_data, type = "class")) %>% bind_cols(
-        predict(mdl2, mil_data, type = "raw")) %>% distinct(bag_name, bag_label,
-        .pred_class, .pred)
+      mil_data %>% dplyr::bind_cols(predict(mdl2, mil_data, type = "class")) %>%
+        dplyr::bind_cols(predict(mdl2, mil_data, type = "raw")) %>% dplyr::distinct(
+        bag_name, bag_label, .pred_class, .pred)
     Output
       # A tibble: 15 x 4
          bag_label bag_name .pred_class   .pred
@@ -609,9 +594,9 @@
       mil_data <- generate_mild_df(nbag = 15, nsample = 20, positive_prob = 0.15,
         sd_of_mean = rep(0.1, 3))
       mdl1 <- mismm(mil_data, control = list(sigma = 1 / 5))
-      mil_data %>% bind_cols(predict(mdl1, mil_data, type = "class")) %>% bind_cols(
-        predict(mdl1, mil_data, type = "raw")) %>% distinct(bag_name, bag_label,
-        .pred_class, .pred)
+      mil_data %>% dplyr::bind_cols(predict(mdl1, mil_data, type = "class")) %>%
+        dplyr::bind_cols(predict(mdl1, mil_data, type = "raw")) %>% dplyr::distinct(
+        bag_name, bag_label, .pred_class, .pred)
     Output
       # A tibble: 15 x 4
          bag_label bag_name .pred_class   .pred
@@ -632,9 +617,9 @@
       14         1 bag14    1            0.223 
       15         1 bag15    1            0.459 
     Code
-      mil_data %>% bind_cols(predict(mdl1, mil_data, type = "class", layer = "instance")) %>%
-        bind_cols(predict(mdl1, mil_data, type = "raw", layer = "instance")) %>%
-        distinct(bag_name, instance_name, bag_label, .pred_class, .pred)
+      mil_data %>% dplyr::bind_cols(predict(mdl1, mil_data, type = "class", layer = "instance")) %>%
+        dplyr::bind_cols(predict(mdl1, mil_data, type = "raw", layer = "instance")) %>%
+        dplyr::distinct(bag_name, instance_name, bag_label, .pred_class, .pred)
     Output
       # An MILD data frame: 60 x 5 with 15 bags, 60 instances
       # and instance labels: 0, 0, 0, 0, 0, ...
@@ -680,10 +665,10 @@
       10 3          
       # ... with 990 more rows
     Code
-      df1 <- bind_cols(y = y, bags = bags, as.data.frame(x))
-      df1 %>% bind_cols(predict(mdl1, df1, new_bags = bags, type = "class")) %>%
-        bind_cols(predict(mdl1, df1, new_bags = bags, type = "raw")) %>% select(
-        -starts_with("V")) %>% distinct()
+      df1 <- dplyr::bind_cols(y = y, bags = bags, as.data.frame(x))
+      df1 %>% dplyr::bind_cols(predict(mdl1, df1, new_bags = bags, type = "class")) %>%
+        dplyr::bind_cols(predict(mdl1, df1, new_bags = bags, type = "raw")) %>%
+        dplyr::select(-starts_with("V")) %>% dplyr::distinct()
     Output
           y bags .pred_class      .pred_1     .pred_2      .pred_3      .pred_4
       1   2    1           2  0.072054072  1.24157688 -0.005075918 -0.783087461
@@ -1117,8 +1102,9 @@
       10 -1.00
       # ... with 70 more rows
     Code
-      df %>% bind_cols(predict(mdl2, df, type = "class")) %>% bind_cols(predict(mdl2,
-        df, type = "raw")) %>% distinct(bag_name, bag_label, .pred_class, .pred)
+      df %>% dplyr::bind_cols(predict(mdl2, df, type = "class")) %>% dplyr::bind_cols(
+        predict(mdl2, df, type = "raw")) %>% dplyr::distinct(bag_name, bag_label,
+        .pred_class, .pred)
     Output
          bag_label bag_name .pred_class       .pred
       1          0     bag1           0 -0.11805071
@@ -1145,35 +1131,20 @@
 # `omisvm()` examples work
 
     Code
-      data("ordmvnorm")
-      x <- ordmvnorm[, 3:7]
+      if (require(gurobi)) {
+        data("ordmvnorm")
+        x <- ordmvnorm[, 3:7]
+        y <- ordmvnorm$bag_label
+        bags <- ordmvnorm$bag_name
+        mdl1 <- omisvm(x, y, bags, weights = NULL)
+        predict(mdl1, x, new_bags = bags)
+        df1 <- dplyr::bind_cols(y = y, bags = bags, as.data.frame(x))
+        df1 %>% dplyr::bind_cols(predict(mdl1, df1, new_bags = bags, type = "class")) %>%
+          dplyr::bind_cols(predict(mdl1, df1, new_bags = bags, type = "raw")) %>%
+          dplyr::distinct(y, bags, .pred_class, .pred)
+      }
     Warning <warning>
       Dropping 'mi_df' class as required column was removed.
-    Code
-      y <- ordmvnorm$bag_label
-      bags <- ordmvnorm$bag_name
-      mdl1 <- omisvm(x, y, bags, weights = NULL)
-      predict(mdl1, x, new_bags = bags)
-    Output
-      # A tibble: 1,000 x 1
-         .pred_class
-         <fct>      
-       1 2          
-       2 2          
-       3 2          
-       4 2          
-       5 2          
-       6 4          
-       7 4          
-       8 4          
-       9 4          
-      10 4          
-      # ... with 990 more rows
-    Code
-      df1 <- bind_cols(y = y, bags = bags, as.data.frame(x))
-      df1 %>% bind_cols(predict(mdl1, df1, new_bags = bags, type = "class")) %>%
-        bind_cols(predict(mdl1, df1, new_bags = bags, type = "raw")) %>% distinct(y,
-        bags, .pred_class, .pred)
     Output
           y bags .pred_class       .pred
       1   2    1           2  2.12567387

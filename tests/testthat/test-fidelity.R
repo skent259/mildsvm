@@ -1,8 +1,6 @@
-suppressMessages(suppressWarnings({library(dplyr)}))
-
 test_that("GenerateData.R functions have identical output", {
-  skip_if_not_installed("MilDistribution")
-  
+  skip_if_not_installed("MilDistribution") %>%
+    suppressMessages()
   # Note: as of updates to 0.3.2 of mildsvm, no longer expect fidelity of
   # `generate_mild_df()`.  Just check for similarity here
 
@@ -70,7 +68,7 @@ test_that("mismm.R functions have identical output", {
   mil_data <- mil_data[-c(ind1, ind2), ]
 
   mil_data <- mil_data %>%
-    arrange(bag_label, bag_name, instance_name, X1)
+    dplyr::arrange(bag_label, bag_name, instance_name, X1)
   mil_data2 <- mil_data
   class(mil_data2) <- c("MilData", "data.frame")
 
@@ -103,10 +101,10 @@ test_that("mismm.R functions have identical output", {
 
   expect_equal(
     mil_data %>%
-      bind_cols(predict(mdl1, new_data = mil_data, type = "raw", layer = "bag")) %>%
-      distinct(bag_name, .pred) ,
+      dplyr::bind_cols(predict(mdl1, new_data = mil_data, type = "raw", layer = "bag")) %>%
+      dplyr::distinct(bag_name, .pred),
     predict(mdl2, newdata = mil_data2)$final_pred %>%
-      distinct(bag_name, bag_score) %>%
+      dplyr::distinct(bag_name, bag_score) %>%
       suppressMessages(),
     ignore_attr = TRUE
   )
@@ -116,11 +114,11 @@ test_that("mismm.R functions have identical output", {
   # positive
   # expect_equal(
   #   mil_data_ %>%
-  #     bind_cols(predict(mdl1, new_data = mil_data_, type = "raw", layer = "bag")) %>%
-  #     bind_cols(predict(mdl1, new_data = mil_data_, type = "class", layer = "bag")) %>%
-  #     distinct(bag_name, .pred, .pred_class),
+  #     dplyr::bind_cols(predict(mdl1, new_data = mil_data_, type = "raw", layer = "bag")) %>%
+  #     dplyr::bind_cols(predict(mdl1, new_data = mil_data_, type = "class", layer = "bag")) %>%
+  #     dplyr::distinct(bag_name, .pred, .pred_class),
   #   predict(mdl2, newdata = mil_data_)$final_pred %>%
-  #     distinct(bag_name, bag_score, bag_label) %>%
+  #     dplyr::distinct(bag_name, bag_score, bag_label) %>%
   #     dplyr::mutate(bag_label = as.factor(bag_label)),
   #     ignore_attr = TRUE
   # )
@@ -146,7 +144,7 @@ test_that("misvm.R functions have identical output.", {
                                         positive_prob = 0.15,
                                         sd_of_mean = rep(0.1, 3))
   df1 <- mildsvm::build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10)) %>%
-    arrange(desc(bag_label), bag_name, instance_name)
+    dplyr::arrange(desc(bag_label), bag_name, instance_name)
 
   set.seed(8)
   mildsvm_output <- mildsvm::misvm(x = df1[, 4:123],
@@ -163,15 +161,15 @@ test_that("misvm.R functions have identical output.", {
 
   # objects are quite different because of different ordering, but as long as predictions match that is okay
   mildsvm_inst_pred <- df1 %>%
-    select(bag_label, bag_name) %>%
-    bind_cols(predict(mildsvm_output, new_data = df1, layer = "instance")) %>%
-    bind_cols(predict(mildsvm_output, new_data = df1, type = "raw", layer = "instance"))
+    dplyr::select(bag_label, bag_name) %>%
+    dplyr::bind_cols(predict(mildsvm_output, new_data = df1, layer = "instance")) %>%
+    dplyr::bind_cols(predict(mildsvm_output, new_data = df1, type = "raw", layer = "instance"))
 
   mildsvm_bag_pred <- df1 %>%
-    select(bag_label, bag_name) %>%
-    bind_cols(predict(mildsvm_output, new_data = df1, type = "raw", layer = "bag")) %>%
-    bind_cols(predict(mildsvm_output, new_data = df1, layer = "bag")) %>%
-    distinct()
+    dplyr::select(bag_label, bag_name) %>%
+    dplyr::bind_cols(predict(mildsvm_output, new_data = df1, type = "raw", layer = "bag")) %>%
+    dplyr::bind_cols(predict(mildsvm_output, new_data = df1, layer = "bag")) %>%
+    dplyr::distinct()
 
   MilDistribution_pred <- predict(MilDistribution_output, newdata = df1)
 
@@ -181,8 +179,8 @@ test_that("misvm.R functions have identical output.", {
     ignore_attr = TRUE
   )
   expect_equal(
-    mildsvm_bag_pred %>% arrange(.pred) %>% pull(.pred),
-    MilDistribution_pred$bag_level_prediction %>% arrange(bag_score_pred) %>% pull(bag_score_pred),
+    mildsvm_bag_pred %>% dplyr::arrange(.pred) %>% dplyr::pull(.pred),
+    MilDistribution_pred$bag_level_prediction %>% dplyr::arrange(bag_score_pred) %>% dplyr::pull(bag_score_pred),
     ignore_attr = TRUE
   )
 
@@ -197,7 +195,7 @@ test_that("cv_misvm.R functions have identical output.", {
                                         positive_prob = 0.15,
                                         sd_of_mean = rep(0.1, 3))
   df1 <- mildsvm::build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10)) %>%
-    arrange(desc(bag_label), bag_name, instance_name)
+    dplyr::arrange(desc(bag_label), bag_name, instance_name)
 
 
   set.seed(8)
@@ -220,15 +218,15 @@ test_that("cv_misvm.R functions have identical output.", {
   expect_equal(mildsvm_cv_output$misvm_fit$n_step, MilDistribution_cv_output$BestMdl$total_step)
 
   mildsvm_inst_pred <- df1 %>%
-    select(bag_label, bag_name) %>%
-    bind_cols(predict(mildsvm_cv_output, new_data = df1, layer = "instance")) %>%
-    bind_cols(predict(mildsvm_cv_output, new_data = df1, type = "raw", layer = "instance"))
+    dplyr::select(bag_label, bag_name) %>%
+    dplyr::bind_cols(predict(mildsvm_cv_output, new_data = df1, layer = "instance")) %>%
+    dplyr::bind_cols(predict(mildsvm_cv_output, new_data = df1, type = "raw", layer = "instance"))
 
   mildsvm_bag_pred <- df1 %>%
-    select(bag_label, bag_name) %>%
-    bind_cols(predict(mildsvm_cv_output, new_data = df1, type = "raw", layer = "bag")) %>%
-    bind_cols(predict(mildsvm_cv_output, new_data = df1, layer = "bag")) %>%
-    distinct()
+    dplyr::select(bag_label, bag_name) %>%
+    dplyr::bind_cols(predict(mildsvm_cv_output, new_data = df1, type = "raw", layer = "bag")) %>%
+    dplyr::bind_cols(predict(mildsvm_cv_output, new_data = df1, layer = "bag")) %>%
+    dplyr::distinct()
 
   MilDistribution_pred <- predict(MilDistribution_cv_output$BestMdl, newdata = df1) %>%
     suppressMessages()
@@ -239,8 +237,8 @@ test_that("cv_misvm.R functions have identical output.", {
     ignore_attr = TRUE
   )
   expect_equal(
-    mildsvm_bag_pred %>% arrange(.pred) %>% pull(.pred),
-    MilDistribution_pred$bag_level_prediction %>% arrange(bag_score_pred) %>% pull(bag_score_pred),
+    mildsvm_bag_pred %>% dplyr::arrange(.pred) %>% dplyr::pull(.pred),
+    MilDistribution_pred$bag_level_prediction %>% dplyr::arrange(bag_score_pred) %>% dplyr::pull(bag_score_pred),
     ignore_attr = TRUE
   )
 
@@ -266,7 +264,7 @@ test_that("smm.R functions have identical output", {
   # NOTE: also, we need to pass a factor as `y` for `ksvm`, which wasn't made
   # explicit in yifei's code
   df <- data.frame(instance_label = factor(y), instance_name = instances, x) %>%
-    arrange(instance_name)
+    dplyr::arrange(instance_name)
 
   mdl1 <- mildsvm::smm(x = df[, c("x1", "x2", "x3")],
                        y = df$instance_label,
@@ -274,13 +272,13 @@ test_that("smm.R functions have identical output", {
                        cost = 1,
                        weights = FALSE,
                        control = list(sigma = 0.05, scale = FALSE))
-  mdl2 <- MilDistribution::SMM(df %>% arrange(instance_name))
+  mdl2 <- MilDistribution::SMM(df %>% dplyr::arrange(instance_name))
 
   expect_equal(mdl1$ksvm_fit, mdl2$ksvm_res)
   common_components <- c("sigma", "cost")
   expect_equal(mdl1[common_components], mdl2[common_components])
   expect_equal(mdl1$x,
-               mdl2$traindata %>% select(-instance_label),
+               mdl2$traindata %>% dplyr::select(-instance_label),
                ignore_attr = TRUE)
 
 })
@@ -292,7 +290,7 @@ test_that("misvm.R functions have identical output on MilData object.", {
   mil_data <- mildsvm::generate_mild_df(nbag = 10, nsample = 7,
                                         positive_prob = 0.15,
                                         sd_of_mean = rep(0.1, 3)) %>%
-    arrange(desc(bag_label), bag_name, instance_name)
+    dplyr::arrange(desc(bag_label), bag_name, instance_name)
 
   # make the quantile functions
   qtls <- seq(0.05, 0.95, length.out = 10)
@@ -318,10 +316,10 @@ test_that("misvm.R functions have identical output on MilData object.", {
 
   # objects are quite different because of different ordering, but as long as predictions match that is okay
   mildsvm_bag_pred <- mil_data %>%
-    select(bag_label, bag_name) %>%
-    bind_cols(predict(mdl1, new_data = mil_data, type = "raw", layer = "bag")) %>%
-    bind_cols(predict(mdl1, new_data = mil_data, layer = "bag")) %>%
-    distinct()
+    dplyr::select(bag_label, bag_name) %>%
+    dplyr::bind_cols(predict(mdl1, new_data = mil_data, type = "raw", layer = "bag")) %>%
+    dplyr::bind_cols(predict(mdl1, new_data = mil_data, layer = "bag")) %>%
+    dplyr::distinct()
 
   # Note prediction doesn't work in MilDistribution, but this is what it should do
   suppressWarnings({
@@ -329,8 +327,8 @@ test_that("misvm.R functions have identical output on MilData object.", {
   })
 
   expect_equal(
-    mildsvm_bag_pred %>% arrange(.pred) %>% pull(.pred),
-    MilDistribution_pred$bag_level_prediction %>% arrange(bag_score_pred) %>% pull(bag_score_pred),
+    mildsvm_bag_pred %>% dplyr::arrange(.pred) %>% dplyr::pull(.pred),
+    MilDistribution_pred$bag_level_prediction %>% dplyr::arrange(bag_score_pred) %>% dplyr::pull(bag_score_pred),
     ignore_attr = TRUE
   )
 

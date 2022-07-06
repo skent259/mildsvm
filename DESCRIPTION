@@ -1,9 +1,10 @@
 Type: Package
 Package: mildsvm
 Title: Multiple-instance Learning in R
-Version: 0.3.1.9015
+Version: 0.3.1.9016
 Authors@R: c(
-    person("Sean", "Kent", , "skent259@gmail.com", role = c("aut", "cre")),
+    person("Sean", "Kent", , "skent259@gmail.com", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0001-8697-9069")),
     person("Yifei", "Liou", role = "aut")
   )
 Description: mildsvm contains popular methods for training classifiers on
@@ -28,13 +29,13 @@ Imports:
     rlang,
     stats,
     tibble,
-    tidyr
+    tidyr,
+    utils
 Suggests: 
     covr,
     gurobi,
     Matrix,
-    testthat,
-    utils
+    testthat
 Config/testthat/edition: 3
 Encoding: UTF-8
 LazyData: true

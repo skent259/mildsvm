@@ -24,7 +24,9 @@
 }
 \arguments{
 \item{x}{A data.frame, matrix, or similar object of covariates, where each
-row represents a sample.}
+row represents an instance. If a \code{mi_df} object is passed, \code{y} is
+automatically extracted, \code{bags} is ignored, and all other columns will be
+used as predictors.}
 
 \item{y}{A numeric, character, or factor vector of bag labels for each
 instance.  Must satisfy \code{length(y) == nrow(x)}. Suggest that one of the
@@ -55,10 +57,9 @@ to the console.
 
 \item{...}{Arguments passed to or from other methods.}
 
-\item{formula}{a formula with specification \code{mi(y, bags) ~ x} which uses the
-\code{mi} function to create the bag-instance structure. This argument is an
-alternative to the \verb{x, y, bags} arguments, but requires the \code{data}
-argument. See examples.}
+\item{formula}{A formula with specification \code{y ~ x}. This argument is an
+alternative to the \code{x}, \code{y} arguments, but requires the \code{data} argument.
+See examples.}
 
 \item{data}{If \code{formula} is provided, a data.frame or similar from which
 formula elements will be extracted.}

@@ -14,6 +14,13 @@ validate_svor_exc <- function(x) {
 #' Constraints based on the research of Chu and Keerthi (2007).
 #'
 #' @inheritParams omisvm
+#' @param x A data.frame, matrix, or similar object of covariates, where each
+#'   row represents an instance. If a `mi_df` object is passed, `y` is
+#'   automatically extracted, `bags` is ignored, and all other columns will be
+#'   used as predictors.
+#' @param formula A formula with specification `y ~ x`. This argument is an
+#'   alternative to the `x`, `y` arguments, but requires the `data` argument.
+#'   See examples.
 #' @param data If `formula` is provided, a data.frame or similar from which
 #'   formula elements will be extracted.
 #' @param cost The cost parameter in SVM.

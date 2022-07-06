@@ -25,6 +25,10 @@ validate_mismm <- function(x) {
 #' using the gurobi package optimization back-end.
 #'
 #' @inheritParams misvm
+#' @param x A data.frame, matrix, or similar object of covariates, where each
+#'   row represents a sample. If a `mild_df` object is passed, `y, bags,
+#'   instances` are automatically extracted, and all other columns will be used
+#'   as predictors.
 #' @param instances A vector specifying which samples belong to each instance.
 #'   Can be a string, numeric, of factor.
 #' @param method The algorithm to use in fitting (default `'heuristic'`).  When
@@ -386,8 +390,8 @@ predict.mismm <- function(object,
                           new_instances = "instance_name",
                           kernel = NULL,
                           ...) {
-  type <- match.arg(type)
-  layer <- match.arg(layer)
+  type <- match.arg(type, c("class", "raw"))
+  layer <- match.arg(layer, c("bag", "instance"))
   method <- attr(object, "method")
   if (!is.null(new_data)) {
     new_data <- as.data.frame(new_data)
@@ -420,12 +424,11 @@ predict.mismm <- function(object,
     stop("predict.mismm requires method = 'heuristic', 'mip', 'qp-heuristic'.")
   }
 
-  pos <- .to_plus_minus(scores)
-
   if (layer == "bag") {
     bags <- .get_bags(object, new_data, new_bags)
     scores <- classify_bags(scores, bags, condense = FALSE)
   }
+  pos <- .to_plus_minus(scores)
   pos <- factor(pos, levels = c(-1, 1), labels = object$levels)
 
   res <- .pred_output(type, scores, pos)

@@ -1,8 +1,3 @@
-suppressMessages(suppressWarnings({
-  library(dplyr)
-  library(tibble)
-}))
-
 # Build a sample data set ------------------------------------------------------
 # - 3 columns, where there is a representative point and other points that are irrelevant
 
@@ -29,7 +24,7 @@ repr <- c(rep(1, 300), rep(0, 600))
 
 y_bag <- classify_bags(y, bags, condense = FALSE)
 
-df <- bind_cols(bag_label = y_bag,
+df <- dplyr::bind_cols(bag_label = y_bag,
                 bag_name = bags,
                 repr = repr,
                 as.data.frame(x))
@@ -48,7 +43,7 @@ test_that("`mior()` has reasonable performance", {
     pred_scores <- predict(model, new_data = df, type = "raw")
     pred_vec <- as.numeric(as.character(preds$.pred_class))
 
-    bag_resp <- df %>% filter(repr == 1) %>% select(bag_name, bag_label) %>% deframe()
+    bag_resp <- df %>% dplyr::filter(repr == 1) %>% dplyr::select(bag_name, bag_label) %>% tibble::deframe()
     bag_pred <- with(df, classify_bags(pred_vec, bag_name))
 
     .evaluate_ordinal_predictions(bag_resp, bag_pred, roc_cutoff, mzoe_cutoff, mae_cutoff)
@@ -99,9 +94,9 @@ test_that("`mior()` works for data-frame-like inputs", {
 
   bag_preds <-
     df1 %>%
-    bind_cols(predict(mdl2, df1, type = "class")) %>%
-    group_by(bag_name) %>%
-    summarize(bag_label = unique(bag_label),
+    dplyr::bind_cols(predict(mdl2, df1, type = "class")) %>%
+    dplyr::group_by(bag_name) %>%
+    dplyr::summarize(bag_label = unique(bag_label),
               .pred = unique(.pred_class))
 
   expect_equal(nrow(bag_preds), length(unique(df1$bag_name)))
@@ -224,33 +219,33 @@ test_that("`predict.mior()` returns labels that match the input labels", {
   }
 
   # 1:5
-  df2 <- df1 %>% mutate(bag_label = factor(bag_label))
+  df2 <- df1 %>% dplyr::mutate(bag_label = factor(bag_label))
   test_prediction_levels_equal(df2, method = "qp-heuristic")
   test_prediction_levels_equal(df2, method = "qp-heuristic", kernel = "radial")
   test_prediction_levels_equal(df2, method = "qp-heuristic", class = "formula")
 
   # 1/0
-  df2 <- df1 %>% mutate(bag_label = factor(bag_label, levels = 3:1))
+  df2 <- df1 %>% dplyr::mutate(bag_label = factor(bag_label, levels = 3:1))
   test_prediction_levels_equal(df2, method = "qp-heuristic")
   test_prediction_levels_equal(df2, method = "qp-heuristic", kernel = "radial")
   test_prediction_levels_equal(df2, method = "qp-heuristic", class = "formula")
 
   # Characters
-  df2 <- df1 %>% mutate(bag_label = factor(bag_label, labels = c("A", "B", "C")))
+  df2 <- df1 %>% dplyr::mutate(bag_label = factor(bag_label, labels = c("A", "B", "C")))
   test_prediction_levels_equal(df2, method = "qp-heuristic")
   test_prediction_levels_equal(df2, method = "qp-heuristic", kernel = "radial")
   test_prediction_levels_equal(df2, method = "qp-heuristic", class = "formula")
 
   # check re-naming of factors returns the same predictions
   df2 <- df1
-  df3 <- df1 %>% mutate(bag_label = ordered(bag_label, labels = letters[1:3]))
+  df3 <- df1 %>% dplyr::mutate(bag_label = ordered(bag_label, labels = letters[1:3]))
   suppressMessages(suppressWarnings({
     set.seed(8)
     mdl2 <- mior(mi(bag_label, bag_name) ~ V1 + V2, data = df2, weights = NULL)
     set.seed(8)
     mdl3 <- mior(mi(bag_label, bag_name) ~ V1 + V2, data = df3, weights = NULL)
   }))
-  expect_equal(predict(mdl2, df2, type = "class") %>% mutate(.pred_class = ordered(.pred_class, labels = letters[1:3])),
+  expect_equal(predict(mdl2, df2, type = "class") %>% dplyr::mutate(.pred_class = ordered(.pred_class, labels = letters[1:3])),
                predict(mdl3, df3, type = "class"),
                ignore_attr = TRUE)
   # NOTE: re-ordering of the factors in this case WILL NOT return the same model, and this is expected
@@ -260,7 +255,7 @@ test_that("`predict.mior()` returns labels that match the input labels", {
 test_that("Dots work in `mior()` formula", {
   skip_if_not_installed("gurobi")
 
-  df2 <- df1 %>% select(bag_label, bag_name, V1, V2, V3)
+  df2 <- df1 %>% dplyr::select(bag_label, bag_name, V1, V2, V3)
 
   suppressMessages(suppressWarnings({
     set.seed(8)

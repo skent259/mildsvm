@@ -151,13 +151,10 @@
 # `omisvm()` value returns make sense
 
     Code
-      models <- list(xy = omisvm(x = df1[, 3:7], y = df1$bag_label, bags = df1$
-        bag_name, method = "qp-heuristic", weights = NULL), formula = omisvm(mi(
-        bag_label, bag_name) ~ V1 + V2, method = "qp-heuristic", data = df1, weights = NULL),
-      mi_df = omisvm(as_mi_df(df1, instance_label = NULL)), `no-scale` = omisvm(x = df1[
-        , 3:7], y = df1$bag_label, bags = df1$bag_name, method = "qp-heuristic",
-      weights = NULL, control = list(scale = FALSE))) %>% suppressWarnings() %>%
-        suppressMessages()
+      models <- list(xy = .run_omisvm(df1, weights = NULL), formula = omisvm(mi(
+        bag_label, bag_name) ~ V1 + V2, data = df1, weights = NULL), mi_df = omisvm(
+        as_mi_df(df1, instance_label = NULL)), `no-scale` = .run_omisvm(df1, weights = NULL,
+        control = list(scale = FALSE))) %>% suppressWarnings() %>% suppressMessages()
       print(lapply(models, names))
     Output
       $xy
@@ -189,15 +186,14 @@
         kernel: linear  
         cost: 1 
         h: 1 
-        s: 4 
+        s: 2 
         scale: TRUE 
         weights: FALSE 
        
       Model info: 
-        Levels of `y`: chr [1:5] "1" "2" "3" "4" "5"
+        Levels of `y`: chr [1:3] "1" "2" "3"
         Features: chr [1:5] "V1" "V2" "V3" "V4" "V5"
-        Number of iterations: 
-        Gap to optimality: 
+        Number of iterations: 2 
       
       
       $formula
@@ -208,15 +204,14 @@
         kernel: linear  
         cost: 1 
         h: 1 
-        s: 4 
+        s: 2 
         scale: TRUE 
         weights: FALSE 
        
       Model info: 
-        Levels of `y`: chr [1:5] "1" "2" "3" "4" "5"
+        Levels of `y`: chr [1:3] "1" "2" "3"
         Features: chr [1:2] "V1" "V2"
-        Number of iterations: 
-        Gap to optimality: 
+        Number of iterations: 1 
       
       
       $mi_df
@@ -227,15 +222,14 @@
         kernel: linear  
         cost: 1 
         h: 1 
-        s: 4 
+        s: 2 
         scale: TRUE 
         weights: FALSE 
        
       Model info: 
-        Levels of `y`: chr [1:5] "1" "2" "3" "4" "5"
+        Levels of `y`: chr [1:3] "1" "2" "3"
         Features: chr [1:5] "V1" "V2" "V3" "V4" "V5"
-        Number of iterations: 
-        Gap to optimality: 
+        Number of iterations: 2 
       
       
       $`no-scale`
@@ -246,15 +240,14 @@
         kernel: linear  
         cost: 1 
         h: 1 
-        s: 4 
+        s: 2 
         scale: FALSE 
         weights: FALSE 
        
       Model info: 
-        Levels of `y`: chr [1:5] "1" "2" "3" "4" "5"
+        Levels of `y`: chr [1:3] "1" "2" "3"
         Features: chr [1:5] "V1" "V2" "V3" "V4" "V5"
-        Number of iterations: 
-        Gap to optimality: 
+        Number of iterations: 3 
       
       
 
@@ -269,5 +262,5 @@
       Setting levels: control = 1, case = 2
       Setting direction: controls < cases
     Output
-      Area under the curve: 0.9302
+      Area under the curve: 0.9335
 

@@ -20,13 +20,49 @@ knitr::opts_chunk$set(
 [![Codecov test coverage](https://codecov.io/gh/skent259/mildsvm/branch/master/graph/badge.svg)](https://app.codecov.io/gh/skent259/mildsvm?branch=master)
 <!-- badges: end -->
 
-mildsvm contains popular methods for training classifiers on multiple-instance learning (MIL) data.  A core feature of MIL data is that instances are grouped into bags, and only the bag label is observed (in contrast to supervised learning where all instances will have an instance label).  
+Weakly supervised (WS), multiple instance (MI) data lives in numerous interesting applications such as drug discovery, object detection, and tumor prediction on whole slide images. The `mildsvm` package provides an easy way to learn from this data by training Support Vector Machine (SVM)-based classifiers. It also contains helpful functions for building and printing multiple instance data frames. 
 
-In particular, mildsvm implements
+The `mildsvm` package implements methods that cover a variety of data types, including:
 
-- `misvm()`: The MI-SVM approach from [Andrews et al. (2003)](https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.86.8281&rep=rep1&type=pdf) "Support Vector Machines for Multiple-Instance Learning"
-- `mismm()`: Novel research code for training a MI-SVM classifier.
-- `smm()`: Support Measure Machines (for supervised data) based on [Muandet et al. (2012)](https://papers.nips.cc/paper/2012/file/9bf31c7ff062936a96d3c8bd1f8f2ff3-Paper.pdf) "Learning from Distributions via Support Measure Machines"
+- ordinal and binary labels
+- weakly supervised and traditional supervised structures 
+- vector-based and distributional-instance rows of data 
+
+A full table of functions with references is available [below](#methods-implemented). We highlight two methods based on recent research: 
+
+- `omisvm()` runs a novel OMI-SVM approach for ordinal, multiple instance (weakly supervised) data using the work of Kent and Yu (2022+)
+- `mismm()` run the MISMM approach for binary, weakly supervised data where the instances can be thought of as a matrix of draws from a distribution. This non-convex SVM approach is formalized and applied to breast cancer diagnosis based on morphological features of the tumor microenvironment in [Kent and Yu (2022)][p2].
+
+## Usage
+
+A typical MI data frame (a `mi_df`) with ordinal labels might look like this, with multiple rows of information for each of the `bag_name`s involved and a label that matches each bag: 
+
+```{r ordmvnorm}
+library(mildsvm)
+data("ordmvnorm")
+
+print(ordmvnorm)
+# dplyr::distinct(ordmvnorm, bag_label, bag_name)
+```
+
+
+The `mildsvm` package uses the familiar formula and predict methods that R uses will be familiar with. To indicate that MI data is involved, we specify the unique bag label and bag name with `mi(bag_label, bag_name) ~ predictors`:  
+
+```{r ord-example}
+fit <- omisvm(mi(bag_label, bag_name) ~ V1 + V2 + V3,
+              data = ordmvnorm, 
+              weights = NULL)
+print(fit)
+predict(fit, new_data = ordmvnorm)
+```
+
+Or, if the data frame has the `mi_df` class, we can directly pass it to the function and all features will be included:
+
+```{r ord-example-2}
+fit2 <- omisvm(ordmvnorm)
+print(fit2)
+```
+
 
 ## Installation
 
@@ -44,61 +80,103 @@ You can install the development version from [GitHub](https://github.com/) with:
 devtools::install_github("skent259/mildsvm")
 ```
 
-## Usage
+## Additional Usage
 
-mildsvm works well for two types of data: MIL and MILD.
-
-MILD data comes from a 3-level structure with *bags*, *instances*, and *samples*.  As in MIL, *instances* are contained within *bags* (where we only observe the bag label).  However, for MILD, each instance represents a distribution, and the *samples* are drawn from this distribution.  
+`mildsvm` also works well MI data with distributional instances. There is a 3-level structure with *bags*, *instances*, and *samples*.  As in MIL, *instances* are contained within *bags* (where we only observe the bag label).  However, for MILD, each instance represents a distribution, and the *samples* are drawn from this distribution.  
 
 You can generate MILD data with `generate_mild_df()`:
 
 ```{r generate_mild_df}
 # Normal(mean=0, sd=1) vs Normal(mean=3, sd=1)
-library(mildsvm)
 set.seed(4)
-(mild_df <- generate_mild_df(
+mild_df <- generate_mild_df(
   ncov = 1, nimp_pos = 1, nimp_neg = 1, 
   positive_dist = "mvnormal", positive_mean = 3,
   negative_dist = "mvnormal", negative_mean = 0, 
   nbag = 4,
   ninst = 2, 
   nsample = 2
-))
+)
+print(mild_df)
+```
 
+You can train a MISVM classifier using `mismm()` on the MILD data with the `mild()` formula specification:
+
+```{r message = FALSE}
+fit3 <- mismm(mild(bag_label, bag_name, instance_name) ~ X1, data = mild_df, cost = 100)
+
+# summarize predictions at the bag layer
+mild_df %>% 
+  dplyr::bind_cols(predict(fit3, mild_df, type = "raw")) %>% 
+  dplyr::bind_cols(predict(fit3, mild_df, type = "class")) %>% 
+  dplyr::distinct(bag_label, bag_name, .pred, .pred_class)
 ```
 
 If you summarize a MILD data set (for example, by taking the mean of each covariate), you can recover a MIL data set.  Use `summarize_samples()` for this:
 
 ```{r summarize_samples}
-( mil_df <- summarize_samples(mild_df, .fns = list(mean = mean)) )
+mil_df <- summarize_samples(mild_df, .fns = list(mean = mean)) 
+print(mil_df)
 ```
-
 
 You can train an MI-SVM classifier using `misvm()` on MIL data with the helper function `mi()`:
 
 ```{r, message = FALSE, warning=FALSE}
-fit1 <- misvm(mi(bag_label, bag_name) ~ mean, data = mil_df, cost = 100)
+fit4 <- misvm(mi(bag_label, bag_name) ~ mean, data = mil_df, cost = 100)
 
-# predict
-library(dplyr, quietly = TRUE)
-mil_df %>% 
-  dplyr::bind_cols(predict(fit1, mil_df, type = "raw")) %>% 
-  dplyr::bind_cols(predict(fit1, mil_df, type = "class")) %>% 
-  dplyr::distinct(bag_label, bag_name, .pred, .pred_class)
+print(fit4)
 ```
 
 
-Similarly, you can train a MILD-SVM classifier using `mismm()` on the MILD data:
 
-```{r message = FALSE}
-fit2 <- mismm(mild(bag_label, bag_name, instance_name) ~ X1, data = mild_df, cost = 100)
 
-# predict
-mild_df %>% 
-  dplyr::bind_cols(predict(fit2, mild_df, type = "raw")) %>% 
-  dplyr::bind_cols(predict(fit2, mild_df, type = "class")) %>% 
-  dplyr::distinct(bag_label, bag_name, .pred, .pred_class)
-```
+### Methods implemented
+
+| Function        | Method           | Outcome/label | Data type             | Extra libraries | Reference |
+|-----------------|------------------|---------------|-----------------------|-----------------|-----------|
+| `omisvm()`      | `"qp-heuristic"` | ordinal       | MI                    | gurobi          | [1]       |
+| `mismm()`       | `"heuristic"`    | binary        | distributional MI     | ---             | [2]       |
+| `mismm()`       | `"mip"`          | binary        | distributional MI     | gurobi          | [2]       |
+| `mismm()`       | `"qp-heuristic"` | binary        | distributional MI     | gurobi          | [2]       |
+| `misvm()`       | `"heuristic"`    | binary        | MI                    | ---             | [3]       |
+| `misvm()`       | `"mip"`          | binary        | MI                    | gurobi          | [3], [2]  |
+| `misvm()`       | `"qp-heuristic"` | binary        | MI                    | gurobi          | [3]       |
+| `mior()`        | `"qp-heuristic"` | ordinal       | MI                    | gurobi          | [4]       |
+| `misvm_orova()` | `"heuristic"`    | ordinal       | MI                    | ---             | [3], [1]  |
+| `misvm_orova()` | `"mip"`          | ordinal       | MI                    | gurobi          | [3], [1]  |
+| `misvm_orova()` | `"qp-heuristic"` | ordinal       | MI                    | gurobi          | [3], [1]  |
+| `svor_exc()`    | `"smo"`          | ordinal       | vector                | ---             | [5]       |
+| `smm()`         | ---              | binary        | distributional vector | ---             | [6]       |
+
+#### Table acronyms
+
+- MI: multiple instance
+- SVM: support vector machine
+- SMM: support measure machine
+- OR: ordinal regression
+- OVA: one-vs-all
+- MIP: mixed integer programming
+- QP: quadratic programming
+- SVOR: support vector ordinal regression
+- EXC: explicit constraints
+- SMO: sequential minimal optimization
+
+### References 
+
+[1] Kent, S., & Yu, M. (2022+). Ordinal multiple instance support vector machines. *In prep.*
+
+[2] [Kent, S., & Yu, M. (2022)][p2]. Non-convex SVM for cancer diagnosis based on morphologic features of tumor microenvironment. *arXiv preprint arXiv:2206.14704.*
+
+[3] Andrews, S., Tsochantaridis, I., & Hofmann, T. (2002). Support vector machines for multiple-instance learning. *Advances in neural information processing systems, 15.*
+
+[4] Xiao, Y., Liu, B., & Hao, Z. (2017). Multiple-instance ordinal regression. *IEEE Transactions on Neural Networks and Learning Systems*, *29*(9), 4398-4413.
+
+[5] Chu, W., & Keerthi, S. S. (2007). Support vector ordinal regression. *Neural computation*, *19*(3), 792-815.
+
+[6] Muandet, K., Fukumizu, K., Dinuzzo, F., & Schölkopf, B. (2012). Learning from distributions via support measure machines. *Advances in neural information processing systems*, *25*.
+
+<!-- Links that are re-used -->
+[p2]: https://arxiv.org/abs/2206.14704
 
 
 <!-- TODO: create a vignette and link -->
