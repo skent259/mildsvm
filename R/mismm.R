@@ -285,7 +285,7 @@ mismm.default <- function(
   if (method == "heuristic") {
     out$inst_order <- inst_order
   }
-  if (control$scale & method == "heuristic") {
+  if (control$scale && method == "heuristic") {
     out$x_scale <- list("center" = center, "scale" = scale)
   } else {
     out$x_scale <- res$x_scale

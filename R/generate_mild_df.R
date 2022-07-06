@@ -254,7 +254,7 @@ generate_mild_df <- function(
 #' @noRd
 .check_args <- function(dist, degree, nimp_pos, nimp_neg, ncov, pos = 1, neg = 2, rem = 3) {
   for (k in c(pos, neg, rem)) {
-    if (dist[k] == "mvt" & is.na(degree[k])) {
+    if (dist[k] == "mvt" && is.na(degree[k])) {
       msg <- paste0("Must specify `degree[", k, "]` when `dist[", k, "] == 'mvt'`.")
       stop(msg, call. = FALSE)
     }

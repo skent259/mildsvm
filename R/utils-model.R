@@ -109,10 +109,10 @@ convert_y <- function(y, to = "0,1") {
   } else if (length(lev) > 2) {
     stop(paste0("Response y has more than two levels, ", lev, ", cannot perform misvm fitting."))
   }
-  if (lev[1] == 1 | lev[1] == "1" | lev[1] == TRUE) {
+  if (lev[1] == 1 || lev[1] == "1" || lev[1] == TRUE) {
     lev <- rev(lev)
     y <- factor(y, levels = lev) # make sure 1 is second level
-  } else if (lev[2] != 1 & lev[2] != "1" & lev[2] != TRUE) {
+  } else if (lev[2] != 1 && lev[2] != "1" && lev[2] != TRUE) {
     message(paste0("Setting level ", lev[2], " to be the positive class for misvm fitting."))
   } # else lev[2] is like 1, keep it that way.
   y <- as.numeric(y) - 1
@@ -133,7 +133,7 @@ convert_y <- function(y, to = "0,1") {
   } else if (length(lev) == 2) {
     warning(paste0("Only 2 levels detected.  Consider using a non-ordinal method."))
   }
-  if (lev[1] != 1 & lev[1] != "1") {
+  if (lev[1] != 1 && lev[1] != "1") {
     message(paste0("Setting level ", lev[1], " to be the lowest ordinal level"))
   }
   y <- as.numeric(y)
@@ -284,7 +284,7 @@ convert_y <- function(y, to = "0,1") {
 #' @param kernel Taken from `control$kernel` in `omisvm()`
 #' @noRd
 .warn_omisvm_s <- function(s, k, method, kernel) {
-  if (method == "qp-heuristic" & kernel == "linear" & s != Inf) {
+  if (method == "qp-heuristic" && kernel == "linear" && s != Inf) {
     rlang::warn(
       "The argument `s` is not currently used for `kernel == 'linear'`."
     )
@@ -373,10 +373,10 @@ x_from_mild_formula <- function(formula, data) {
 #' @inheritParams predict.misvm
 #' @noRd
 .get_bags <- function(object, new_data, new_bags) {
-  if (grepl("formula", object$call_type) & new_bags[1] == "bag_name" & length(new_bags) == 1) {
+  if (grepl("formula", object$call_type) && new_bags[1] == "bag_name" && length(new_bags) == 1) {
     new_bags <- object$bag_name
   }
-  if (length(new_bags) == 1 & new_bags[1] %in% colnames(new_data)) {
+  if (length(new_bags) == 1 && new_bags[1] %in% colnames(new_data)) {
     bags <- new_data[[new_bags]]
   } else {
     bags <- new_bags
@@ -389,10 +389,10 @@ x_from_mild_formula <- function(formula, data) {
 #' @inheritParams predict.smm
 #' @noRd
 .get_instances <- function(object, new_data, new_instances) {
-  if (grepl("formula", object$call_type) & new_instances[1] == "instance_name" & length(new_instances) == 1) {
+  if (grepl("formula", object$call_type) && new_instances[1] == "instance_name" && length(new_instances) == 1) {
     new_instances <- object$instance_name
   }
-  if (length(new_instances) == 1 & new_instances[1] %in% colnames(new_data)) {
+  if (length(new_instances) == 1 && new_instances[1] %in% colnames(new_data)) {
     instances <- new_data[[new_instances]]
   } else {
     instances <- new_instances
@@ -426,7 +426,7 @@ x_from_mild_formula <- function(formula, data) {
     }
   }
   scale_eligible <- method == "qp-heuristic" || grepl("smm", object$call_type)
-  if (scale_eligible & "x_scale" %in% names(object) & is.null(kernel)) {
+  if (scale_eligible && "x_scale" %in% names(object) && is.null(kernel)) {
     new_x <- as.data.frame(scale(new_x, object$x_scale$center, object$x_scale$scale))
   }
   new_x

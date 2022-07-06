@@ -120,7 +120,7 @@ omisvm.default <- function(
 
   s <- .warn_omisvm_s(s, k, method, control$kernel)
 
-  if (method == "qp-heuristic" & control$kernel == "linear") {
+  if (method == "qp-heuristic" && control$kernel == "linear") {
     weights <- .warn_no_weights(weights, "omisvm")
     res <- omisvm_qpheuristic_fit(y, bags, x,
                                   c = cost,
@@ -271,7 +271,7 @@ predict.omisvm <- function(object,
   h <- object$h
   new_x <- .get_new_x(object, new_data)
 
-  if (method == "qp-heuristic" & object$gurobi_fit$kernel == "linear") {
+  if (method == "qp-heuristic" && object$gurobi_fit$kernel == "linear") {
     scores <- as.matrix(new_x) %*% object$gurobi_fit$w
     scores_matrix <- outer(as.vector(scores), object$gurobi_fit$b, `+`)
 
@@ -451,7 +451,7 @@ omisvm_qpheuristic_fit <- function(y,
   baritercount <- 0
   n_selections <- 0
 
-  while (selection_changed & n_selections < max_step) {
+  while (selection_changed && n_selections < max_step) {
     model <- omisvm_qpheuristic_model(y, bags, x, x_selected, c, h, weights)
     gurobi_result <- gurobi::gurobi(model, params = params)
 

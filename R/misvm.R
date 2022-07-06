@@ -193,7 +193,7 @@ misvm.default <- function(
   weights <- .set_weights(weights, y_info, bags)
 
   # Nystrom approximation to x for mip and  methods
-  if (method %in% c("mip") & control$kernel == "radial") {
+  if (method %in% c("mip") && control$kernel == "radial") {
     control$nystrom_args$df <- as.matrix(x)
     control$nystrom_args$kernel <- control$kernel
     control$nystrom_args$sigma <- control$sigma
@@ -238,7 +238,7 @@ misvm.default <- function(
   }
 
   out <- res[1]
-  if (method %in% c("mip") & control$kernel == "radial") {
+  if (method %in% c("mip") && control$kernel == "radial") {
     out$kfm_fit <- kfm_fit
   }
   out$call_type <- "misvm.default"
@@ -693,7 +693,7 @@ misvm_heuristic_fit <- function(y,
   selection_changed <- TRUE
   n_selections <- 0
 
-  while (selection_changed & n_selections < max_step) {
+  while (selection_changed && n_selections < max_step) {
     y_model <- c(rep(1, nrow(x_selected)), y[y == -1])
     b_model <- c(pos_bags, bags[y == -1])
     x_model <- rbind(x_selected,
@@ -812,7 +812,7 @@ misvm_qpheuristic_fit <- function(y,
   baritercount <- 0
   n_selections <- 0
 
-  while (selection_changed & n_selections < max_step) {
+  while (selection_changed && n_selections < max_step) {
     y_model <- c(y[y == -1], rep(1, nrow(x_selected)))
     b_model <- c(bags[y == -1], pos_bags)
     x_model <- rbind(x[y == -1, , drop = FALSE],
@@ -938,7 +938,7 @@ misvm_dualqpheuristic_fit <- function(y,
   baritercount <- 0
   n_selections <- 0
 
-  while (selection_changed & n_selections < max_step) {
+  while (selection_changed && n_selections < max_step) {
     ind <- c(which(y == -1), selected) # effective set for this iteration
     kern_ind <- kern_mat[ind, ind, drop = FALSE]
 

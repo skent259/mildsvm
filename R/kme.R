@@ -59,7 +59,7 @@ kme.default <- function(df, df2 = NULL, sigma = 0.05, ...) {
             }
         }
     } else {
-        if (is.null(df$instance_name) | is.null(df2$instance_name)) {
+        if (is.null(df$instance_name) || is.null(df2$instance_name)) {
             stop("There should be a column of 'df' and 'df2' called 'instance_name'!")
         } else {
             instances <- df$instance_name

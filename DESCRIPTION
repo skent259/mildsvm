@@ -1,7 +1,7 @@
 Type: Package
 Package: mildsvm
 Title: Multiple-instance Learning in R
-Version: 0.3.1.9016
+Version: 0.3.1.9017
 Authors@R: c(
     person("Sean", "Kent", , "skent259@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0001-8697-9069")),
@@ -16,7 +16,7 @@ License: MIT + file LICENSE
 URL: https://github.com/skent259/mildsvm
 BugReports: https://github.com/skent259/mildsvm/issues
 Depends: 
-    R (>= 2.10)
+    R (>= 3.5.0)
 Imports:
     dplyr,
     e1071,

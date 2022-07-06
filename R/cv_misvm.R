@@ -113,7 +113,7 @@ cv_misvm.default <- function(
     ...) {
 
   method <- match.arg(method, c("heuristic", "mip", "qp-heuristic"))
-  if (!missing(n_fold) & !missing(fold_id)) {
+  if (!missing(n_fold) && !missing(fold_id)) {
     message("Both n_fold and fold_id are supplied, ignoring n_fold in favor of fold_id")
   }
   stopifnot(is.numeric(cost_seq))
@@ -125,7 +125,7 @@ cv_misvm.default <- function(
 
   # weights
   if (is.numeric(weights)) {
-    stopifnot(names(weights) == lev | names(weights) == rev(lev))
+    stopifnot(names(weights) == lev || names(weights) == rev(lev))
     weights <- weights[lev]
     names(weights) <- c("0", "1")
   } else if (weights) {

@@ -332,7 +332,7 @@ smo <- function(y, kernel, c, max_step) {
   b_info <- .calculate_b(opt$alpha, opt$mu, f, c, y)
 
   i <- 0
-  while (max(b_info$B_low - b_info$B_up) > tau & i < max_step) {
+  while (max(b_info$B_low - b_info$B_up) > tau && i < max_step) {
 
     j_thresh <- which.max(b_info$B_low - b_info$B_up) # active threshold
 
@@ -444,7 +444,7 @@ smo <- function(y, kernel, c, max_step) {
 
   cap_b_low <- sapply(1:j_max, function(j) {
     # when j == j_max, mu[j+1] == 0
-    if (mu[j+1] > 0 & j != j_max) {
+    if (mu[j+1] > 0 && j != j_max) {
       cap_b_tilde_low[j+1]
     } else {
       cap_b_tilde_low[j]
@@ -452,7 +452,7 @@ smo <- function(y, kernel, c, max_step) {
   })
   cap_b_up <- sapply(1:j_max, function(j) {
     # when j == 1, mu[0] == 0
-    if (mu[j] > 0 & j != 1) {
+    if (mu[j] > 0 && j != 1) {
       cap_b_tilde_up[j-1]
     } else {
       cap_b_tilde_up[j]
