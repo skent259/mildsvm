@@ -7,11 +7,13 @@ Authors@R: c(
            comment = c(ORCID = "0000-0001-8697-9069")),
     person("Yifei", "Liou", role = "aut")
   )
-Description: mildsvm contains popular methods for training classifiers on
-    multiple-instance learning (MIL) data. A core feature of MIL data is
-    that instances are grouped into bags, and only the bag label is
-    observed (in contrast to supervised learning where all instances will
-    have an instance label).
+Description: Weakly supervised (WS), multiple instance (MI) data lives in 
+    numerous interesting applications such as drug discovery, object 
+    detection, and tumor prediction on whole slide images. The mildsvm
+    package provides an easy way to learn from this data by training 
+    Support Vector Machine (SVM)-based classifiers. It also contains 
+    helpful functions for building and printing multiple instance data 
+    frames. 
 License: MIT + file LICENSE
 URL: https://github.com/skent259/mildsvm
 BugReports: https://github.com/skent259/mildsvm/issues
