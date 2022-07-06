@@ -98,7 +98,7 @@ test_that("predict.mismm returns labels that match the input labels", {
   skip_if_not_installed("gurobi")
   df1 <- readRDS(test_path("fixtures", "mimmm-train_mild_df.rds")) %>%
     tibble::as_tibble() %>%
-    dplyr::filter(bag_name %in% c("bag1", "bag2", "bag3", "bag6"))
+    dplyr::filter(bag_name %in% c("bag1", "bag2", "bag4", "bag8"))
 
   test_prediction_levels_equal <- function(df, method, class = "default") {
     mdl <- switch(
@@ -166,7 +166,7 @@ test_that("Dots work in mismm() formula", {
 test_that("mismm() has correct argument handling", {
   skip_if_not_installed("gurobi")
   df <- readRDS(test_path("fixtures", "mimmm-train_mild_df.rds")) %>%
-    dplyr::filter(bag_name %in% c("bag1", "bag2", "bag3", "bag6"))
+    dplyr::filter(bag_name %in% c("bag1", "bag2", "bag4", "bag8"))
 
   ## weights
   mismm(df, weights = TRUE)
@@ -252,11 +252,11 @@ test_that("mismm() has correct argument handling", {
 
   ## nystrom_args
   mdl <- mismm(df, method = "mip",
-               control = list(nystrom_args = list(m = 50, r = 25)))
+               control = list(nystrom_args = list(m = 16, r = 8)))
 
-  expect_equal(length(mdl$gurobi_fit$w), 25)
-  expect_equal(dim(mdl$kfm_fit$dv), c(25, 50))
-  expect_equal(dim(mdl$kfm_fit$df_sub), c(50, ncol(df) - 3))
+  expect_equal(length(mdl$gurobi_fit$w), 8)
+  expect_equal(dim(mdl$kfm_fit$dv), c(8, 16))
+  expect_equal(dim(mdl$kfm_fit$df_sub), c(16, ncol(df) - 3))
 
   ## minimal arguments
   mismm.mild_df(df)

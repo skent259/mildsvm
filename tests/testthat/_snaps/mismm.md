@@ -3,60 +3,54 @@
     Code
       bag_preds
     Output
-      # A tibble: 10 x 4
-      # Groups:   bag_name [10]
-         bag_label bag_name .pred_class  .pred
-             <dbl> <chr>    <fct>        <dbl>
-       1         0 bag1     1            1096.
-       2         0 bag2     1             588.
-       3         1 bag3     1             913.
-       4         0 bag4     1             209.
-       5         0 bag5     0           -1195.
-       6         1 bag6     1           10652.
-       7         0 bag7     1             575.
-       8         0 bag8     1             302.
-       9         1 bag9     1           10031.
-      10         1 bag10    1             816.
+      # A tibble: 8 x 4
+      # Groups:   bag_name [8]
+        bag_label bag_name .pred_class  .pred
+            <dbl> <chr>    <fct>        <dbl>
+      1         0 bag1     1            13.6 
+      2         0 bag2     1           164.  
+      3         0 bag3     1            23.7 
+      4         1 bag4     1            47.1 
+      5         0 bag5     0           -33.2 
+      6         0 bag6     0           -31.4 
+      7         0 bag7     1             8.95
+      8         1 bag8     1           643.  
 
 ---
 
     Code
       bag_preds
     Output
-      # A tibble: 10 x 4
-      # Groups:   bag_name [10]
-         bag_label bag_name .pred_class  .pred
-             <dbl> <chr>    <fct>        <dbl>
-       1         0 bag1     0           -0.886
-       2         0 bag2     0           -0.830
-       3         1 bag3     1            1.01 
-       4         0 bag4     0           -0.895
-       5         0 bag5     0           -1.10 
-       6         1 bag6     1            1.00 
-       7         0 bag7     0           -0.918
-       8         0 bag8     0           -0.934
-       9         1 bag9     1            0.971
-      10         1 bag10    1            0.885
+      # A tibble: 8 x 4
+      # Groups:   bag_name [8]
+        bag_label bag_name .pred_class .pred
+            <dbl> <chr>    <fct>       <dbl>
+      1         0 bag1     1           0.826
+      2         0 bag2     1           0.780
+      3         0 bag3     1           0.705
+      4         1 bag4     1           1.00 
+      5         0 bag5     1           0.885
+      6         0 bag6     1           0.763
+      7         0 bag7     1           0.706
+      8         1 bag8     1           0.809
 
 ---
 
     Code
       bag_preds
     Output
-      # A tibble: 10 x 4
-      # Groups:   bag_name [10]
-         bag_label bag_name .pred_class  .pred
-             <dbl> <chr>    <fct>        <dbl>
-       1         0 bag1     0           -0.829
-       2         0 bag2     0           -0.721
-       3         1 bag3     0           -0.494
-       4         0 bag4     0           -0.880
-       5         0 bag5     0           -0.892
-       6         1 bag6     0           -0.575
-       7         0 bag7     0           -0.878
-       8         0 bag8     0           -0.805
-       9         1 bag9     0           -0.581
-      10         1 bag10    0           -0.552
+      # A tibble: 8 x 4
+      # Groups:   bag_name [8]
+        bag_label bag_name .pred_class  .pred
+            <dbl> <chr>    <fct>        <dbl>
+      1         0 bag1     0           -0.731
+      2         0 bag2     0           -0.821
+      3         0 bag3     0           -0.768
+      4         1 bag4     0           -0.617
+      5         0 bag5     0           -0.809
+      6         0 bag6     0           -0.779
+      7         0 bag7     0           -0.800
+      8         1 bag8     0           -0.638
 
 # `mismm()` value returns make sense
 
@@ -140,7 +134,7 @@
         kernel: kme w/ radial  (sigma = 0.3333333) 
         cost: 1 
         scale: TRUE 
-        weights: ('0' = 0.222222222222222, '1' = 1) 
+        weights: ('0' = 0.166666666666667, '1' = 1) 
        
       Model info: 
         Features: chr [1:3] "X1" "X2" "X3"
@@ -155,7 +149,7 @@
         kernel: kme w/ radial  (sigma = 0.3333333) 
         cost: 1 
         scale: TRUE 
-        weights: ('0' = 0.222222222222222, '1' = 1) 
+        weights: ('0' = 0.166666666666667, '1' = 1) 
        
       Model info: 
         Features: chr [1:3] "X1" "X2" "X3"
@@ -170,7 +164,7 @@
         kernel: kme w/ radial  (sigma = 0.3333333) 
         cost: 1 
         scale: TRUE 
-        weights: ('0' = 0.222222222222222, '1' = 1) 
+        weights: ('0' = 0.166666666666667, '1' = 1) 
        
       Model info: 
         Features: chr [1:3] "X1" "X2" "X3"
@@ -185,7 +179,7 @@
         kernel: kme w/ radial  (sigma = 0.3333333) 
         cost: 1 
         scale: TRUE 
-        weights: ('0' = 0.222222222222222, '1' = 1) 
+        weights: ('0' = 0.166666666666667, '1' = 1) 
        
       Model info: 
         Features: chr [1:3] "X1" "X2" "X3"
@@ -200,7 +194,7 @@
         kernel: kme w/ radial  (sigma = 0.3333333) 
         cost: 1 
         scale: TRUE 
-        weights: ('0' = 0.222222222222222, '1' = 1) 
+        weights: ('0' = 0.166666666666667, '1' = 1) 
        
       Model info: 
         Features: chr [1:3] "X1" "X2" "X3"
@@ -215,7 +209,7 @@
         kernel: kme w/ radial  (sigma = 0.3333333) 
         cost: 1 
         scale: FALSE 
-        weights: ('0' = 0.222222222222222, '1' = 1) 
+        weights: ('0' = 0.166666666666667, '1' = 1) 
        
       Model info: 
         Features: chr [1:3] "X1" "X2" "X3"
@@ -230,7 +224,7 @@
         kernel: kme w/ radial  (sigma = 0.3333333) 
         cost: 1 
         scale: FALSE 
-        weights: ('0' = 0.222222222222222, '1' = 1) 
+        weights: ('0' = 0.166666666666667, '1' = 1) 
        
       Model info: 
         Features: chr [1:3] "X1" "X2" "X3"
@@ -245,7 +239,7 @@
         kernel: kme w/ radial  (sigma = 0.3333333) 
         cost: 1 
         scale: FALSE 
-        weights: ('0' = 0.222222222222222, '1' = 1) 
+        weights: ('0' = 0.166666666666667, '1' = 1) 
        
       Model info: 
         Features: chr [1:3] "X1" "X2" "X3"

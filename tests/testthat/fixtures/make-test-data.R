@@ -42,9 +42,9 @@ saveRDS(test_df, test_path("fixtures", "misvm-test_df.rds"))
 
 set.seed(8)
 train_mild_df <- generate_mild_df(
-  nbag = 10,
-  nsample = 5,
-  ninst = 3,
+  nbag = 8,
+  nsample = 4,
+  ninst = 2,
   ncov = 3,
   nimp_pos = 1, nimp_neg = 1,
   dist = rep("mvnormal", 3),
@@ -54,8 +54,8 @@ train_mild_df <- generate_mild_df(
 set.seed(9)
 test_mild_df <- generate_mild_df(
   nbag = 20,
-  nsample = 5,
-  ninst = 3,
+  nsample = 4,
+  ninst = 2,
   ncov = 3,
   nimp_pos = 1, nimp_neg = 1,
   dist = rep("mvnormal", 3),
