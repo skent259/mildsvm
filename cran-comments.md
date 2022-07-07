@@ -1,3 +1,11 @@
+## Resubmission
+This is a resubmission. In this version I have:
+
+* Converted the DESCRIPTION title to title case.
+
+* I have added to the DESCRIPTION file the website and 
+  brief instructions for how to get the 'gurobi' package 
+
 ## R CMD check results
 
 0 errors | 0 warnings | 2 notes

@@ -1,6 +1,6 @@
 Type: Package
 Package: mildsvm
-Title: Multiple-instance Learning in R
+Title: Multiple-Instance Learning in R
 Version: 0.4.0
 Authors@R: c(
     person("Sean", "Kent", , "skent259@gmail.com", role = c("aut", "cre"),
@@ -13,7 +13,10 @@ Description: Weakly supervised (WS), multiple instance (MI) data lives in
     package provides an easy way to learn from this data by training 
     Support Vector Machine (SVM)-based classifiers. It also contains 
     helpful functions for building and printing multiple instance data 
-    frames. 
+    frames. Many functions use the Gurobi optimiation backend to improve 
+    the optimization problem speed; the 'gurobi' R package and associated
+    software can be downloaded from <https://www.gurobi.com> after obtaining
+    a license. 
 License: MIT + file LICENSE
 URL: https://github.com/skent259/mildsvm
 BugReports: https://github.com/skent259/mildsvm/issues
