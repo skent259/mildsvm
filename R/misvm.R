@@ -101,6 +101,14 @@ validate_misvm <- function(x) {
 #'   steps used in the heuristic algorithm.
 #'   * `x_scale`: If `scale = TRUE`, the scaling parameters for new predictions.
 #'
+#' @references Andrews, S., Tsochantaridis, I., & Hofmann, T. (2002). Support
+#'   vector machines for multiple-instance learning. *Advances in neural
+#'   information processing systems*, *15*.
+#'
+#'   Kent, S., & Yu, M. (2022). Non-convex SVM for cancer diagnosis based on
+#'   morphologic features of tumor microenvironment *arXiv preprint*
+#'   [arXiv:2206.14704](http://arxiv.org/abs/2206.14704)
+#'
 #' @seealso
 #' * [predict.misvm()] for prediction on new data.
 #' * [cv_misvm()] for cross-validation fitting.

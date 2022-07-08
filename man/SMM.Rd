@@ -121,6 +121,11 @@ df \%>\%
   dplyr::distinct(instance_name, y, .pred, .pred_class)
 
 }
+\references{
+Muandet, K., Fukumizu, K., Dinuzzo, F., & Schölkopf, B. (2012).
+Learning from distributions via support measure machines. \emph{Advances in
+neural information processing systems}, \emph{25}.
+}
 \seealso{
 \code{\link[=predict.smm]{predict.smm()}} for prediction on new data.
 }

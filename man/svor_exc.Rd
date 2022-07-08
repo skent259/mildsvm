@@ -103,6 +103,11 @@ mdl1 <- svor_exc(x, y)
 predict(mdl1, x)
 
 }
+\references{
+Chu, W., & Keerthi, S. S. (2007). Support vector ordinal
+regression. \emph{Neural computation}, \emph{19}(3), 792-815.
+\href{https://doi.org/10.1162/neco.2007.19.3.792}{doi:10.1162/neco.2007.19.3.792}
+}
 \seealso{
 \code{\link[=predict.svor_exc]{predict.svor_exc()}} for prediction on new data.
 }

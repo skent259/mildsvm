@@ -175,6 +175,15 @@ df \%>\%
 
 
 }
+\references{
+Andrews, S., Tsochantaridis, I., & Hofmann, T. (2002). Support
+vector machines for multiple-instance learning. \emph{Advances in neural
+information processing systems}, \emph{15}.
+
+Kent, S., & Yu, M. (2022). Non-convex SVM for cancer diagnosis based on
+morphologic features of tumor microenvironment \emph{arXiv preprint}
+\href{http://arxiv.org/abs/2206.14704}{arXiv:2206.14704}
+}
 \seealso{
 \itemize{
 \item \code{\link[=predict.misvm]{predict.misvm()}} for prediction on new data.

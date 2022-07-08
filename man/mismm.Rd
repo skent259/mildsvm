@@ -162,6 +162,11 @@ mil_data \%>\%
 
 
 }
+\references{
+Kent, S., & Yu, M. (2022). Non-convex SVM for cancer diagnosis
+based on morphologic features of tumor microenvironment \emph{arXiv preprint}
+\href{http://arxiv.org/abs/2206.14704}{arXiv:2206.14704}
+}
 \seealso{
 \code{\link[=predict.mismm]{predict.mismm()}} for prediction on new data.
 }

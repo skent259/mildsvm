@@ -127,6 +127,11 @@ mdl1 <- misvm_orova(x, y, bags)
 predict(mdl1, x, new_bags = bags)
 
 }
+\references{
+Andrews, S., Tsochantaridis, I., & Hofmann, T. (2002). Support
+vector machines for multiple-instance learning. \emph{Advances in neural
+information processing systems}, \emph{15}.
+}
 \seealso{
 \code{\link[=predict.misvm_orova]{predict.misvm_orova()}} for prediction on new data.
 }
