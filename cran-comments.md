@@ -16,6 +16,8 @@ In this version I have:
 
 * Removed pipe (%>%) as an export, thus removing the problematic pipe.Rd file
 
+* Added references to some documentation .Rd files
+
 ## R CMD check results
 
 0 errors | 0 warnings | 2 notes
