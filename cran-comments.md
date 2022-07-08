@@ -1,10 +1,20 @@
 ## Resubmission
-This is a resubmission. In this version I have:
+This is a resubmission. Thank you for the helpful suggestions. 
+In this version I have:
 
-* Converted the DESCRIPTION title to title case.
+* Edited title to 
+  * remove "in R" and 
+  * add "With Support Vector Machines" for more information.
 
-* I have added to the DESCRIPTION file the website and 
-  brief instructions for how to get the 'gurobi' package 
+* Edited DESCRIPTION to 
+  * remove extra spaces,
+  * add references from the package, and 
+  * correct spelling of 'optimization'
+
+* Added \value tag for the following .Rd files: as_mi_df.Rd, as_mild_df.Rd, 
+  formatting.Rd
+
+* Removed pipe (%>%) as an export, thus removing the problematic pipe.Rd file
 
 ## R CMD check results
 
