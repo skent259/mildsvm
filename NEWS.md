@@ -4,7 +4,7 @@
 
 * Add `omisvm()` for ordinal multiple instance support vector machine
 * Add `mior()` for multiple instance ordinal regression
-* Add `misvm_orova()` for MI-SVM reducine ordinal to binary one-vs-all classification
+* Add `misvm_orova()` for MI-SVM reducing ordinal to binary one-vs-all classification
 * Add `svor_exc()` for support vector ordinal regression with explicit constraints
 
 ## Other changes

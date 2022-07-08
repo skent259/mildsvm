@@ -8,9 +8,9 @@ validate_kfm_nystrom <- function(x) {
   x
 }
 
-#' Fit a Nystrom kernel feature map approximation
+#' Fit a Nyström kernel feature map approximation
 #'
-#' Use the Nystrom method to fit a feature map that approximates a given kernel.
+#' Use the Nyström method to fit a feature map that approximates a given kernel.
 #'
 #' For the `...` argument, the additional parameters depend on which kernel is
 #' used:
@@ -37,6 +37,14 @@ validate_kfm_nystrom <- function(x) {
 #'   * `method` `'nystrom'`
 #'   * `kernel` the input parameter `kernel`
 #'   * `kernel_params` parameters passed to `...`
+#'
+#' @references Williams, C., & Seeger, M. (2001). Using the Nyström Method to
+#'   Speed Up Kernel Machines. *Advances in Neural Information Processing
+#'   Systems*, *13*, 682–688.
+#'
+#'   Kent, S., & Yu, M. (2022). Non-convex SVM for cancer diagnosis based on
+#'   morphologic features of tumor microenvironment *arXiv preprint*
+#'   [arXiv:2206.14704](http://arxiv.org/abs/2206.14704)
 #'
 #' @examples
 #' df <- data.frame(

@@ -34,6 +34,10 @@ validate_misvm_orova <- function(x) {
 #'   * `features`: The names of features used in training.
 #'   * `levels`: The levels of `y` that are recorded for future prediction.
 #'
+#' @references Andrews, S., Tsochantaridis, I., & Hofmann, T. (2002). Support
+#'   vector machines for multiple-instance learning. *Advances in neural
+#'   information processing systems*, *15*.
+#'
 #' @seealso [predict.misvm_orova()] for prediction on new data.
 #'
 #' @examples

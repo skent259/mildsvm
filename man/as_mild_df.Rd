@@ -31,6 +31,11 @@ used.}
 
 \item{...}{Arguments reserved for other methods.}
 }
+\value{
+A 'mild_df' object. This data.frame-like has columns \code{bag_label},
+\code{bag_name}, \code{instance_name}, and potentially others. It also inherits from
+the \code{'tbl_df'} and \code{'tbl'} classes.
+}
 \description{
 \code{as_mild_df()} turns an existing object, such as a data frame, into a MILD
 data frame, a data frame with 'mild_df'. This is in contrast with

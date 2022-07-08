@@ -48,6 +48,10 @@ validate_smm <- function(x) {
 #'   * `weights`: The calculated weights on the `cost` parameter, if applicable.
 #'   * `x_scale`: If `scale = TRUE`, the scaling parameters for new predictions.
 #'
+#' @references Muandet, K., Fukumizu, K., Dinuzzo, F., & Schölkopf, B. (2012).
+#'   Learning from distributions via support measure machines. *Advances in
+#'   neural information processing systems*, *25*.
+#'
 #' @seealso [predict.smm()] for prediction on new data.
 #
 #' @examples

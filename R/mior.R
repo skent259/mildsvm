@@ -69,6 +69,11 @@ validate_mior <- function(x) {
 #'   steps used in the heuristic algorithm.
 #'   * `x_scale`: If `scale = TRUE`, the scaling parameters for new predictions.
 #'
+#' @references Xiao, Y., Liu, B., & Hao, Z. (2017). Multiple-instance ordinal
+#'   regression. *IEEE Transactions on Neural Networks and Learning Systems*,
+#'   *29*(9), 4398-4413.
+#'   [doi:10.1109/TNNLS.2017.2766164](https://doi.org/10.1109/TNNLS.2017.2766164)
+#'
 #' @seealso [predict.misvm()] for prediction on new data.
 #'
 #' @examples

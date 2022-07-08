@@ -92,7 +92,9 @@ validate_mild_df <- function(x) {
 #' @param ... A set of name-value pairs. These construct the covariates for a
 #'   `mild_df`.
 #'
-#' @return A 'mild_df' object.
+#' @return A 'mild_df' object. This data.frame-like has columns `bag_label`,
+#'   `bag_name`, `instance_name`, and those specified in `...`. It also inherits
+#'   from the `'tbl_df'` and `'tbl'` classes.
 #'
 #' @seealso
 #' * [as_mild_df()] to convert data.frames to `mild_df`s.
@@ -141,7 +143,12 @@ mild_df <- function(bag_label = character(),
 #'   used.
 #' @param ... Arguments reserved for other methods.
 #'
+#' @return A 'mild_df' object. This data.frame-like has columns `bag_label`,
+#'   `bag_name`, `instance_name`, and potentially others. It also inherits from
+#'   the `'tbl_df'` and `'tbl'` classes.
+#'
 #' @seealso [mild_df()] to build a `mild_df` object.
+#'
 #' @examples
 #' x <- data.frame('bag_LABEL' = factor(c(1, 1, 0)),
 #'                'bag_name' = c(rep('bag_1', 2), 'bag_2'),
@@ -233,7 +240,7 @@ tbl_sum.mild_df <- function(x, ...) {
   } else {
     warn <- FALSE
   }
-  
+
   if (nargs() > 2) {
     inst_label <- df_instance_label(x)
     if (!is.null(inst_label)) {

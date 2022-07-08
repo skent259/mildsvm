@@ -4,7 +4,7 @@
 \alias{kfm_nystrom}
 \alias{kfm_nystrom.default}
 \alias{kfm_nystrom.mild_df}
-\title{Fit a Nystrom kernel feature map approximation}
+\title{Fit a Nyström kernel feature map approximation}
 \usage{
 kfm_nystrom(df, m, r, kernel, sampling, ...)
 
@@ -57,7 +57,7 @@ eigenvalues and eigenvectors of \code{df_sub}
 }
 }
 \description{
-Use the Nystrom method to fit a feature map that approximates a given kernel.
+Use the Nyström method to fit a feature map that approximates a given kernel.
 }
 \details{
 For the \code{...} argument, the additional parameters depend on which kernel is
@@ -84,6 +84,15 @@ df <- data.frame(
 fit <- kfm_nystrom(df, m = 7, r = 6, kernel = "radial", sigma = 0.05)
 fm <- build_fm(fit, df)
 
+}
+\references{
+Williams, C., & Seeger, M. (2001). Using the Nyström Method to
+Speed Up Kernel Machines. \emph{Advances in Neural Information Processing
+Systems}, \emph{13}, 682–688.
+
+Kent, S., & Yu, M. (2022). Non-convex SVM for cancer diagnosis based on
+morphologic features of tumor microenvironment \emph{arXiv preprint}
+\href{http://arxiv.org/abs/2206.14704}{arXiv:2206.14704}
 }
 \seealso{
 Other kernel feature map functions: 

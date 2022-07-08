@@ -162,6 +162,12 @@ if (require(gurobi)) {
 }
 
 }
+\references{
+Xiao, Y., Liu, B., & Hao, Z. (2017). Multiple-instance ordinal
+regression. \emph{IEEE Transactions on Neural Networks and Learning Systems},
+\emph{29}(9), 4398-4413.
+\href{https://doi.org/10.1109/TNNLS.2017.2766164}{doi:10.1109/TNNLS.2017.2766164}
+}
 \seealso{
 \code{\link[=predict.misvm]{predict.misvm()}} for prediction on new data.
 }
