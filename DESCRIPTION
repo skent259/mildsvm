@@ -1,6 +1,6 @@
 Type: Package
 Package: mildsvm
-Title: Multiple-Instance Learning with Support Vector Machines
+Title: Multiple-Instance Learning With Support Vector Machines
 Version: 0.4.0
 Authors@R: c(
     person("Sean", "Kent", , "skent259@gmail.com", role = c("aut", "cre"),
