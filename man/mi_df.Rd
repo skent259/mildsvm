@@ -23,7 +23,9 @@ mi_df(
 \code{NULL}.}
 }
 \value{
-A 'mi_df' object.
+A 'mi_df' object. This data.frame-like has columns \code{bag_label},
+\code{bag_name}, and those specified in \code{...}. It also inherits from the
+\code{'tbl_df'} and \code{'tbl'} classes.
 }
 \description{
 \code{mi_df()} constructs a data frame that corresponds to Multiple Instance (MI)

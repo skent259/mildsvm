@@ -27,6 +27,11 @@ used.}
 
 \item{...}{Arguments reserved for other methods.}
 }
+\value{
+A 'mi_df' object. This data.frame-like has columns \code{bag_label},
+\code{bag_name}, and potentially others. It also inherits from the
+\code{'tbl_df'} and \code{'tbl'} classes.
+}
 \description{
 \code{as_mi_df()} turns an existing object, such as a data frame, into a MI
 data frame, a data frame with 'mi_df'. This is in contrast with

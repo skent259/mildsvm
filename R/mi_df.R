@@ -87,7 +87,9 @@ validate_mi_df <- function(x) {
 #' @param ... A set of name-value pairs. These construct the covariates for a
 #'   `mi_df`.
 #'
-#' @return A 'mi_df' object.
+#' @return A 'mi_df' object. This data.frame-like has columns `bag_label`,
+#'   `bag_name`, and those specified in `...`. It also inherits from the
+#'   `'tbl_df'` and `'tbl'` classes.
 #'
 #' @seealso
 #' * [as_mi_df()] to convert data.frames to `mi_df`s.
@@ -135,6 +137,10 @@ df_instance_label <- function(x) {
 #'   column refers to the instance labels. If NULL, no instance_labels will be
 #'   used.
 #' @param ... Arguments reserved for other methods.
+#'
+#' @return A 'mi_df' object. This data.frame-like has columns `bag_label`,
+#'   `bag_name`, and potentially others. It also inherits from the
+#'   `'tbl_df'` and `'tbl'` classes.
 #'
 #' @seealso [mi_df()] to build a `mi_df` object.
 #' @examples
@@ -225,6 +231,9 @@ as_mi_df.default <- function(x,
 #' @param x Object to format or print.
 #' @param ... Passed to other methods.  See [print.tbl()] or details for more
 #'   information.
+#'
+#' @return The object passed in `x`, invisibly. Primarily called to print the
+#'   object to the console.
 #'
 #' @examples
 #' data("ordmvnorm")

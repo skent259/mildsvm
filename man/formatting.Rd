@@ -16,6 +16,10 @@
 \item{...}{Passed to other methods.  See \code{\link[=print.tbl]{print.tbl()}} or details for more
 information.}
 }
+\value{
+The object passed in \code{x}, invisibly. Primarily called to print the
+object to the console.
+}
 \description{
 Specialized print methods for the \code{mi_df}, \code{mild_df} classes. These return
 helpful information such as the number of rows, columns, bags, and instances
