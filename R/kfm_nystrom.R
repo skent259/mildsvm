@@ -44,7 +44,7 @@ validate_kfm_nystrom <- function(x) {
 #'
 #'   Kent, S., & Yu, M. (2022). Non-convex SVM for cancer diagnosis based on
 #'   morphologic features of tumor microenvironment *arXiv preprint*
-#'   [arXiv:2206.14704](http://arxiv.org/abs/2206.14704)
+#'   [arXiv:2206.14704](https://arxiv.org/abs/2206.14704)
 #'
 #' @examples
 #' df <- data.frame(
