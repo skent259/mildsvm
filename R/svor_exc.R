@@ -54,7 +54,7 @@ validate_svor_exc <- function(x) {
 #'
 #' @references Chu, W., & Keerthi, S. S. (2007). Support vector ordinal
 #'   regression. *Neural computation*, *19*(3), 792-815.
-#'   [doi:10.1162/neco.2007.19.3.792](https://doi.org/10.1162/neco.2007.19.3.792)
+#'   \doi{10.1162/neco.2007.19.3.792}
 #'
 #' @seealso [predict.svor_exc()] for prediction on new data.
 #'
