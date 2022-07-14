@@ -5,6 +5,8 @@
 
 <!-- badges: start -->
 
+[![CRAN
+status](https://www.r-pkg.org/badges/version/mildsvm)](https://CRAN.R-project.org/package=mildsvm)
 [![R-CMD-check](https://github.com/skent259/mildsvm/workflows/R-CMD-check/badge.svg)](https://github.com/skent259/mildsvm/actions)
 [![Codecov test
 coverage](https://codecov.io/gh/skent259/mildsvm/branch/master/graph/badge.svg)](https://app.codecov.io/gh/skent259/mildsvm?branch=master)
@@ -136,14 +138,14 @@ print(fit2)
 
 ## Installation
 
-mildsvm is not currently on CRAN.
-<!-- You can install the released version of mildsvm from [CRAN](https://CRAN.R-project.org) with: -->
+You can install the released version of mildsvm from
+[CRAN](https://CRAN.R-project.org) with:
 
-<!-- ``` r -->
-<!-- install.packages("mildsvm") -->
-<!-- ``` -->
+``` r
+install.packages("mildsvm")
+```
 
-You can install the development version from
+Alternatively, you can install the development version from
 [GitHub](https://github.com/) with:
 
 ``` r
@@ -202,6 +204,7 @@ the `mild()` formula specification:
 fit3 <- mismm(mild(bag_label, bag_name, instance_name) ~ X1, data = mild_df, cost = 100)
 
 # summarize predictions at the bag layer
+library(dplyr)
 mild_df %>% 
   dplyr::bind_cols(predict(fit3, mild_df, type = "raw")) %>% 
   dplyr::bind_cols(predict(fit3, mild_df, type = "class")) %>% 
