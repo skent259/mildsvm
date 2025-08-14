@@ -235,7 +235,7 @@ test_that("`mismm()` example works", {
     mil_data %>%
       dplyr::bind_cols(predict(mdl2, mil_data, type = "class")) %>%
       dplyr::bind_cols(predict(mdl2, mil_data, type = "raw")) %>%
-      dplyr::distinct(bag_name, bag_label, .pred_class, .pred)
+      dplyr::distinct(bag_label, bag_name, .pred_class, .pred)
   })
 
   expect_s3_class(mdl1, "mismm")
@@ -263,7 +263,7 @@ test_that("`predict.mismm()` examples work", {
     mil_data %>%
       dplyr::bind_cols(predict(mdl1, mil_data, type = "class", layer = "instance")) %>%
       dplyr::bind_cols(predict(mdl1, mil_data, type = "raw", layer = "instance")) %>%
-      dplyr::distinct(bag_name, instance_name, bag_label, .pred_class, .pred)
+      dplyr::distinct(bag_label, bag_name, instance_name, .pred_class, .pred)
   })
 
   expect_s3_class(mdl1, "mismm")
