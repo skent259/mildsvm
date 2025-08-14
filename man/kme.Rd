@@ -36,11 +36,11 @@ otherwise calculate (\code{df}, \code{df2})
 }
 \section{Methods (by class)}{
 \itemize{
-\item \code{default}: Default S3 method
+\item \code{kme(default)}: Default S3 method
 
-\item \code{mild_df}: S3 method for class \code{mild_df}
+\item \code{kme(mild_df)}: S3 method for class \code{mild_df}
+
 }}
-
 \examples{
 x = data.frame('instance_name' = c('inst_1', 'inst_2', 'inst_1'),
                'X1' = c(-0.4, 0.5, 2))

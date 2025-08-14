@@ -90,14 +90,14 @@ train the appropriate SVM model.
 }
 \section{Methods (by class)}{
 \itemize{
-\item \code{default}: Method for data.frame-like objects
+\item \code{smm(default)}: Method for data.frame-like objects
 
-\item \code{formula}: Method for passing formula
+\item \code{smm(formula)}: Method for passing formula
 
-\item \code{mild_df}: Method for \code{mild_df} objects. Use the \code{bag_label} as \code{y} at
+\item \code{smm(mild_df)}: Method for \code{mild_df} objects. Use the \code{bag_label} as \code{y} at
 the instance level, then perform \code{smm()} ignoring the MIL structure.
-}}
 
+}}
 \examples{
 set.seed(8)
 n_instances <- 10

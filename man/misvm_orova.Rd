@@ -109,14 +109,14 @@ individual level vs not.
 }
 \section{Methods (by class)}{
 \itemize{
-\item \code{default}: Method for data.frame-like objects
+\item \code{misvm_orova(default)}: Method for data.frame-like objects
 
-\item \code{formula}: Method for passing formula
+\item \code{misvm_orova(formula)}: Method for passing formula
 
-\item \code{mi_df}: Method for \code{mi_df} objects, automatically handling bag
+\item \code{misvm_orova(mi_df)}: Method for \code{mi_df} objects, automatically handling bag
 names, labels, and all covariates.
-}}
 
+}}
 \examples{
 data("ordmvnorm")
 x <- ordmvnorm[, 3:7]

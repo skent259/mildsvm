@@ -68,12 +68,12 @@ used:
 }
 \section{Methods (by class)}{
 \itemize{
-\item \code{default}: For use on objects of class \code{data.frame} or \code{matrix}.
+\item \code{kfm_nystrom(default)}: For use on objects of class \code{data.frame} or \code{matrix}.
 
-\item \code{mild_df}: Ignore the information columns \code{'bag_label'},
+\item \code{kfm_nystrom(mild_df)}: Ignore the information columns \code{'bag_label'},
 \code{'bag_name'}, and \code{'instance_name'} when calculating kernel approximation.
-}}
 
+}}
 \examples{
 df <- data.frame(
   X1 = c(2,   3,   4,   5,   6, 7, 8),

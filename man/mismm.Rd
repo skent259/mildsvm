@@ -129,13 +129,13 @@ using the gurobi package optimization back-end.
 }
 \section{Methods (by class)}{
 \itemize{
-\item \code{default}: Method for data.frame-like objects
+\item \code{mismm(default)}: Method for data.frame-like objects
 
-\item \code{formula}: Method for passing formula
+\item \code{mismm(formula)}: Method for passing formula
 
-\item \code{mild_df}: Method for \code{mild_df} objects
+\item \code{mismm(mild_df)}: Method for \code{mild_df} objects
+
 }}
-
 \examples{
 set.seed(8)
 mil_data <- generate_mild_df(nbag = 15, nsample = 20, positive_prob = 0.15,
