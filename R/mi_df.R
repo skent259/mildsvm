@@ -229,7 +229,7 @@ as_mi_df.default <- function(x,
 #'   `max_footer_lines` [option][pillar::pillar_options] is used.
 #'
 #' @param x Object to format or print.
-#' @param ... Passed to other methods.  See [print.tbl()] or details for more
+#' @param ... Passed to other methods.  See [tibble::print.tbl()] or details for more
 #'   information.
 #'
 #' @return The object passed in `x`, invisibly. Primarily called to print the

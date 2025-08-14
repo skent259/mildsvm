@@ -36,11 +36,11 @@ sample level to the instance level.
 }
 \section{Methods (by class)}{
 \itemize{
-\item \code{default}: Method for data.frame-like objects.
+\item \code{summarize_samples(default)}: Method for data.frame-like objects.
 
-\item \code{mild_df}: Method for \code{mild_df} objects.
+\item \code{summarize_samples(mild_df)}: Method for \code{mild_df} objects.
+
 }}
-
 \examples{
 fns <- list(mean = mean, sd = sd)
 summarize_samples(mtcars, group_cols = c("cyl", "gear"), .fns = fns)

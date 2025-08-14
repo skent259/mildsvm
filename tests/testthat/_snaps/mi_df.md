@@ -61,5 +61,5 @@
         <fct>     <chr>    <dbl>
       1 1         bag_1     -0.4
       2 1         bag_1      0.5
-      # ... with 1 more row
+      # i 1 more row
 

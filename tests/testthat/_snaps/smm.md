@@ -2,17 +2,9 @@
 
     Code
       auc1 <- with(mil_df_test, pROC::auc(response = classify_bags(bag_label,
-        bag_name), predictor = classify_bags(pred1$.pred, bag_name)))
-    Message <simpleMessage>
-      Setting levels: control = 0, case = 1
-      Setting direction: controls < cases
-    Code
+        bag_name), predictor = classify_bags(pred1$.pred, bag_name), quiet = TRUE))
       auc2 <- with(mil_df_test, pROC::auc(response = classify_bags(bag_label,
-        bag_name), predictor = classify_bags(pred2$.pred, bag_name)))
-    Message <simpleMessage>
-      Setting levels: control = 0, case = 1
-      Setting direction: controls < cases
-    Code
+        bag_name), predictor = classify_bags(pred2$.pred, bag_name), quiet = TRUE))
       auc1
     Output
       Area under the curve: 1

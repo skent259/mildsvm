@@ -39,7 +39,7 @@ summarize_samples.default <- function(data,
                                       cor = FALSE,
                                       ...) {
   df <- data %>%
-    dplyr::group_by(dplyr::all_of(dplyr::across(group_cols))) %>%
+    dplyr::group_by(!!!dplyr::syms(group_cols)) %>%
     dplyr::summarize_all(.fns) %>%
     dplyr::ungroup()
 
@@ -62,13 +62,13 @@ summarize_samples.mild_df <- function(data, ...) {
 #' @noRd
 .compute_cor <- function(data, group_cols) {
   data %>%
-    dplyr::group_by(dplyr::all_of(dplyr::across(group_cols))) %>%
+    dplyr::group_by(!!!dplyr::syms(group_cols)) %>%
     tidyr::nest() %>%
     dplyr::mutate(
       cov = purrr::map(data, stats::cov),
       cov_var = purrr::map(.data$cov, ~.x[upper.tri(.x)])
     ) %>%
-    tidyr::unnest_wider(.data$cov_var, names_sep = "_") %>%
-    dplyr::select(-.data$data, -.data$cov) %>%
+    tidyr::unnest_wider("cov_var", names_sep = "_") %>%
+    dplyr::select(-"data", -"cov") %>%
     dplyr::ungroup()
 }

@@ -15,9 +15,9 @@
   cost_eta = 1,
   method = "qp-heuristic",
   weights = NULL,
-  control = list(kernel = "linear", sigma = if (is.vector(x)) 1 else 1/ncol(x),
-    max_step = 500, scale = TRUE, verbose = FALSE, time_limit = 60, option =
-    c("corrected", "xiao")),
+  control = list(kernel = "linear", sigma = if (is.vector(x)) 1 else 1/ncol(x), max_step
+    = 500, scale = TRUE, verbose = FALSE, time_limit = 60, option = c("corrected",
+    "xiao")),
   ...
 )
 
@@ -123,14 +123,14 @@ with \code{control$option = 'xiao'}.
 }
 \section{Methods (by class)}{
 \itemize{
-\item \code{default}: Method for data.frame-like objects
+\item \code{mior(default)}: Method for data.frame-like objects
 
-\item \code{formula}: Method for passing formula
+\item \code{mior(formula)}: Method for passing formula
 
-\item \code{mi_df}: Method for \code{mi_df} objects, automatically handling bag
+\item \code{mior(mi_df)}: Method for \code{mi_df} objects, automatically handling bag
 names, labels, and all covariates.
-}}
 
+}}
 \examples{
 if (require(gurobi)) {
   set.seed(8)

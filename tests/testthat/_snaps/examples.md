@@ -8,69 +8,6 @@
       fit2 <- kfm_exact(kernel = "polynomial", degree = 2, const = 1)
       fm <- build_fm(fit2, df)
 
-# `cv_misvm()` examples work
-
-    Code
-      set.seed(8)
-      mil_data <- generate_mild_df(nbag = 20, positive_prob = 0.15, dist = rep(
-        "mvnormal", 3), mean = list(rep(1, 10), rep(2, 10)), sd_of_mean = rep(0.1, 3))
-      df <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
-      cost_seq <- 2^seq(-5, 7, length.out = 3)
-      mdl1 <- cv_misvm(x = df[, 4:123], y = df$bag_label, bags = df$bag_name,
-      cost_seq = cost_seq, n_fold = 3, method = "heuristic")
-      mdl2 <- cv_misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean + X3_mean, data = df,
-      cost_seq = cost_seq, n_fold = 3)
-      if (require(gurobi)) {
-        mdl3 <- cv_misvm(x = df[, 4:123], y = df$bag_label, bags = df$bag_name,
-        cost_seq = cost_seq, n_fold = 3, method = "mip")
-      }
-    Message <packageStartupMessage>
-      Loading required package: gurobi
-      Loading required package: slam
-    Code
-      predict(mdl1, new_data = df, type = "raw", layer = "bag")
-    Output
-      # A tibble: 80 x 1
-         .pred
-         <dbl>
-       1 -1.00
-       2 -1.00
-       3 -1.00
-       4 -1.00
-       5  1.04
-       6  1.04
-       7  1.04
-       8  1.04
-       9 -1.13
-      10 -1.13
-      # ... with 70 more rows
-    Code
-      df %>% dplyr::bind_cols(predict(mdl2, df, type = "class")) %>% dplyr::bind_cols(
-        predict(mdl2, df, type = "raw")) %>% dplyr::distinct(bag_name, bag_label,
-        .pred_class, .pred)
-    Output
-         bag_label bag_name .pred_class      .pred
-      1          0     bag1           0 -0.5932349
-      2          1     bag2           1  0.7493612
-      3          0     bag3           0 -0.9387030
-      4          1     bag4           1  1.2126533
-      5          0     bag5           0 -0.8094506
-      6          0     bag6           0 -0.8083522
-      7          1     bag7           1  0.6587946
-      8          0     bag8           0 -0.9032079
-      9          1     bag9           1  0.5855234
-      10         1    bag10           1  1.2019300
-      11         1    bag11           1  1.2689043
-      12         0    bag12           0 -0.8143970
-      13         1    bag13           1  0.8591738
-      14         1    bag14           1  1.0000000
-      15         1    bag15           1  1.1078369
-      16         1    bag16           1  1.2117319
-      17         0    bag17           0 -0.6022075
-      18         1    bag18           1  0.9355648
-      19         0    bag19           0 -0.7314129
-      20         1    bag20           1  1.0393764
-
 # `generate_mild_df()` examples work
 
     Code
@@ -93,11 +30,11 @@
        8         1 bag3     bag3inst2    
        9         1 bag3     bag3inst3    
       10         0 bag4     bag4inst1    
-      # ... with 11 more rows
+      # i 11 more rows
     Code
       split(mild_data[, 4:5], mild_data$instance_name) %>% sapply(colMeans) %>% round(
         2) %>% t()
-    Warning <warning>
+    Warning <rlang_warning>
       Dropping 'mild_df' class as required column was removed.
     Output
                    X1    X2
@@ -463,131 +400,6 @@
       5         1     bag1 -0.85251086 -2.6362243
       6         1     bag1  1.40033082 -1.1679564
 
-# `mior()` examples work
-
-    Code
-      if (require(gurobi)) {
-        set.seed(8)
-        n <- 15
-        X <- rbind(mvtnorm::rmvnorm(n / 3, mean = c(4, -2, 0)), mvtnorm::rmvnorm(n /
-        3, mean = c(0, 0, 0)), mvtnorm::rmvnorm(n / 3, mean = c(-2, 1, 0)))
-        score <- X %*% c(2, -1, 0)
-        y <- as.numeric(cut(score, c(-Inf, quantile(score, probs = 1:2 / 3), Inf)))
-        bags <- seq_along(y)
-        X <- rbind(X, mvtnorm::rmvnorm(n, mean = c(6, -3, 0)), mvtnorm::rmvnorm(n,
-          mean = c(-6, 3, 0)))
-        y <- c(y, rep(-1, 2 * n))
-        bags <- rep(bags, 3)
-        repr <- c(rep(1, n), rep(0, 2 * n))
-        y_bag <- classify_bags(y, bags, condense = FALSE)
-        mdl1 <- mior(X, y_bag, bags)
-        predict(mdl1, X, new_bags = bags)
-        df1 <- dplyr::bind_cols(y = y_bag, bags = bags, as.data.frame(X))
-        df1 %>% dplyr::bind_cols(predict(mdl1, df1, new_bags = bags, type = "class")) %>%
-          dplyr::bind_cols(predict(mdl1, df1, new_bags = bags, type = "raw")) %>%
-          dplyr::distinct(y, bags, .pred_class, .pred)
-      }
-    Message <message>
-      [Step 1] The optimization solution suggests that two intercepts are equal: b[1] == b[2].
-      [Step 1] The optimization solution suggests that two intercepts are equal: b[2] == b[3].
-    Warning <warning>
-      [Step 1] There were NA values in `b`.  Replacing with 0.
-    Message <message>
-      [Step 2] The optimization solution suggests that two intercepts are equal: b[0] == b[1].
-      [Step 2] The optimization solution suggests that two intercepts are equal: b[1] == b[2].
-      [Step 2] The optimization solution suggests that two intercepts are equal: b[2] == b[3].
-      [Step 2] The optimization solution suggests that endpoints are equal: b[0] == b[K].
-      [Step 3] The optimization solution suggests that two intercepts are equal: b[1] == b[2].
-      [Step 3] The optimization solution suggests that two intercepts are equal: b[2] == b[3].
-    Warning <warning>
-      [Step 3] There were NA values in `b`.  Replacing with 0.
-    Output
-         y bags .pred_class       .pred
-      1  3    1           2 -1.27106961
-      2  3    2           2 -1.46009539
-      3  3    3           1  0.55859958
-      4  3    4           2 -2.14449120
-      5  3    5           2 -2.39500843
-      6  1    6           2 -1.35396484
-      7  2    7           2 -1.52776943
-      8  2    8           1 -0.27197967
-      9  2    9           1 -0.03922016
-      10 2   10           1  1.13574924
-      11 1   11           1  1.81787187
-      12 1   12           1  0.86516230
-      13 2   13           1  0.33191616
-      14 1   14           2 -1.86835119
-      15 1   15           1  0.03157952
-
-# `mismm()` example works
-
-    Code
-      set.seed(8)
-      mil_data <- generate_mild_df(nbag = 15, nsample = 20, positive_prob = 0.15,
-        sd_of_mean = rep(0.1, 3))
-      mdl1 <- mismm(mil_data)
-      mdl2 <- mismm(mild(bag_label, bag_name, instance_name) ~ X1 + X2 + X3, data = mil_data)
-      if (require(gurobi)) {
-        mdl3 <- mismm(mil_data, method = "mip", control = list(nystrom_args = list(m = 10,
-          r = 10)))
-        predict(mdl3, mil_data)
-      }
-    Output
-      # A tibble: 1,200 x 1
-         .pred_class
-         <fct>      
-       1 1          
-       2 1          
-       3 1          
-       4 1          
-       5 1          
-       6 1          
-       7 1          
-       8 1          
-       9 1          
-      10 1          
-      # ... with 1,190 more rows
-    Code
-      predict(mdl1, new_data = mil_data, type = "raw", layer = "bag")
-    Output
-      # A tibble: 1,200 x 1
-          .pred
-          <dbl>
-       1 -0.289
-       2 -0.289
-       3 -0.289
-       4 -0.289
-       5 -0.289
-       6 -0.289
-       7 -0.289
-       8 -0.289
-       9 -0.289
-      10 -0.289
-      # ... with 1,190 more rows
-    Code
-      mil_data %>% dplyr::bind_cols(predict(mdl2, mil_data, type = "class")) %>%
-        dplyr::bind_cols(predict(mdl2, mil_data, type = "raw")) %>% dplyr::distinct(
-        bag_name, bag_label, .pred_class, .pred)
-    Output
-      # A tibble: 15 x 4
-         bag_label bag_name .pred_class   .pred
-             <dbl> <chr>    <fct>         <dbl>
-       1         0 bag1     0           -0.120 
-       2         1 bag2     1            0.211 
-       3         0 bag3     0           -0.0939
-       4         1 bag4     1            0.0945
-       5         0 bag5     0           -0.0922
-       6         0 bag6     0           -0.134 
-       7         1 bag7     1            0.155 
-       8         0 bag8     0           -0.0408
-       9         1 bag9     1            0.169 
-      10         1 bag10    1            0.250 
-      11         1 bag11    1            0.137 
-      12         0 bag12    0           -0.0584
-      13         1 bag13    1            0.173 
-      14         1 bag14    1            0.143 
-      15         1 bag15    1            0.329 
-
 # `predict.mismm()` examples work
 
     Code
@@ -599,27 +411,27 @@
         bag_name, bag_label, .pred_class, .pred)
     Output
       # A tibble: 15 x 4
-         bag_label bag_name .pred_class   .pred
-             <dbl> <chr>    <fct>         <dbl>
-       1         0 bag1     0           -0.377 
-       2         1 bag2     1            0.283 
-       3         0 bag3     0           -0.332 
-       4         1 bag4     1            0.132 
-       5         0 bag5     0           -0.335 
-       6         0 bag6     0           -0.248 
-       7         1 bag7     1            0.261 
-       8         0 bag8     0           -0.0604
-       9         1 bag9     1            0.379 
-      10         1 bag10    1            0.392 
-      11         1 bag11    1            0.301 
-      12         0 bag12    0           -0.282 
-      13         1 bag13    1            0.326 
-      14         1 bag14    1            0.223 
-      15         1 bag15    1            0.459 
+         bag_name bag_label .pred_class   .pred
+         <chr>        <dbl> <fct>         <dbl>
+       1 bag1             0 0           -0.377 
+       2 bag2             1 1            0.283 
+       3 bag3             0 0           -0.332 
+       4 bag4             1 1            0.132 
+       5 bag5             0 0           -0.335 
+       6 bag6             0 0           -0.248 
+       7 bag7             1 1            0.261 
+       8 bag8             0 0           -0.0604
+       9 bag9             1 1            0.379 
+      10 bag10            1 1            0.392 
+      11 bag11            1 1            0.301 
+      12 bag12            0 0           -0.282 
+      13 bag13            1 1            0.326 
+      14 bag14            1 1            0.223 
+      15 bag15            1 1            0.459 
     Code
       mil_data %>% dplyr::bind_cols(predict(mdl1, mil_data, type = "class", layer = "instance")) %>%
         dplyr::bind_cols(predict(mdl1, mil_data, type = "raw", layer = "instance")) %>%
-        dplyr::distinct(bag_name, instance_name, bag_label, .pred_class, .pred)
+        dplyr::distinct(bag_label, bag_name, instance_name, .pred_class, .pred)
     Output
       # An MILD data frame: 60 x 5 with 15 bags, 60 instances
       # and instance labels: 0, 0, 0, 0, 0, ...
@@ -635,14 +447,14 @@
        8         1 bag2     bag2inst4     1            0.283
        9         0 bag3     bag3inst1     0           -0.332
       10         0 bag3     bag3inst2     0           -0.395
-      # ... with 50 more rows
+      # i 50 more rows
 
 # `misvm_orova()` examples work
 
     Code
       data("ordmvnorm")
       x <- ordmvnorm[, 3:7]
-    Warning <warning>
+    Warning <rlang_warning>
       Dropping 'mi_df' class as required column was removed.
     Code
       y <- ordmvnorm$bag_label
@@ -663,7 +475,7 @@
        8 3          
        9 3          
       10 3          
-      # ... with 990 more rows
+      # i 990 more rows
     Code
       df1 <- dplyr::bind_cols(y = y, bags = bags, as.data.frame(x))
       df1 %>% dplyr::bind_cols(predict(mdl1, df1, new_bags = bags, type = "class")) %>%
@@ -1073,281 +885,6 @@
       199 -3.50721222
       200 -3.37582254
 
-# `misvm()` examples work
-
-    Code
-      set.seed(8)
-      mil_data <- generate_mild_df(nbag = 20, positive_prob = 0.15, sd_of_mean = rep(
-        0.1, 3))
-      df <- build_instance_feature(mil_data, seq(0.05, 0.95, length.out = 10))
-      mdl1 <- misvm(x = df[, 4:123], y = df$bag_label, bags = df$bag_name, method = "heuristic")
-      mdl2 <- misvm(mi(bag_label, bag_name) ~ X1_mean + X2_mean + X3_mean, data = df)
-      if (require(gurobi)) {
-        mdl3 <- misvm(x = df[, 4:123], y = df$bag_label, bags = df$bag_name, method = "mip")
-      }
-      predict(mdl1, new_data = df, type = "raw", layer = "bag")
-    Output
-      # A tibble: 80 x 1
-         .pred
-         <dbl>
-       1 -1.04
-       2 -1.04
-       3 -1.04
-       4 -1.04
-       5  1.00
-       6  1.00
-       7  1.00
-       8  1.00
-       9 -1.00
-      10 -1.00
-      # ... with 70 more rows
-    Code
-      df %>% dplyr::bind_cols(predict(mdl2, df, type = "class")) %>% dplyr::bind_cols(
-        predict(mdl2, df, type = "raw")) %>% dplyr::distinct(bag_name, bag_label,
-        .pred_class, .pred)
-    Output
-         bag_label bag_name .pred_class       .pred
-      1          0     bag1           0 -0.11805071
-      2          1     bag2           1  1.01732791
-      3          0     bag3           0 -0.24540426
-      4          1     bag4           1  1.00046917
-      5          0     bag5           1  0.15460188
-      6          0     bag6           1  0.87469487
-      7          1     bag7           1  0.16754553
-      8          0     bag8           1  1.00811386
-      9          1     bag9           1  0.99998275
-      10         1    bag10           1  2.67168111
-      11         1    bag11           1  0.29471379
-      12         0    bag12           1  1.52487131
-      13         1    bag13           1  2.15326561
-      14         1    bag14           1  0.99956477
-      15         1    bag15           0 -0.38940230
-      16         1    bag16           1  0.67654218
-      17         0    bag17           1  0.39241276
-      18         1    bag18           0 -0.11878006
-      19         0    bag19           1  0.06554383
-      20         1    bag20           1  0.85951804
-
-# `omisvm()` examples work
-
-    Code
-      if (require(gurobi)) {
-        data("ordmvnorm")
-        x <- ordmvnorm[, 3:7]
-        y <- ordmvnorm$bag_label
-        bags <- ordmvnorm$bag_name
-        mdl1 <- omisvm(x, y, bags, weights = NULL)
-        predict(mdl1, x, new_bags = bags)
-        df1 <- dplyr::bind_cols(y = y, bags = bags, as.data.frame(x))
-        df1 %>% dplyr::bind_cols(predict(mdl1, df1, new_bags = bags, type = "class")) %>%
-          dplyr::bind_cols(predict(mdl1, df1, new_bags = bags, type = "raw")) %>%
-          dplyr::distinct(y, bags, .pred_class, .pred)
-      }
-    Warning <warning>
-      Dropping 'mi_df' class as required column was removed.
-    Output
-          y bags .pred_class       .pred
-      1   2    1           2  2.12567387
-      2   4    2           4  4.65794584
-      3   1    3           1 -0.83805734
-      4   3    4           3  2.63966213
-      5   1    5           1 -0.25380927
-      6   5    6           5  7.77042870
-      7   4    7           3  3.72950569
-      8   4    8           5  6.80992822
-      9   3    9           3  3.70282546
-      10  4   10           4  5.94699034
-      11  5   11           4  5.94752631
-      12  3   12           3  3.19506580
-      13  5   13           5  8.35594177
-      14  3   14           3  3.15834447
-      15  2   15           2  1.33977357
-      16  3   16           3  2.47991026
-      17  2   17           3  2.70733748
-      18  2   18           2  0.88989980
-      19  2   19           2  0.55035855
-      20  1   20           1 -0.48857803
-      21  3   21           4  4.62498956
-      22  2   22           2  1.34357488
-      23  3   23           2  2.07230182
-      24  4   24           4  5.11838378
-      25  2   25           2  1.62530071
-      26  4   26           4  5.04146527
-      27  4   27           4  6.12983599
-      28  2   28           2  1.38152030
-      29  5   29           5  6.60015162
-      30  3   30           3  3.26062479
-      31  2   31           2  1.81985451
-      32  5   32           5  7.11161632
-      33  2   33           2  2.21294409
-      34  5   34           5  7.29111446
-      35  4   35           4  4.46349207
-      36  3   36           3  3.98620574
-      37  4   37           4  6.06686466
-      38  2   38           2  1.56219942
-      39  4   39           4  5.30727742
-      40  2   40           2  2.27510342
-      41  1   41           1 -0.81342852
-      42  1   42           1  0.02151881
-      43  2   43           2  0.52168663
-      44  2   44           2  1.44739630
-      45  2   45           2  1.59950373
-      46  3   46           3  2.59372869
-      47  3   47           3  2.74693863
-      48  4   48           4  6.14110841
-      49  2   49           2  2.32840644
-      50  4   50           4  5.02891382
-      51  3   51           3  2.44752466
-      52  5   52           5  7.74094074
-      53  5   53           5  6.42830548
-      54  2   54           2  1.31239708
-      55  4   55           3  3.99384803
-      56  3   56           3  3.79146236
-      57  5   57           5  8.07575177
-      58  1   58           1 -0.54392096
-      59  2   59           2  0.48349162
-      60  4   60           4  5.71926852
-      61  2   61           2  1.34308764
-      62  2   62           2  0.51765081
-      63  2   63           2  0.95240309
-      64  5   64           5  7.39404182
-      65  2   65           2  0.79525838
-      66  4   66           5  6.70635073
-      67  2   67           1  0.21166463
-      68  4   68           4  5.30727742
-      69  1   69           1 -0.17442229
-      70  2   70           3  2.54644169
-      71  4   71           4  5.61509347
-      72  4   72           4  5.51145838
-      73  1   73           1 -0.41594083
-      74  5   74           5  9.28598108
-      75  5   75           5  7.96521824
-      76  4   76           4  5.62411564
-      77  1   77           1 -0.05464613
-      78  3   78           4  4.42463829
-      79  2   79           2  1.94267090
-      80  1   80           2  0.78140124
-      81  3   81           3  3.95317076
-      82  3   82           2  1.57994465
-      83  2   83           2  0.59626748
-      84  5   84           5  8.85967969
-      85  2   85           2  1.96307114
-      86  2   86           2  0.53479058
-      87  3   87           4  4.53134302
-      88  3   88           3  3.36033245
-      89  3   89           3  3.60200338
-      90  2   90           2  1.06057133
-      91  3   91           3  2.98476241
-      92  4   92           3  4.15237641
-      93  3   93           4  4.60544506
-      94  2   94           3  2.42829931
-      95  3   95           3  2.51276246
-      96  3   96           2  2.09600292
-      97  2   97           2  1.47889650
-      98  2   98           2  1.37766926
-      99  2   99           2  1.15593677
-      100 2  100           2  1.27380967
-      101 2  101           2  1.19192283
-      102 2  102           2  2.26486948
-      103 2  103           2  0.96767384
-      104 5  104           5  8.52363527
-      105 1  105           2  0.36592471
-      106 3  106           3  3.24715264
-      107 3  107           3  2.85117594
-      108 1  108           1 -0.66022643
-      109 3  109           4  4.67142427
-      110 5  110           5  7.27179022
-      111 1  111           1 -0.18336695
-      112 3  112           2  2.21778165
-      113 2  113           1  0.02990462
-      114 1  114           1 -0.42337571
-      115 5  115           5  6.48828236
-      116 2  116           2  1.27682708
-      117 4  117           3  4.25799913
-      118 2  118           2  2.10080070
-      119 1  119           2  0.93064817
-      120 5  120           5  7.52021032
-      121 1  121           1 -0.29092487
-      122 2  122           2  0.88786343
-      123 3  123           3  3.98453366
-      124 3  124           3  3.65453342
-      125 2  125           2  0.90799958
-      126 2  126           2  1.26472093
-      127 5  127           5  7.55024109
-      128 3  128           3  4.01900088
-      129 1  129           1 -1.05125879
-      130 3  130           3  2.62876392
-      131 4  131           4  6.07376153
-      132 2  132           2  1.90236816
-      133 3  133           2  2.25972489
-      134 5  134           5  8.11634426
-      135 4  135           4  5.00440266
-      136 5  136           5  6.81334557
-      137 2  137           2  1.01226568
-      138 5  138           5  7.64971991
-      139 5  139           5  7.45437571
-      140 3  140           3  3.24438924
-      141 2  141           1  0.18105533
-      142 3  142           3  3.94018318
-      143 3  143           3  2.36976230
-      144 5  144           5  7.27290297
-      145 4  145           4  4.89267331
-      146 1  146           1 -0.15294844
-      147 5  147           5  7.39521045
-      148 3  148           3  3.09050461
-      149 3  149           3  3.76402819
-      150 1  150           2  1.17147884
-      151 4  151           3  4.25669454
-      152 2  152           2  0.37705873
-      153 4  153           3  3.50975303
-      154 2  154           2  1.31948372
-      155 1  155           1 -0.28261632
-      156 1  156           1 -0.93086447
-      157 2  157           2  1.29143142
-      158 4  158           4  5.41757327
-      159 2  159           3  2.81103227
-      160 3  160           3  3.63819060
-      161 4  161           3  4.16650748
-      162 4  162           5  6.54752782
-      163 2  163           2  1.20572586
-      164 4  164           4  6.13185612
-      165 2  165           2  0.56934837
-      166 1  166           1 -0.42607856
-      167 1  167           1 -0.78088361
-      168 2  168           2  1.62783817
-      169 3  169           3  3.76726554
-      170 3  170           2  1.76488593
-      171 4  171           4  4.41643401
-      172 1  172           1 -0.46522749
-      173 2  173           2  1.48310131
-      174 3  174           3  2.76200714
-      175 2  175           3  2.96845063
-      176 2  176           2  1.57232998
-      177 4  177           3  3.37146742
-      178 2  178           2  1.27492919
-      179 2  179           2  0.56000795
-      180 3  180           3  2.50825115
-      181 3  181           2  2.04157031
-      182 2  182           2  0.69159336
-      183 3  183           4  4.68423662
-      184 1  184           2  0.64191641
-      185 2  185           2  1.95328294
-      186 4  186           3  4.06195481
-      187 2  187           2  2.27932700
-      188 3  188           2  1.08385635
-      189 3  189           3  2.90625148
-      190 5  190           5  7.49152508
-      191 4  191           4  5.01998550
-      192 2  192           2  1.51988937
-      193 2  193           2  0.86665906
-      194 2  194           2  1.34357488
-      195 5  195           5  8.45275065
-      196 3  196           3  3.40346084
-      197 2  197           3  3.41311656
-      198 3  198           3  2.35031158
-      199 1  199           2  0.98324723
-      200 1  200           2  0.55294597
-
 # `smm()` examples work
 
     Code
@@ -1399,7 +936,7 @@
       6     6     5     19.7      145     175       3.62    2.77      15.5     0  
       7     8     3     15.0      358.    194.      3.12    4.10      17.1     0  
       8     8     5     15.4      326     300.      3.88    3.37      14.6     0  
-      # ... with 11 more variables: am_mean <dbl>, carb_mean <dbl>, mpg_sd <dbl>,
+      # i 11 more variables: am_mean <dbl>, carb_mean <dbl>, mpg_sd <dbl>,
       #   disp_sd <dbl>, hp_sd <dbl>, drat_sd <dbl>, wt_sd <dbl>, qsec_sd <dbl>,
       #   vs_sd <dbl>, am_sd <dbl>, carb_sd <dbl>
       # A tibble: 8 x 56
@@ -1413,7 +950,7 @@
       6     6     5     19.7      145     175       3.62    2.77      15.5     0  
       7     8     3     15.0      358.    194.      3.12    4.10      17.1     0  
       8     8     5     15.4      326     300.      3.88    3.37      14.6     0  
-      # ... with 47 more variables: am_mean <dbl>, carb_mean <dbl>, mpg_sd <dbl>,
+      # i 47 more variables: am_mean <dbl>, carb_mean <dbl>, mpg_sd <dbl>,
       #   disp_sd <dbl>, hp_sd <dbl>, drat_sd <dbl>, wt_sd <dbl>, qsec_sd <dbl>,
       #   vs_sd <dbl>, am_sd <dbl>, carb_sd <dbl>, cov_var_1 <dbl>, cov_var_2 <dbl>,
       #   cov_var_3 <dbl>, cov_var_4 <dbl>, cov_var_5 <dbl>, cov_var_6 <dbl>,
@@ -1426,12 +963,12 @@
     Code
       data("ordmvnorm")
       x <- ordmvnorm[, 3:7]
-    Warning <warning>
+    Warning <rlang_warning>
       Dropping 'mi_df' class as required column was removed.
     Code
       y <- attr(ordmvnorm, "instance_label")
       mdl1 <- svor_exc(x, y)
-    Message <message>
+    Message <rlang_message>
       The SMO algorithm reached the maximum of 500 steps.
     Code
       predict(mdl1, x)
@@ -1449,7 +986,7 @@
        8 4          
        9 2          
       10 2          
-      # ... with 990 more rows
+      # i 990 more rows
     Code
       predict(mdl1, x, type = "raw")
     Output
@@ -1466,5 +1003,5 @@
        8  2.15  
        9  0.266 
       10  0.216 
-      # ... with 990 more rows
+      # i 990 more rows
 

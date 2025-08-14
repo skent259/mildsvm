@@ -637,7 +637,7 @@ select_cv_folds <- function(data, n_fold, fold_id) {
     temp_data <- data.frame(bag_name = unique(data$bag_name),
                             bag_id = bag_id,
                             stringsAsFactors = FALSE) %>%
-      dplyr::right_join(unique(data %>% dplyr::select(.data$bag_name, .data$instance_name)),
+      dplyr::right_join(unique(data %>% dplyr::select("bag_name", "instance_name")),
                         by = "bag_name")
     fold_id <- temp_data$bag_id  ## now fold_id is of length(unique(data$instance_name))
   } else {

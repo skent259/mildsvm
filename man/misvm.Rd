@@ -134,18 +134,18 @@ using the gurobi package optimization back-end.
 }
 \section{Methods (by class)}{
 \itemize{
-\item \code{default}: Method for data.frame-like objects
+\item \code{misvm(default)}: Method for data.frame-like objects
 
-\item \code{formula}: Method for passing formula
+\item \code{misvm(formula)}: Method for passing formula
 
-\item \code{mi_df}: Method for \code{mi_df} objects, automatically handling bag
+\item \code{misvm(mi_df)}: Method for \code{mi_df} objects, automatically handling bag
 names, labels, and all covariates.
 
-\item \code{mild_df}: Method for \code{mild_df} objects. Summarize samples to the
+\item \code{misvm(mild_df)}: Method for \code{mild_df} objects. Summarize samples to the
 instance level based on specified functions, then perform \code{misvm()} on
 instance level data.
-}}
 
+}}
 \examples{
 set.seed(8)
 mil_data <- generate_mild_df(nbag = 20,

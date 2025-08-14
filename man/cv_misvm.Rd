@@ -119,14 +119,14 @@ more details on the fitting function.
 }
 \section{Methods (by class)}{
 \itemize{
-\item \code{default}: Method for data.frame-like objects
+\item \code{cv_misvm(default)}: Method for data.frame-like objects
 
-\item \code{formula}: Method for passing formula
+\item \code{cv_misvm(formula)}: Method for passing formula
 
-\item \code{mi_df}: Method for \code{mi_df} objects, automatically handling bag
+\item \code{cv_misvm(mi_df)}: Method for \code{mi_df} objects, automatically handling bag
 names, labels, and all covariates.
-}}
 
+}}
 \examples{
 set.seed(8)
 mil_data <- generate_mild_df(nbag = 20,

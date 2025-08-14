@@ -16,9 +16,8 @@
   s = Inf,
   method = c("qp-heuristic"),
   weights = TRUE,
-  control = list(kernel = "linear", sigma = if (is.vector(x)) 1 else 1/ncol(x),
-    max_step = 500, type = "C-classification", scale = TRUE, verbose = FALSE, time_limit
-    = 60),
+  control = list(kernel = "linear", sigma = if (is.vector(x)) 1 else 1/ncol(x), max_step
+    = 500, type = "C-classification", scale = TRUE, verbose = FALSE, time_limit = 60),
   ...
 )
 
@@ -125,14 +124,14 @@ space. Additional methods should be available shortly.
 }
 \section{Methods (by class)}{
 \itemize{
-\item \code{default}: Method for data.frame-like objects
+\item \code{omisvm(default)}: Method for data.frame-like objects
 
-\item \code{formula}: Method for passing formula
+\item \code{omisvm(formula)}: Method for passing formula
 
-\item \code{mi_df}: Method for \code{mi_df} objects, automatically handling bag
+\item \code{omisvm(mi_df)}: Method for \code{mi_df} objects, automatically handling bag
 names, labels, and all covariates.
-}}
 
+}}
 \examples{
 if (require(gurobi)) {
   data("ordmvnorm")

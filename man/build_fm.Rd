@@ -33,11 +33,11 @@ specifies the feature map and a provided dataset.
 }
 \section{Methods (by class)}{
 \itemize{
-\item \code{kfm_exact}: Method for \code{kfm_exact} class.
+\item \code{build_fm(kfm_exact)}: Method for \code{kfm_exact} class.
 
-\item \code{kfm_nystrom}: Method for \code{kfm_nystrom} class.
+\item \code{build_fm(kfm_nystrom)}: Method for \code{kfm_nystrom} class.
+
 }}
-
 \examples{
 df <- data.frame(
   X1 = c(2,   3,   4,   5,   6, 7, 8),

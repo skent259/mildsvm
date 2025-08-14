@@ -13,7 +13,7 @@
 \arguments{
 \item{x}{Object to format or print.}
 
-\item{...}{Passed to other methods.  See \code{\link[=print.tbl]{print.tbl()}} or details for more
+\item{...}{Passed to other methods.  See \code{\link[tibble:formatting]{tibble::print.tbl()}} or details for more
 information.}
 }
 \value{

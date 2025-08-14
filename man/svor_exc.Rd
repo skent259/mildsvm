@@ -13,8 +13,8 @@
   cost = 1,
   method = c("smo"),
   weights = NULL,
-  control = list(kernel = "linear", sigma = if (is.vector(x)) 1 else 1/ncol(x),
-    max_step = 500, scale = TRUE, verbose = FALSE),
+  control = list(kernel = "linear", sigma = if (is.vector(x)) 1 else 1/ncol(x), max_step
+    = 500, scale = TRUE, verbose = FALSE),
   ...
 )
 
@@ -84,16 +84,16 @@ Constraints based on the research of Chu and Keerthi (2007).
 }
 \section{Methods (by class)}{
 \itemize{
-\item \code{default}: Method for data.frame-like objects
+\item \code{svor_exc(default)}: Method for data.frame-like objects
 
-\item \code{formula}: Method for passing formula
+\item \code{svor_exc(formula)}: Method for passing formula
 
-\item \code{mi_df}: Method for \code{mi_df} objects, automatically handling bag
+\item \code{svor_exc(mi_df)}: Method for \code{mi_df} objects, automatically handling bag
 names, labels, and all covariates. Use the \code{bag_label} as \code{y} at the
 instance level, then perform \code{svor_exc()} ignoring the MIL structure and
 bags.
-}}
 
+}}
 \examples{
 data("ordmvnorm")
 x <- ordmvnorm[, 3:7]
