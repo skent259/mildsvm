@@ -54,5 +54,5 @@
         <fct>     <chr>    <chr>         <dbl>
       1 1         bag_1    bag_1_inst_1  -0.4 
       2 1         bag_1    bag_1_inst_1  -0.35
-      # ... with 4 more rows
+      # i 4 more rows
 
