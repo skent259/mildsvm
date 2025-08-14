@@ -1,4 +1,4 @@
-# v0.4.1
+# mildsvm 0.4.1
 
 * Fix documentation to address CRAN NOTEs
 * Minor updates to functions, snapshot tests, and Github actions to accomodate newer versions of other packages (in particular, dplyr, tibble, testthat)
