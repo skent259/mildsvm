@@ -369,10 +369,12 @@ test_that("Re-ordering data doesn't reduce performance", {
   expect_snapshot({
     auc1 <- with(mil_df_test,
                  pROC::auc(response = classify_bags(bag_label, bag_name),
-                           predictor = classify_bags(pred1$.pred, bag_name)))
+                           predictor = classify_bags(pred1$.pred, bag_name),
+                           quiet = TRUE))
     auc2 <- with(mil_df_test,
                  pROC::auc(response = classify_bags(bag_label, bag_name),
-                           predictor = classify_bags(pred2$.pred, bag_name)))
+                           predictor = classify_bags(pred2$.pred, bag_name),
+                           quiet = TRUE))
 
     # the auc2 should be in the neighborhood of auc1
     auc1; auc2
