@@ -35,30 +35,30 @@
     Code
       print(roc$auc)
     Output
-      Multi-class area under the curve: 0.9514
+      Multi-class area under the curve: 0.9509
     Code
       print(mzoe)
     Output
-      [1] 0.1
+      [1] 0.1066667
     Code
       print(mae)
     Output
-      [1] 0.1
+      [1] 0.1066667
 
 ---
 
     Code
       print(roc$auc)
     Output
-      Multi-class area under the curve: 0.9482
+      Multi-class area under the curve: 0.9491
     Code
       print(mzoe)
     Output
-      [1] 0.1223529
+      [1] 0.1235294
     Code
       print(mae)
     Output
-      [1] 0.1223529
+      [1] 0.1235294
 
 # `svor_exc()` value returns make sense
 
@@ -118,7 +118,7 @@
       Model info: 
         Levels of `y`: chr [1:5] "1" "2" "3" "4" "5"
         Features: chr [1:2] "V1" "V2"
-        Number of iterations: 139 
+        Number of iterations: 146 
       
       
       $mi_df

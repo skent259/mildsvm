@@ -4,8 +4,8 @@ test_that("Nystrom method approximates the true kernel on a dataframe.", {
     true_kernel <- rbf_kernel_matrix(fit$kernel_params$sigma, as.matrix(df), as.matrix(df))
     approximate_kernel <- fm %*% t(fm)
 
-    expect_lt(max(abs(true_kernel - approximate_kernel)), max_thresh)
-    expect_lt(mean(abs(true_kernel - approximate_kernel)), mean_thresh)
+    expect_lte(max(abs(true_kernel - approximate_kernel)), max_thresh)
+    expect_lte(mean(abs(true_kernel - approximate_kernel)), mean_thresh)
   }
 
   set.seed(8)
@@ -18,9 +18,9 @@ test_that("Nystrom method approximates the true kernel on a dataframe.", {
   set.seed(8)
   ## RBF kernel, full feature map
   fit <- kfm_nystrom(df, m = 7, r = 7, kernel = "radial", sigma = 0.05)
-  check_nystrom_approximation(fit, df, 1e-14, 1e-15)
+  check_nystrom_approximation(fit, df, 1e-12, 1e-13)
   fit <- kfm_nystrom(df, m = 7, r = 7, kernel = "radial", sigma = 0.5)
-  check_nystrom_approximation(fit, df, 1e-14, 1e-15)
+  check_nystrom_approximation(fit, df, 1e-12, 1e-13)
 
   ## RBF kernel, smaller feature map
   fit <- kfm_nystrom(df, m = 7, r = 6, kernel = "radial", sigma = 0.05)

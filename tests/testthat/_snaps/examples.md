@@ -34,7 +34,8 @@
     Code
       split(mild_data[, 4:5], mild_data$instance_name) %>% sapply(colMeans) %>% round(
         2) %>% t()
-    Warning <rlang_warning>
+    Condition
+      Warning:
       Dropping 'mild_df' class as required column was removed.
     Output
                    X1    X2
@@ -454,7 +455,8 @@
     Code
       data("ordmvnorm")
       x <- ordmvnorm[, 3:7]
-    Warning <rlang_warning>
+    Condition
+      Warning:
       Dropping 'mi_df' class as required column was removed.
     Code
       y <- ordmvnorm$bag_label
@@ -963,12 +965,13 @@
     Code
       data("ordmvnorm")
       x <- ordmvnorm[, 3:7]
-    Warning <rlang_warning>
+    Condition
+      Warning:
       Dropping 'mi_df' class as required column was removed.
     Code
       y <- attr(ordmvnorm, "instance_label")
       mdl1 <- svor_exc(x, y)
-    Message <rlang_message>
+    Message
       The SMO algorithm reached the maximum of 500 steps.
     Code
       predict(mdl1, x)

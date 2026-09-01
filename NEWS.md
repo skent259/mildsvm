@@ -1,5 +1,9 @@
 # mildsvm (development version)
 
+# mildsvm 0.4.2
+
+* Minor fix to tests to pass CRAN checks on MKL
+
 # mildsvm 0.4.1
 
 * Fix documentation to address CRAN NOTEs
