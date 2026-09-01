@@ -5,6 +5,12 @@
 # rhub::rhub_setup()
 #
 # It is unlikely that you need to modify this file manually.
+#
+# NOTE: this file HAS been modified manually. The 'setup-deps' steps skip
+# soft dependencies ('gurobi' is suggested but not on CRAN), and the checks
+# set _R_CHECK_FORCE_SUGGESTS_=false so that R CMD check does not fail on
+# the missing suggested packages. Re-apply these changes after running
+# rhub::rhub_setup().
 
 name: R-hub
 run-name: >-
@@ -54,6 +60,9 @@ jobs:
     container:
       image: ${{ matrix.config.container }}
 
+    env:
+      _R_CHECK_FORCE_SUGGESTS_: false
+
     steps:
       - uses: r-hub/actions/checkout@v1
       - uses: r-hub/actions/platform-info@v1
@@ -64,6 +73,10 @@ jobs:
         with:
           token: ${{ secrets.RHUB_TOKEN }}
           job-config: ${{ matrix.config.job-config }}
+          dependencies: '"hard"'
+          extra-packages: |
+            any::rcmdcheck
+            any::testthat
       - uses: r-hub/actions/run-check@v1
         with:
           token: ${{ secrets.RHUB_TOKEN }}
@@ -79,6 +92,9 @@ jobs:
       matrix:
         config: ${{ fromJson(needs.setup.outputs.platforms) }}
 
+    env:
+      _R_CHECK_FORCE_SUGGESTS_: false
+
     steps:
       - uses: r-hub/actions/checkout@v1
       - uses: r-hub/actions/setup-r@v1
@@ -93,6 +109,10 @@ jobs:
         with:
           job-config: ${{ matrix.config.job-config }}
           token: ${{ secrets.RHUB_TOKEN }}
+          dependencies: '"hard"'
+          extra-packages: |
+            any::rcmdcheck
+            any::testthat
       - uses: r-hub/actions/run-check@v1
         with:
           job-config: ${{ matrix.config.job-config }}
