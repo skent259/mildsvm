@@ -31,8 +31,8 @@ head(df)
 
 }
 \seealso{
-Other multiple instance formula helper functions: 
-\code{\link{mi}()}
+Other multiple instance formula helper functions:
+\code{\link[=mi]{mi()}}
 }
 \author{
 Sean Kent

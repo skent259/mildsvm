@@ -28,8 +28,8 @@ head(df)
 
 }
 \seealso{
-Other multiple instance formula helper functions: 
-\code{\link{mild}()}
+Other multiple instance formula helper functions:
+\code{\link[=mild]{mild()}}
 }
 \author{
 Sean Kent

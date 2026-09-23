@@ -95,8 +95,8 @@ morphologic features of tumor microenvironment \emph{arXiv preprint}
 \href{https://arxiv.org/abs/2206.14704}{arXiv:2206.14704}
 }
 \seealso{
-Other kernel feature map functions: 
-\code{\link{kfm_exact}()}
+Other kernel feature map functions:
+\code{\link[=kfm_exact]{kfm_exact()}}
 }
 \author{
 Sean Kent

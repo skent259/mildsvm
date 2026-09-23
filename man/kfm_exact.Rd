@@ -47,8 +47,8 @@ fm <- build_fm(fit, df)
 
 }
 \seealso{
-Other kernel feature map functions: 
-\code{\link{kfm_nystrom}()}
+Other kernel feature map functions:
+\code{\link[=kfm_nystrom]{kfm_nystrom()}}
 }
 \author{
 Sean Kent

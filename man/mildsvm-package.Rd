@@ -21,6 +21,7 @@ Useful links:
 
 Authors:
 \itemize{
+  \item Sean Kent \email{skent259@gmail.com} (\href{https://orcid.org/0000-0001-8697-9069}{ORCID})
   \item Yifei Liou
 }
 
